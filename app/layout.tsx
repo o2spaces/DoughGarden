@@ -7,6 +7,7 @@ import "./tracker.css";
 import "./nav-overrides.css";
 import "./hero-refresh.css";
 import "./settings-controls.css";
+import "./saved-starters.css";
 
 const anuphan = Anuphan({
   variable: "--font-anuphan",

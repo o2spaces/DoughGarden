@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 type ProofMode = "room" | "cold" | "combo";
 type BakeMode = "dutch" | "open";
 type Phase = { icon: string; title: string; subtitle: string; hours: number; temp: string; guide: string[]; cue: string };
+type SavedYeast = { id: string; name: string; birth: string; savedAt: string };
 
 const DEFAULT_SETTINGS = {
   temperature: 28, humidity: 70, starterOld: 20, feedFlour: 40, feedWater: 40,
@@ -86,6 +87,8 @@ export default function Home() {
   const [toast, setToast] = useState("");
   const [yeastName, setYeastName] = useState("เจ้าก้อนแป้ง");
   const [yeastBirth, setYeastBirth] = useState("");
+  const [savedYeasts, setSavedYeasts] = useState<SavedYeast[]>([]);
+  const [activeYeastId, setActiveYeastId] = useState("");
   const [today, setToday] = useState("");
   const didAlert = useRef(false);
   const importRef = useRef<HTMLInputElement>(null);
@@ -166,11 +169,25 @@ export default function Home() {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      setToday(new Date().toISOString().slice(0, 10));
+      const localToday = new Date();
+      localToday.setMinutes(localToday.getMinutes() - localToday.getTimezoneOffset());
+      setToday(localToday.toISOString().slice(0, 10));
       try {
         const saved = JSON.parse(localStorage.getItem("doughgarden-yeast") || "null");
         if (saved?.name) setYeastName(saved.name);
         if (saved?.birth) setYeastBirth(saved.birth);
+        const savedList = JSON.parse(localStorage.getItem("doughgarden-starters") || "[]");
+        if (Array.isArray(savedList)) {
+          const validList = savedList.filter((item): item is SavedYeast => Boolean(item?.id && item?.name && item?.birth));
+          if (!validList.length && saved?.birth) {
+            const migrated: SavedYeast = { id: `เดิม-${Date.now()}`, name: saved.name || "เจ้าก้อนแป้ง", birth: saved.birth, savedAt: new Date().toISOString() };
+            localStorage.setItem("doughgarden-starters", JSON.stringify([migrated]));
+            setSavedYeasts([migrated]); setActiveYeastId(migrated.id);
+          } else {
+            setSavedYeasts(validList);
+            if (validList[0]) setActiveYeastId(validList[0].id);
+          }
+        }
         const settings = normalizeSettings(JSON.parse(localStorage.getItem("doughgarden-settings") || "null"));
         setTemperature(settings.temperature); setHumidity(settings.humidity);
         setStarterOld(settings.starterOld); setFeedFlour(settings.feedFlour); setFeedWater(settings.feedWater);
@@ -203,13 +220,34 @@ export default function Home() {
   };
   const selectPhase = (index: number) => { setActivePhase(index); setRunning(false); setPhaseEnd(null); didAlert.current = false; };
   const saveYeast = () => {
-    localStorage.setItem("doughgarden-yeast", JSON.stringify({ name: yeastName.trim() || "เจ้าก้อนแป้ง", birth: yeastBirth }));
-    setToast("บันทึกเดย์แทร็กเกอร์แล้ว");
+    if (!yeastBirth) { setToast("กรุณาเลือกวันเกิดหัวเชื้อก่อนบันทึก"); return; }
+    const name = yeastName.trim() || "เจ้าก้อนแป้ง";
+    const id = activeYeastId || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const record: SavedYeast = { id, name, birth: yeastBirth, savedAt: new Date().toISOString() };
+    const next = [record, ...savedYeasts.filter(item => item.id !== id)];
+    try {
+      localStorage.setItem("doughgarden-starters", JSON.stringify(next));
+      localStorage.setItem("doughgarden-yeast", JSON.stringify({ name, birth: yeastBirth }));
+      setSavedYeasts(next); setActiveYeastId(id); setYeastName(name);
+      setToast(`บันทึก “${name}” แล้ว`);
+    } catch { setToast("บันทึกไม่ได้ กรุณาอนุญาตการจัดเก็บข้อมูลของเว็บไซต์"); }
   };
   const resetYeast = () => {
-    setYeastName("เจ้าก้อนแป้ง"); setYeastBirth("");
+    setYeastName(""); setYeastBirth(""); setActiveYeastId("");
     localStorage.removeItem("doughgarden-yeast");
-    setToast("รีเซ็ตเดย์แทร็กเกอร์แล้ว");
+    setToast("ล้างช่องกรอกแล้ว รายการที่บันทึกยังอยู่");
+  };
+  const selectYeast = (record: SavedYeast) => {
+    setYeastName(record.name); setYeastBirth(record.birth); setActiveYeastId(record.id);
+    localStorage.setItem("doughgarden-yeast", JSON.stringify({ name: record.name, birth: record.birth }));
+    setToast(`เปิดข้อมูล “${record.name}” แล้ว`);
+  };
+  const deleteYeast = (id: string) => {
+    const next = savedYeasts.filter(item => item.id !== id);
+    localStorage.setItem("doughgarden-starters", JSON.stringify(next));
+    setSavedYeasts(next);
+    if (activeYeastId === id) { setActiveYeastId(""); setYeastName(""); setYeastBirth(""); localStorage.removeItem("doughgarden-yeast"); }
+    setToast("ลบรายการหัวเชื้อแล้ว");
   };
   const currentSettings = (): SavedSettings => ({ temperature, humidity, starterOld, feedFlour, feedWater, wholeWheat, targetDough, hydration, starterPercent, proofMode, coldHours, fridgeTemp, bakeMode, steamWater, ovenVolume, trayWidth, trayLength, steamMinutes, ovenSeal });
   const saveSettings = () => {
@@ -269,8 +307,9 @@ export default function Home() {
 
     <section className="day-tracker shell" id="day-tracker">
       <div className="tracker-intro"><p className="section-kicker">มายสตาร์ตเตอร์ — เดย์แทร็กเกอร์</p><h2>{yeastName.trim() || "ตั้งชื่อยีสต์ของคุณ"}</h2><span>ติดตามวันแรกที่หัวเชื้อถือกำเนิดจนถึงวันนี้</span></div>
-      <div className="tracker-fields"><label>ชื่อยีสต์<input aria-label="ชื่อยีสต์" type="text" maxLength={30} value={yeastName} onChange={e=>setYeastName(e.target.value)} placeholder="เช่น น้องฟูฟ่อง"/></label><label>วันเกิดยีสต์<input aria-label="วันเกิดยีสต์" type="date" max={today || undefined} value={yeastBirth} onChange={e=>setYeastBirth(e.target.value)}/></label><button onClick={saveYeast}>บันทึก</button><button className="secondary" onClick={resetYeast}>รีเซ็ต</button></div>
+      <div className="tracker-fields"><label>ชื่อหัวเชื้อ<input aria-label="ชื่อหัวเชื้อ" type="text" maxLength={30} value={yeastName} onChange={e=>setYeastName(e.target.value)} placeholder="เช่น น้องฟูฟ่อง"/></label><label>วันเกิดหัวเชื้อ<input aria-label="วันเกิดหัวเชื้อ" type="date" max={today || undefined} value={yeastBirth} onChange={e=>setYeastBirth(e.target.value)}/></label><button type="button" onClick={saveYeast}>{activeYeastId ? "อัปเดต" : "บันทึก"}</button><button type="button" className="secondary" onClick={resetYeast}>เพิ่มรายการใหม่</button></div>
       <div className={`age-display ${yeastAge.ready?"ready":""}`}><span>อายุปัจจุบัน</span>{yeastBirth&&yeastAge.ready?<><strong>{yeastAge.days}<small> วัน</small></strong><p>เดย์ {yeastAge.days + 1}{yeastAge.years>0?` · ${yeastAge.years} ปี ${yeastAge.months} เดือน`:""}</p></>:<><strong>—</strong><p>เลือกวันเกิดเพื่อเริ่มนับ</p></>}</div>
+      <div className="saved-starters"><div className="saved-starters-head"><strong>หัวเชื้อที่บันทึกไว้</strong><span>{savedYeasts.length} รายการ · เก็บไว้ในเบราว์เซอร์เครื่องนี้</span></div>{savedYeasts.length ? <div className="saved-starters-list">{savedYeasts.map(record=><article className={record.id===activeYeastId?"active":""} key={record.id}><button type="button" className="starter-select" onClick={()=>selectYeast(record)}><strong>{record.name}</strong><span>เกิด {new Date(`${record.birth}T00:00:00`).toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"})}</span></button><button type="button" className="starter-delete" aria-label={`ลบ ${record.name}`} onClick={()=>deleteYeast(record.id)}>ลบ</button></article>)}</div>:<p className="saved-empty">ยังไม่มีรายการ กรอกชื่อและวันเกิดแล้วกด “บันทึก”</p>}</div>
     </section>
 
     <section className="starter-strip shell">

@@ -1,0 +1,107 @@
+.saved-starters {
+  grid-column: 1 / -1;
+  padding-top: 20px;
+  border-top: 1px solid rgba(241, 198, 110, 0.16);
+}
+
+.saved-starters-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.saved-starters-head strong {
+  color: var(--cream);
+  font: 500 16px var(--font-mitr), sans-serif;
+}
+
+.saved-starters-head span {
+  color: #817261;
+  font-size: 10px;
+}
+
+.saved-starters-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.saved-starters-list article {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(241, 198, 110, 0.13);
+  border-radius: 12px;
+  background: #17130f;
+}
+
+.saved-starters-list article.active {
+  border-color: var(--amber);
+  background: rgba(231, 161, 62, 0.08);
+}
+
+.starter-select,
+.starter-delete {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.starter-select {
+  min-width: 0;
+  padding: 13px 14px;
+  color: #8f806e;
+  text-align: left;
+}
+
+.starter-select strong,
+.starter-select span {
+  display: block;
+}
+
+.starter-select strong {
+  overflow: hidden;
+  color: #e5d3bc;
+  font-size: 13px;
+  text-overflow: ellipsis;
+}
+
+.starter-select span {
+  margin-top: 3px;
+  font-size: 10px;
+}
+
+.starter-delete {
+  align-self: stretch;
+  padding: 0 13px;
+  border-left: 1px solid rgba(241, 198, 110, 0.1);
+  color: #a77d69;
+  font-size: 10px;
+}
+
+.starter-delete:hover {
+  color: #ef9478;
+  background: rgba(223, 118, 89, 0.07);
+}
+
+.saved-empty {
+  margin: 12px 0 0;
+  padding: 14px;
+  border: 1px dashed rgba(241, 198, 110, 0.15);
+  border-radius: 11px;
+  color: #796c5d;
+  text-align: center;
+  font-size: 11px;
+}
+
+@media (max-width: 920px) {
+  .saved-starters-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 600px) {
+  .saved-starters-head { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .saved-starters-list { grid-template-columns: 1fr; }
+}
