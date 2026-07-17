@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 type ProofMode = "room" | "cold" | "combo";
 type BakeMode = "dutch" | "open";
+type AlertSound = "bell" | "chime" | "soft" | "none";
 type Phase = { icon: string; title: string; subtitle: string; hours: number; temp: string; guide: string[]; cue: string };
 type SavedYeast = { id: string; name: string; birth: string; savedAt: string };
 type TimerMilestone = { minutes: number; title: string; body: string };
@@ -21,6 +22,7 @@ const DEFAULT_SETTINGS = {
   bakeMode: "dutch" as BakeMode, steamWater: 200, ovenVolume: 60,
   trayWidth: 30, trayLength: 20, steamMinutes: 20,
   ovenSeal: "normal" as "tight" | "normal" | "leaky",
+  alertSound: "bell" as AlertSound,
 };
 
 type SavedSettings = typeof DEFAULT_SETTINGS;
@@ -45,6 +47,7 @@ const normalizeSettings = (data: Record<string, unknown> | null | undefined): Sa
   trayLength: validNumber(data?.trayLength, DEFAULT_SETTINGS.trayLength),
   steamMinutes: validNumber(data?.steamMinutes, DEFAULT_SETTINGS.steamMinutes),
   ovenSeal: data?.ovenSeal === "tight" || data?.ovenSeal === "normal" || data?.ovenSeal === "leaky" ? data.ovenSeal : DEFAULT_SETTINGS.ovenSeal,
+  alertSound: data?.alertSound === "bell" || data?.alertSound === "chime" || data?.alertSound === "soft" || data?.alertSound === "none" ? data.alertSound : DEFAULT_SETTINGS.alertSound,
 });
 
 const clamp = (n: number, min = 0) => Math.max(min, Number.isFinite(n) ? n : min);
@@ -92,6 +95,7 @@ export default function Home() {
   const [trayLength, setTrayLength] = useState(20);
   const [steamMinutes, setSteamMinutes] = useState(20);
   const [ovenSeal, setOvenSeal] = useState<"tight" | "normal" | "leaky">("normal");
+  const [alertSound, setAlertSound] = useState<AlertSound>("bell");
   const [activePhase, setActivePhase] = useState(0);
   const [phaseStart, setPhaseStart] = useState<number | null>(null);
   const [phaseEnd, setPhaseEnd] = useState<number | null>(null);
@@ -105,6 +109,7 @@ export default function Home() {
   const [activeYeastId, setActiveYeastId] = useState("");
   const [today, setToday] = useState("");
   const alertedMilestones = useRef<Set<number>>(new Set());
+  const audioContextRef = useRef<AudioContext | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
 
   const adaptive = useMemo(() => {
@@ -164,6 +169,51 @@ export default function Home() {
     { icon:"11", title:"คูลดาวน์", subtitle:"พักให้เนื้อเซ็ตตัว", hours:2, temp:"อุณหภูมิห้อง", cue:"ก้อนเย็นเกือบสนิท เปลือกแห้ง และไอน้ำภายในกระจายตัวแล้ว", guide:["ย้ายขึ้นตะแกรงทันที ให้อากาศผ่านรอบก้อน", "รออย่างน้อย 2 ชั่วโมงก่อนตัด; ก้อนใหญ่รอ 3 ชั่วโมง", "การตัดเร็วทำให้เนื้อเหนียวและดูเหมือนอบไม่สุก"] },
   ], [temperature, adaptive.bulk, adaptive.roomProof, adaptive.tempFactor, proofMode, finalProofHours, fridgeTemp, coldHours, bakeMode, steamWater, steamMinutes]);
 
+  const playAlertSound = (sound: AlertSound = alertSound) => {
+    if (sound === "none" || typeof window === "undefined" || !("AudioContext" in window)) return;
+    try {
+      const context = audioContextRef.current || new AudioContext();
+      audioContextRef.current = context;
+      if (context.state === "suspended") void context.resume();
+      const patterns: Record<Exclude<AlertSound, "none">, { frequency: number; delay: number; duration: number; volume: number }[]> = {
+        bell: [
+          { frequency: 880, delay: 0, duration: 1.15, volume: .2 },
+          { frequency: 1320, delay: 0, duration: .8, volume: .09 },
+          { frequency: 880, delay: 1.25, duration: 1.15, volume: .2 },
+          { frequency: 1320, delay: 1.25, duration: .8, volume: .09 },
+        ],
+        chime: [
+          { frequency: 523.25, delay: 0, duration: .65, volume: .16 },
+          { frequency: 659.25, delay: .28, duration: .65, volume: .16 },
+          { frequency: 783.99, delay: .56, duration: .9, volume: .17 },
+        ],
+        soft: [
+          { frequency: 440, delay: 0, duration: .8, volume: .1 },
+          { frequency: 554.37, delay: .42, duration: 1, volume: .1 },
+        ],
+      };
+      const start = context.currentTime + .03;
+      patterns[sound].forEach(note => {
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.type = sound === "bell" ? "sine" : "triangle";
+        oscillator.frequency.setValueAtTime(note.frequency, start + note.delay);
+        gain.gain.setValueAtTime(.0001, start + note.delay);
+        gain.gain.exponentialRampToValueAtTime(note.volume, start + note.delay + .02);
+        gain.gain.exponentialRampToValueAtTime(.0001, start + note.delay + note.duration);
+        oscillator.connect(gain); gain.connect(context.destination);
+        oscillator.start(start + note.delay); oscillator.stop(start + note.delay + note.duration + .05);
+      });
+    } catch { setToast("เบราว์เซอร์นี้ไม่สามารถเล่นเสียงแจ้งเตือนได้"); }
+  };
+
+  const changeAlertSound = (sound: AlertSound) => {
+    setAlertSound(sound);
+    const next = { ...currentSettings(), alertSound: sound };
+    try { localStorage.setItem("doughgarden-settings", JSON.stringify(next)); } catch { /* The selector remains usable without storage. */ }
+    if (sound !== "none") playAlertSound(sound);
+  };
+
   useEffect(() => {
     if (!running || !phaseStart || !phaseEnd) return;
     const milestones: TimerMilestone[] = activePhase === 2
@@ -180,6 +230,7 @@ export default function Home() {
           if (notifyStatus === "granted" && "Notification" in window) {
             try { new Notification(`DoughGarden — ${milestone.title}`, { body: milestone.body, tag: `doughgarden-${activePhase}-${index}` }); } catch { /* Some mobile browsers require installed-app notifications. */ }
           }
+          playAlertSound();
           if (index === milestones.length - 1) setRunning(false);
         }
       });
@@ -215,7 +266,7 @@ export default function Home() {
         setWholeWheat(settings.wholeWheat); setTargetDough(settings.targetDough); setHydration(settings.hydration); setStarterPercent(settings.starterPercent);
         setProofMode(settings.proofMode); setColdHours(settings.coldHours); setFridgeTemp(settings.fridgeTemp);
         setBakeMode(settings.bakeMode); setSteamWater(settings.steamWater); setOvenVolume(settings.ovenVolume);
-        setTrayWidth(settings.trayWidth); setTrayLength(settings.trayLength); setSteamMinutes(settings.steamMinutes); setOvenSeal(settings.ovenSeal);
+        setTrayWidth(settings.trayWidth); setTrayLength(settings.trayLength); setSteamMinutes(settings.steamMinutes); setOvenSeal(settings.ovenSeal); setAlertSound(settings.alertSound);
       } catch {
         // The tracker remains usable if local storage is unavailable.
       }
@@ -230,12 +281,15 @@ export default function Home() {
     if (result === "granted") {
       try {
         new Notification("DoughGarden — ทดสอบแจ้งเตือน", { body: "ระบบแจ้งเตือนพร้อมแล้ว จะเตือนเมื่อถึงเวลาพับโดว์แต่ละรอบ", tag: "doughgarden-test" });
+        playAlertSound();
         setToast("ส่งแจ้งเตือนทดสอบแล้ว");
       } catch { setToast("อนุญาตแล้ว แต่เบราว์เซอร์นี้ต้องติดตั้งเว็บเป็นแอปก่อนแจ้งเตือน"); }
     } else setToast("ยังไม่ได้อนุญาตการแจ้งเตือน");
   };
   const startPhase = () => {
     alertedMilestones.current = new Set();
+    if (audioContextRef.current?.state === "suspended") void audioContextRef.current.resume();
+    if (!audioContextRef.current && "AudioContext" in window) audioContextRef.current = new AudioContext();
     const start = Date.now();
     const end = start + phases[activePhase].hours * 3600000;
     setNow(start); setPhaseStart(start); setPhaseEnd(end); setRunning(true);
@@ -277,7 +331,7 @@ export default function Home() {
     if (activeYeastId === id) { setActiveYeastId(""); setYeastName(""); setYeastBirth(""); localStorage.removeItem("doughgarden-yeast"); }
     setToast("ลบรายการหัวเชื้อแล้ว");
   };
-  const currentSettings = (): SavedSettings => ({ temperature, humidity, starterOld, feedFlour, feedWater, wholeWheat, targetDough, hydration, starterPercent, proofMode, coldHours, fridgeTemp, bakeMode, steamWater, ovenVolume, trayWidth, trayLength, steamMinutes, ovenSeal });
+  const currentSettings = (): SavedSettings => ({ temperature, humidity, starterOld, feedFlour, feedWater, wholeWheat, targetDough, hydration, starterPercent, proofMode, coldHours, fridgeTemp, bakeMode, steamWater, ovenVolume, trayWidth, trayLength, steamMinutes, ovenSeal, alertSound });
   const saveSettings = () => {
     localStorage.setItem("doughgarden-settings", JSON.stringify(currentSettings()));
     setToast("บันทึกค่าที่ปรับไว้ในเครื่องนี้แล้ว");
@@ -308,7 +362,7 @@ export default function Home() {
       setWholeWheat(settings.wholeWheat); setTargetDough(settings.targetDough); setHydration(settings.hydration); setStarterPercent(settings.starterPercent);
       setProofMode(settings.proofMode); setColdHours(settings.coldHours); setFridgeTemp(settings.fridgeTemp);
       setBakeMode(settings.bakeMode); setSteamWater(settings.steamWater); setOvenVolume(settings.ovenVolume);
-      setTrayWidth(settings.trayWidth); setTrayLength(settings.trayLength); setSteamMinutes(settings.steamMinutes); setOvenSeal(settings.ovenSeal);
+      setTrayWidth(settings.trayWidth); setTrayLength(settings.trayLength); setSteamMinutes(settings.steamMinutes); setOvenSeal(settings.ovenSeal); setAlertSound(settings.alertSound);
       if (payload?.yeast?.name) setYeastName(payload.yeast.name);
       if (typeof payload?.yeast?.birth === "string") setYeastBirth(payload.yeast.birth);
       localStorage.setItem("doughgarden-settings", JSON.stringify(settings));
@@ -380,8 +434,9 @@ export default function Home() {
     <section className="section shell" id="assistant"><header><p className="section-kicker">03 — ไกด์เด็ดเวิร์กโฟลว์</p><h2>ผู้ช่วยทำขนมปังทีละขั้น</h2><span>เวิร์กโฟลว์ใช้ไฟนอลพรูฟและวิธีอบที่เลือกไว้ด้านบนโดยอัตโนมัติ</span></header>
       <div className="workflow"><div className="phase-nav">{phases.map((phase,index)=><button key={phase.title} className={`${index===activePhase?"active":""} ${index<activePhase?"done":""}`} onClick={()=>selectPhase(index)}><span>{index<activePhase?"✓":phase.icon}</span><div><strong>{phase.title}</strong><small>{phase.subtitle}</small></div><b>{duration(phase.hours)}</b></button>)}</div>
       <article className="guide-card"><div className="guide-top"><div><p>ขั้นตอน {activePhase+1} จาก {phases.length}</p><h3>{phases[activePhase].title}</h3><span>{phases[activePhase].subtitle}</span></div><div className="phase-temp">{phases[activePhase].temp}</div></div>
-        <div className="timer"><span>{running && phaseEnd ? countdown(phaseEnd-now) : duration(phases[activePhase].hours)}</span><small>{running ? `สิ้นสุดประมาณ ${clock(new Date(phaseEnd!))}` : "เวลาที่แนะนำ"}</small></div>
-        {activePhase===2&&<div className="milestone-schedule"><p>แจ้งเตือนการพับโดว์ 3 รอบ</p><div>{STRENGTH_MILESTONES.map((milestone,index)=>{const reached=Boolean(phaseStart&&now>=phaseStart+milestone.minutes*60000);return <span className={reached?"reached":""} key={milestone.minutes}><b>{reached?"✓":index+1}</b><strong>{milestone.minutes} นาที</strong><small>{milestone.title}</small></span>})}</div></div>}
+        <div className="timer"><span>{running && phaseEnd ? activePhase===2&&phaseStart ? countdown(Math.min(phaseEnd,phaseStart+(Math.floor(Math.max(0,now-phaseStart)/1800000)+1)*1800000)-now) : countdown(phaseEnd-now) : activePhase===2 ? "30 นาที" : duration(phases[activePhase].hours)}</span><small>{running ? activePhase===2&&phaseStart ? `รอบที่ ${Math.min(3,Math.floor(Math.max(0,now-phaseStart)/1800000)+1)} จาก 3` : `สิ้นสุดประมาณ ${clock(new Date(phaseEnd!))}` : activePhase===2 ? "นับถอยหลังแยกรอบละ 30 นาที" : "เวลาที่แนะนำ"}</small></div>
+        <div className="alert-sound-control"><label>เสียงแจ้งเตือน<select value={alertSound} onChange={e=>changeAlertSound(e.target.value as AlertSound)}><option value="bell">เสียงกริ่ง</option><option value="chime">กระดิ่งสามเสียง</option><option value="soft">เสียงนุ่มนวล</option><option value="none">ปิดเสียง</option></select></label><button type="button" onClick={()=>playAlertSound()} disabled={alertSound==="none"}>▶ ลองฟัง</button></div>
+        {activePhase===2&&<div className="milestone-schedule"><p>ตัวนับถอยหลังการพับโดว์ 3 รอบ</p><div>{STRENGTH_MILESTONES.map((milestone,index)=>{const target=phaseStart?phaseStart+milestone.minutes*60000:0;const previousTarget=phaseStart?phaseStart+index*30*60000:0;const reached=Boolean(phaseStart&&now>=target);const current=Boolean(running&&phaseStart&&now>=previousTarget&&now<target);return <span className={`${reached?"reached":""} ${current?"current":""}`} key={milestone.minutes}><b>{reached?"✓":index+1}</b><strong>{reached?"ครบแล้ว":current?countdown(target-now):running?"รอรอบก่อน":"30:00"}</strong><small>{milestone.title}</small></span>})}</div></div>}
         <div className="instruction"><h4>วิธีทำในขั้นตอนนี้</h4><ol>{phases[activePhase].guide.map((g,i)=><li key={g}><span>{i+1}</span>{g}</li>)}</ol></div>
         <div className="cue"><span>◎</span><p><strong>เกณฑ์พร้อมไปขั้นต่อไป</strong>{phases[activePhase].cue}</p></div>
         <div className="guide-actions"><button className="start" onClick={startPhase}>{running?"เริ่มนับใหม่":"▶ เริ่มจับเวลา"}</button><button className="next" onClick={completePhase} disabled={activePhase===phases.length-1}>ทำเสร็จแล้ว · ขั้นต่อไป →</button></div>
