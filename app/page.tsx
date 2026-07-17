@@ -6,6 +6,13 @@ type ProofMode = "room" | "cold" | "combo";
 type BakeMode = "dutch" | "open";
 type Phase = { icon: string; title: string; subtitle: string; hours: number; temp: string; guide: string[]; cue: string };
 type SavedYeast = { id: string; name: string; birth: string; savedAt: string };
+type TimerMilestone = { minutes: number; title: string; body: string };
+
+const STRENGTH_MILESTONES: TimerMilestone[] = [
+  { minutes: 30, title: "พับโดว์รอบที่ 1", body: "ครบ 30 นาที — สเตรตช์แอนด์โฟลด์ให้ครบ 4 ด้าน" },
+  { minutes: 60, title: "พับโดว์รอบที่ 2", body: "ครบ 60 นาที — คอยล์โฟลด์อย่างนุ่มนวล" },
+  { minutes: 90, title: "พับโดว์รอบที่ 3", body: "ครบ 90 นาที — คอยล์โฟลด์รอบสุดท้าย แล้วปล่อยโดว์พัก" },
+];
 
 const DEFAULT_SETTINGS = {
   temperature: 28, humidity: 70, starterOld: 20, feedFlour: 40, feedWater: 40,
@@ -86,6 +93,7 @@ export default function Home() {
   const [steamMinutes, setSteamMinutes] = useState(20);
   const [ovenSeal, setOvenSeal] = useState<"tight" | "normal" | "leaky">("normal");
   const [activePhase, setActivePhase] = useState(0);
+  const [phaseStart, setPhaseStart] = useState<number | null>(null);
   const [phaseEnd, setPhaseEnd] = useState<number | null>(null);
   const [running, setRunning] = useState(false);
   const [now, setNow] = useState(0);
@@ -96,7 +104,7 @@ export default function Home() {
   const [savedYeasts, setSavedYeasts] = useState<SavedYeast[]>([]);
   const [activeYeastId, setActiveYeastId] = useState("");
   const [today, setToday] = useState("");
-  const didAlert = useRef(false);
+  const alertedMilestones = useRef<Set<number>>(new Set());
   const importRef = useRef<HTMLInputElement>(null);
 
   const adaptive = useMemo(() => {
@@ -157,27 +165,34 @@ export default function Home() {
   ], [temperature, adaptive.bulk, adaptive.roomProof, adaptive.tempFactor, proofMode, finalProofHours, fridgeTemp, coldHours, bakeMode, steamWater, steamMinutes]);
 
   useEffect(() => {
-    if (!running || !phaseEnd) return;
+    if (!running || !phaseStart || !phaseEnd) return;
+    const milestones: TimerMilestone[] = activePhase === 2
+      ? STRENGTH_MILESTONES
+      : [{ minutes: phases[activePhase].hours * 60, title: phases[activePhase].title, body: phases[activePhase].cue }];
     const id = window.setInterval(() => {
       const time = Date.now();
       setNow(time);
-      if (time >= phaseEnd && !didAlert.current) {
-        didAlert.current = true;
-        setRunning(false);
-        setToast(`ครบเวลา ${phases[activePhase].title} — ตรวจสภาพโดว์ก่อน`);
-        if (notifyStatus === "granted" && "Notification" in window) {
-          new Notification("DoughGarden — ถึงเวลาตรวจโดว์", { body: `${phases[activePhase].title}: ${phases[activePhase].cue}` });
+      milestones.forEach((milestone, index) => {
+        const target = phaseStart + milestone.minutes * 60000;
+        if (time >= target && !alertedMilestones.current.has(index)) {
+          alertedMilestones.current.add(index);
+          setToast(`ครบ ${milestone.minutes} นาที — ${milestone.title}`);
+          if (notifyStatus === "granted" && "Notification" in window) {
+            try { new Notification(`DoughGarden — ${milestone.title}`, { body: milestone.body, tag: `doughgarden-${activePhase}-${index}` }); } catch { /* Some mobile browsers require installed-app notifications. */ }
+          }
+          if (index === milestones.length - 1) setRunning(false);
         }
-      }
+      });
     }, 1000);
     return () => window.clearInterval(id);
-  }, [running, phaseEnd, phases, activePhase, notifyStatus]);
+  }, [running, phaseStart, phaseEnd, phases, activePhase, notifyStatus]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const localToday = new Date();
       localToday.setMinutes(localToday.getMinutes() - localToday.getTimezoneOffset());
       setToday(localToday.toISOString().slice(0, 10));
+      if ("Notification" in window) setNotifyStatus(Notification.permission);
       try {
         const saved = JSON.parse(localStorage.getItem("doughgarden-yeast") || "null");
         if (saved?.name) setYeastName(saved.name);
@@ -210,21 +225,28 @@ export default function Home() {
 
   const requestNotifications = async () => {
     if (!("Notification" in window)) { setToast("เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน"); return; }
-    const result = await Notification.requestPermission();
+    const result = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
     setNotifyStatus(result);
-    setToast(result === "granted" ? "เปิดการแจ้งเตือนแล้ว" : "ยังไม่ได้อนุญาตการแจ้งเตือน");
+    if (result === "granted") {
+      try {
+        new Notification("DoughGarden — ทดสอบแจ้งเตือน", { body: "ระบบแจ้งเตือนพร้อมแล้ว จะเตือนเมื่อถึงเวลาพับโดว์แต่ละรอบ", tag: "doughgarden-test" });
+        setToast("ส่งแจ้งเตือนทดสอบแล้ว");
+      } catch { setToast("อนุญาตแล้ว แต่เบราว์เซอร์นี้ต้องติดตั้งเว็บเป็นแอปก่อนแจ้งเตือน"); }
+    } else setToast("ยังไม่ได้อนุญาตการแจ้งเตือน");
   };
   const startPhase = () => {
-    didAlert.current = false;
-    const end = Date.now() + phases[activePhase].hours * 3600000;
-    setNow(Date.now()); setPhaseEnd(end); setRunning(true); setToast(`เริ่ม ${phases[activePhase].title} แล้ว`);
+    alertedMilestones.current = new Set();
+    const start = Date.now();
+    const end = start + phases[activePhase].hours * 3600000;
+    setNow(start); setPhaseStart(start); setPhaseEnd(end); setRunning(true);
+    setToast(activePhase === 2 ? "เริ่มจับเวลา — จะเตือนที่นาที 30, 60 และ 90" : `เริ่ม ${phases[activePhase].title} แล้ว`);
   };
   const completePhase = () => {
     const next = Math.min(phases.length - 1, activePhase + 1);
-    setActivePhase(next); setRunning(false); setPhaseEnd(null); didAlert.current = false;
+    setActivePhase(next); setRunning(false); setPhaseStart(null); setPhaseEnd(null); alertedMilestones.current = new Set();
     document.getElementById("assistant")?.scrollIntoView({ behavior:"smooth" });
   };
-  const selectPhase = (index: number) => { setActivePhase(index); setRunning(false); setPhaseEnd(null); didAlert.current = false; };
+  const selectPhase = (index: number) => { setActivePhase(index); setRunning(false); setPhaseStart(null); setPhaseEnd(null); alertedMilestones.current = new Set(); };
   const saveYeast = () => {
     if (!yeastBirth) { setToast("กรุณาเลือกวันเกิดหัวเชื้อก่อนบันทึก"); return; }
     const name = yeastName.trim() || "เจ้าก้อนแป้ง";
@@ -303,7 +325,7 @@ export default function Home() {
     <nav className="nav shell">
       <a className="brand" href="#top"><span>D</span><strong>DoughGarden<small>กระดุ๊กกระดิ๊ก กระจุ๊กกระจิ๊กหัวใจ</small></strong></a>
       <div className="nav-links"><a href="#day-tracker">เดย์แทร็กเกอร์</a><a href="#recipe">สูตร</a><a href="#proof">ไฟนอลพรูฟ</a><a href="#baking">การอบ</a><a href="#assistant">ผู้ช่วยทำขนมปัง</a></div>
-      <button className={`notify-btn ${notifyStatus === "granted" ? "on" : ""}`} onClick={requestNotifications}>{notifyStatus === "granted" ? "● แจ้งเตือนเปิดอยู่" : "◌ เปิดแจ้งเตือน"}</button>
+      <button className={`notify-btn ${notifyStatus === "granted" ? "on" : ""}`} onClick={requestNotifications}>{notifyStatus === "granted" ? "● ทดสอบแจ้งเตือน" : "◌ เปิดแจ้งเตือน"}</button>
     </nav>
 
     <section className="hero shell" id="top">
@@ -359,6 +381,7 @@ export default function Home() {
       <div className="workflow"><div className="phase-nav">{phases.map((phase,index)=><button key={phase.title} className={`${index===activePhase?"active":""} ${index<activePhase?"done":""}`} onClick={()=>selectPhase(index)}><span>{index<activePhase?"✓":phase.icon}</span><div><strong>{phase.title}</strong><small>{phase.subtitle}</small></div><b>{duration(phase.hours)}</b></button>)}</div>
       <article className="guide-card"><div className="guide-top"><div><p>ขั้นตอน {activePhase+1} จาก {phases.length}</p><h3>{phases[activePhase].title}</h3><span>{phases[activePhase].subtitle}</span></div><div className="phase-temp">{phases[activePhase].temp}</div></div>
         <div className="timer"><span>{running && phaseEnd ? countdown(phaseEnd-now) : duration(phases[activePhase].hours)}</span><small>{running ? `สิ้นสุดประมาณ ${clock(new Date(phaseEnd!))}` : "เวลาที่แนะนำ"}</small></div>
+        {activePhase===2&&<div className="milestone-schedule"><p>แจ้งเตือนการพับโดว์ 3 รอบ</p><div>{STRENGTH_MILESTONES.map((milestone,index)=>{const reached=Boolean(phaseStart&&now>=phaseStart+milestone.minutes*60000);return <span className={reached?"reached":""} key={milestone.minutes}><b>{reached?"✓":index+1}</b><strong>{milestone.minutes} นาที</strong><small>{milestone.title}</small></span>})}</div></div>}
         <div className="instruction"><h4>วิธีทำในขั้นตอนนี้</h4><ol>{phases[activePhase].guide.map((g,i)=><li key={g}><span>{i+1}</span>{g}</li>)}</ol></div>
         <div className="cue"><span>◎</span><p><strong>เกณฑ์พร้อมไปขั้นต่อไป</strong>{phases[activePhase].cue}</p></div>
         <div className="guide-actions"><button className="start" onClick={startPhase}>{running?"เริ่มนับใหม่":"▶ เริ่มจับเวลา"}</button><button className="next" onClick={completePhase} disabled={activePhase===phases.length-1}>ทำเสร็จแล้ว · ขั้นต่อไป →</button></div>
