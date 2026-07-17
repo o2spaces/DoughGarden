@@ -96,6 +96,7 @@ export default function Home() {
   const [steamMinutes, setSteamMinutes] = useState(20);
   const [ovenSeal, setOvenSeal] = useState<"tight" | "normal" | "leaky">("normal");
   const [alertSound, setAlertSound] = useState<AlertSound>("bell");
+  const [soundMenuOpen, setSoundMenuOpen] = useState(false);
   const [activePhase, setActivePhase] = useState(0);
   const [phaseStart, setPhaseStart] = useState<number | null>(null);
   const [phaseEnd, setPhaseEnd] = useState<number | null>(null);
@@ -177,19 +178,34 @@ export default function Home() {
       if (context.state === "suspended") void context.resume();
       const patterns: Record<Exclude<AlertSound, "none">, { frequency: number; delay: number; duration: number; volume: number }[]> = {
         bell: [
-          { frequency: 880, delay: 0, duration: 1.15, volume: .2 },
-          { frequency: 1320, delay: 0, duration: .8, volume: .09 },
-          { frequency: 880, delay: 1.25, duration: 1.15, volume: .2 },
-          { frequency: 1320, delay: 1.25, duration: .8, volume: .09 },
+          { frequency: 880, delay: 0, duration: .28, volume: .18 },
+          { frequency: 880, delay: .36, duration: .28, volume: .18 },
+          { frequency: 1174.66, delay: .72, duration: .48, volume: .2 },
+          { frequency: 880, delay: 1.35, duration: .28, volume: .18 },
+          { frequency: 880, delay: 1.71, duration: .28, volume: .18 },
+          { frequency: 1174.66, delay: 2.07, duration: .48, volume: .2 },
+          { frequency: 1318.51, delay: 2.7, duration: .28, volume: .16 },
+          { frequency: 1174.66, delay: 3.06, duration: .28, volume: .16 },
+          { frequency: 880, delay: 3.42, duration: .75, volume: .19 },
         ],
         chime: [
-          { frequency: 523.25, delay: 0, duration: .65, volume: .16 },
-          { frequency: 659.25, delay: .28, duration: .65, volume: .16 },
-          { frequency: 783.99, delay: .56, duration: .9, volume: .17 },
+          { frequency: 659.25, delay: 0, duration: .18, volume: .14 },
+          { frequency: 783.99, delay: .22, duration: .18, volume: .14 },
+          { frequency: 987.77, delay: .44, duration: .35, volume: .17 },
+          { frequency: 659.25, delay: .95, duration: .18, volume: .14 },
+          { frequency: 783.99, delay: 1.17, duration: .18, volume: .14 },
+          { frequency: 987.77, delay: 1.39, duration: .35, volume: .17 },
+          { frequency: 987.77, delay: 1.95, duration: .18, volume: .15 },
+          { frequency: 783.99, delay: 2.17, duration: .18, volume: .15 },
+          { frequency: 659.25, delay: 2.39, duration: .55, volume: .16 },
         ],
         soft: [
-          { frequency: 440, delay: 0, duration: .8, volume: .1 },
-          { frequency: 554.37, delay: .42, duration: 1, volume: .1 },
+          { frequency: 440, delay: 0, duration: .42, volume: .08 },
+          { frequency: 554.37, delay: .48, duration: .42, volume: .08 },
+          { frequency: 659.25, delay: .96, duration: .7, volume: .09 },
+          { frequency: 440, delay: 1.85, duration: .42, volume: .08 },
+          { frequency: 554.37, delay: 2.33, duration: .42, volume: .08 },
+          { frequency: 659.25, delay: 2.81, duration: .8, volume: .09 },
         ],
       };
       const start = context.currentTime + .03;
@@ -209,6 +225,7 @@ export default function Home() {
 
   const changeAlertSound = (sound: AlertSound) => {
     setAlertSound(sound);
+    setSoundMenuOpen(false);
     const next = { ...currentSettings(), alertSound: sound };
     try { localStorage.setItem("doughgarden-settings", JSON.stringify(next)); } catch { /* The selector remains usable without storage. */ }
     if (sound !== "none") playAlertSound(sound);
@@ -379,7 +396,7 @@ export default function Home() {
     <nav className="nav shell">
       <a className="brand" href="#top"><span>D</span><strong>DoughGarden<small>กระดุ๊กกระดิ๊ก กระจุ๊กกระจิ๊กหัวใจ</small></strong></a>
       <div className="nav-links"><a href="#day-tracker">เดย์แทร็กเกอร์</a><a href="#recipe">สูตร</a><a href="#proof">ไฟนอลพรูฟ</a><a href="#baking">การอบ</a><a href="#assistant">ผู้ช่วยทำขนมปัง</a></div>
-      <button className={`notify-btn ${notifyStatus === "granted" ? "on" : ""}`} onClick={requestNotifications}>{notifyStatus === "granted" ? "● ทดสอบแจ้งเตือน" : "◌ เปิดแจ้งเตือน"}</button>
+      <div className="nav-actions"><div className="sound-picker"><button type="button" className={`speaker-btn ${alertSound!=="none"?"on":""}`} aria-label="เลือกเสียงแจ้งเตือน" aria-expanded={soundMenuOpen} onClick={()=>setSoundMenuOpen(!soundMenuOpen)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16 8.5c1.4 1.8 1.4 5.2 0 7M18.7 6c3 3.2 3 8.8 0 12"/></svg></button>{soundMenuOpen&&<div className="sound-popover" role="dialog" aria-label="เลือกเสียงแจ้งเตือน"><div className="sound-popover-head"><strong>เสียงแจ้งเตือน</strong><button type="button" onClick={()=>setSoundMenuOpen(false)}>×</button></div><p>แตะชื่อเสียงเพื่อเลือกและลองฟัง</p>{([['bell','ริงริงคลาสสิก','จังหวะเสียงเรียกเข้าชัดเจน'],['chime','ดิจิทัลคอล','จังหวะสั้น กระชับ'],['soft','ริงโทนนุ่มนวล','เบากว่า เหมาะกับช่วงกลางคืน'],['none','ปิดเสียง','ใช้เฉพาะกล่องแจ้งเตือน']] as [AlertSound,string,string][]).map(([key,label,description])=><button type="button" className={`sound-choice ${alertSound===key?"active":""}`} onClick={()=>changeAlertSound(key)} key={key}><span>{key==='none'?'×':'♪'}</span><strong>{label}<small>{description}</small></strong><b>{alertSound===key?'✓':''}</b></button>)}</div>}</div><button className={`notify-btn ${notifyStatus === "granted" ? "on" : ""}`} onClick={requestNotifications}>{notifyStatus === "granted" ? "● ทดสอบแจ้งเตือน" : "◌ เปิดแจ้งเตือน"}</button></div>
     </nav>
 
     <section className="hero shell" id="top">
@@ -435,7 +452,6 @@ export default function Home() {
       <div className="workflow"><div className="phase-nav">{phases.map((phase,index)=><button key={phase.title} className={`${index===activePhase?"active":""} ${index<activePhase?"done":""}`} onClick={()=>selectPhase(index)}><span>{index<activePhase?"✓":phase.icon}</span><div><strong>{phase.title}</strong><small>{phase.subtitle}</small></div><b>{duration(phase.hours)}</b></button>)}</div>
       <article className="guide-card"><div className="guide-top"><div><p>ขั้นตอน {activePhase+1} จาก {phases.length}</p><h3>{phases[activePhase].title}</h3><span>{phases[activePhase].subtitle}</span></div><div className="phase-temp">{phases[activePhase].temp}</div></div>
         <div className="timer"><span>{running && phaseEnd ? activePhase===2&&phaseStart ? countdown(Math.min(phaseEnd,phaseStart+(Math.floor(Math.max(0,now-phaseStart)/1800000)+1)*1800000)-now) : countdown(phaseEnd-now) : activePhase===2 ? "30 นาที" : duration(phases[activePhase].hours)}</span><small>{running ? activePhase===2&&phaseStart ? `รอบที่ ${Math.min(3,Math.floor(Math.max(0,now-phaseStart)/1800000)+1)} จาก 3` : `สิ้นสุดประมาณ ${clock(new Date(phaseEnd!))}` : activePhase===2 ? "นับถอยหลังแยกรอบละ 30 นาที" : "เวลาที่แนะนำ"}</small></div>
-        <div className="alert-sound-control"><label>เสียงแจ้งเตือน<select value={alertSound} onChange={e=>changeAlertSound(e.target.value as AlertSound)}><option value="bell">เสียงกริ่ง</option><option value="chime">กระดิ่งสามเสียง</option><option value="soft">เสียงนุ่มนวล</option><option value="none">ปิดเสียง</option></select></label><button type="button" onClick={()=>playAlertSound()} disabled={alertSound==="none"}>▶ ลองฟัง</button></div>
         {activePhase===2&&<div className="milestone-schedule"><p>ตัวนับถอยหลังการพับโดว์ 3 รอบ</p><div>{STRENGTH_MILESTONES.map((milestone,index)=>{const target=phaseStart?phaseStart+milestone.minutes*60000:0;const previousTarget=phaseStart?phaseStart+index*30*60000:0;const reached=Boolean(phaseStart&&now>=target);const current=Boolean(running&&phaseStart&&now>=previousTarget&&now<target);return <span className={`${reached?"reached":""} ${current?"current":""}`} key={milestone.minutes}><b>{reached?"✓":index+1}</b><strong>{reached?"ครบแล้ว":current?countdown(target-now):running?"รอรอบก่อน":"30:00"}</strong><small>{milestone.title}</small></span>})}</div></div>}
         <div className="instruction"><h4>วิธีทำในขั้นตอนนี้</h4><ol>{phases[activePhase].guide.map((g,i)=><li key={g}><span>{i+1}</span>{g}</li>)}</ol></div>
         <div className="cue"><span>◎</span><p><strong>เกณฑ์พร้อมไปขั้นต่อไป</strong>{phases[activePhase].cue}</p></div>

@@ -17,6 +17,82 @@ html {
   box-shadow: 0 14px 35px rgba(0, 0, 0, 0.22);
 }
 
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sound-picker { position: relative; }
+
+.speaker-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid rgba(241, 198, 110, 0.22);
+  border-radius: 50%;
+  background: #211a15;
+  color: #8f806e;
+  cursor: pointer;
+}
+
+.speaker-btn.on { color: var(--gold); border-color: rgba(231, 161, 62, 0.5); }
+.speaker-btn svg { width: 19px; height: 19px; fill: currentColor; }
+.speaker-btn svg path:last-child { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
+
+.sound-popover {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 310px;
+  padding: 15px;
+  border: 1px solid rgba(241, 198, 110, 0.28);
+  border-radius: 16px;
+  background: rgba(28, 23, 19, 0.99);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+}
+
+.sound-popover::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  right: 14px;
+  width: 10px;
+  height: 10px;
+  border-top: 1px solid rgba(241, 198, 110, 0.28);
+  border-left: 1px solid rgba(241, 198, 110, 0.28);
+  background: #1c1713;
+  transform: rotate(45deg);
+}
+
+.sound-popover-head { display: flex; justify-content: space-between; align-items: center; }
+.sound-popover-head strong { color: var(--cream); font-size: 14px; }
+.sound-popover-head button { border: 0; background: transparent; color: #8f806e; font-size: 20px; cursor: pointer; }
+.sound-popover > p { margin: 3px 0 11px; color: #796b5c; font-size: 9px; }
+
+.sound-choice {
+  display: grid;
+  grid-template-columns: 28px 1fr 18px;
+  align-items: center;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: #998a76;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sound-choice:hover { background: rgba(231, 161, 62, 0.06); }
+.sound-choice.active { border-color: rgba(231, 161, 62, 0.35); background: rgba(231, 161, 62, 0.09); }
+.sound-choice > span { color: var(--gold); font-size: 15px; }
+.sound-choice > strong { color: #ddcbb4; font-size: 11px; }
+.sound-choice small { display: block; margin-top: 2px; color: #76695a; font-size: 8px; font-weight: 400; }
+.sound-choice > b { color: var(--gold); font-size: 12px; text-align: right; }
+
 .brand > strong small {
   margin-top: 5px;
   color: #fff;
@@ -40,4 +116,8 @@ footer span small {
   .brand > strong small {
     font-size: 10px;
   }
+
+  .speaker-btn { width: 36px; height: 36px; }
+  .sound-popover { position: fixed; top: 68px; right: 14px; left: 14px; width: auto; }
+  .sound-popover::before { right: 122px; }
 }
