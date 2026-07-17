@@ -56,6 +56,12 @@ const countdown = (ms: number) => {
   const s = (total % 60).toString().padStart(2, "0");
   return `${h}:${m}:${s}`;
 };
+const starterDaysOld = (birth: string, currentDate: string) => {
+  if (!birth || !currentDate) return 0;
+  const born = new Date(`${birth}T00:00:00`);
+  const current = new Date(`${currentDate}T00:00:00`);
+  return Math.max(0, Math.floor((current.getTime() - born.getTime()) / 86400000));
+};
 
 export default function Home() {
   const [temperature, setTemperature] = useState(28);
@@ -307,9 +313,9 @@ export default function Home() {
 
     <section className="day-tracker shell" id="day-tracker">
       <div className="tracker-intro"><p className="section-kicker">มายสตาร์ตเตอร์ — เดย์แทร็กเกอร์</p><h2>{yeastName.trim() || "ตั้งชื่อยีสต์ของคุณ"}</h2><span>ติดตามวันแรกที่หัวเชื้อถือกำเนิดจนถึงวันนี้</span></div>
-      <div className="tracker-fields"><label>ชื่อหัวเชื้อ<input aria-label="ชื่อหัวเชื้อ" type="text" maxLength={30} value={yeastName} onChange={e=>setYeastName(e.target.value)} placeholder="เช่น น้องฟูฟ่อง"/></label><label>วันเกิดหัวเชื้อ<input aria-label="วันเกิดหัวเชื้อ" type="date" max={today || undefined} value={yeastBirth} onChange={e=>setYeastBirth(e.target.value)}/></label><button type="button" onClick={saveYeast}>{activeYeastId ? "อัปเดต" : "บันทึก"}</button><button type="button" className="secondary" onClick={resetYeast}>เพิ่มรายการใหม่</button></div>
+      <div className="tracker-fields"><label>ชื่อหัวเชื้อ <small>{yeastName.length}/60</small><input aria-label="ชื่อหัวเชื้อ" type="text" maxLength={60} value={yeastName} onChange={e=>setYeastName(e.target.value)} placeholder="เช่น น้องฟูฟ่อง"/></label><label>วันเกิดหัวเชื้อ<input aria-label="วันเกิดหัวเชื้อ" type="date" max={today || undefined} value={yeastBirth} onChange={e=>setYeastBirth(e.target.value)}/></label><button type="button" onClick={saveYeast}>{activeYeastId ? "อัปเดต" : "บันทึก"}</button><button type="button" className="secondary" onClick={resetYeast}>เพิ่มรายการใหม่</button></div>
       <div className={`age-display ${yeastAge.ready?"ready":""}`}><span>อายุปัจจุบัน</span>{yeastBirth&&yeastAge.ready?<><strong>{yeastAge.days}<small> วัน</small></strong><p>เดย์ {yeastAge.days + 1}{yeastAge.years>0?` · ${yeastAge.years} ปี ${yeastAge.months} เดือน`:""}</p></>:<><strong>—</strong><p>เลือกวันเกิดเพื่อเริ่มนับ</p></>}</div>
-      <div className="saved-starters"><div className="saved-starters-head"><strong>หัวเชื้อที่บันทึกไว้</strong><span>{savedYeasts.length} รายการ · เก็บไว้ในเบราว์เซอร์เครื่องนี้</span></div>{savedYeasts.length ? <div className="saved-starters-list">{savedYeasts.map(record=><article className={record.id===activeYeastId?"active":""} key={record.id}><button type="button" className="starter-select" onClick={()=>selectYeast(record)}><strong>{record.name}</strong><span>เกิด {new Date(`${record.birth}T00:00:00`).toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"})}</span></button><button type="button" className="starter-delete" aria-label={`ลบ ${record.name}`} onClick={()=>deleteYeast(record.id)}>ลบ</button></article>)}</div>:<p className="saved-empty">ยังไม่มีรายการ กรอกชื่อและวันเกิดแล้วกด “บันทึก”</p>}</div>
+      <div className="saved-starters"><div className="saved-starters-head"><strong>หัวเชื้อที่บันทึกไว้</strong><span>{savedYeasts.length} รายการ · เก็บไว้ในเบราว์เซอร์เครื่องนี้</span></div>{savedYeasts.length ? <div className="saved-starters-list">{savedYeasts.map(record=>{const age=starterDaysOld(record.birth,today);return <article className={record.id===activeYeastId?"active":""} key={record.id}><button type="button" className="starter-select" onClick={()=>selectYeast(record)}><strong>{record.name}</strong><span>เกิด {new Date(`${record.birth}T00:00:00`).toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"})}</span><b>อายุ {age.toLocaleString("th-TH")} วัน · เดย์ {(age+1).toLocaleString("th-TH")}</b></button><button type="button" className="starter-delete" aria-label={`ลบ ${record.name}`} onClick={()=>deleteYeast(record.id)}>ลบ</button></article>})}</div>:<p className="saved-empty">ยังไม่มีรายการ กรอกชื่อและวันเกิดแล้วกด “บันทึก”</p>}</div>
     </section>
 
     <section className="starter-strip shell">
