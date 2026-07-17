@@ -1,0 +1,43 @@
+html {
+  scroll-padding-top: 98px;
+}
+
+.nav {
+  height: 86px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  padding: 0 18px;
+  border: 1px solid rgba(241, 198, 110, 0.15);
+  border-top: 0;
+  border-radius: 0 0 16px 16px;
+  background: rgba(21, 18, 15, 0.94);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.22);
+}
+
+.brand > strong small {
+  margin-top: 5px;
+  color: #fff;
+  font: 400 13px/1.45 var(--font-anuphan), sans-serif;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  text-shadow: 0 1px 12px rgba(255, 255, 255, 0.12);
+}
+
+footer span small {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+@media (max-width: 600px) {
+  .nav {
+    height: 76px;
+  }
+
+  .brand > strong small {
+    font-size: 10px;
+  }
+}

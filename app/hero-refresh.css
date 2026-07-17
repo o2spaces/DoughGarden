@@ -1,0 +1,226 @@
+/* Editorial hero treatment inspired by the approved warm, low-key concept. */
+.nav.shell {
+  width: 100%;
+  height: 78px;
+  padding-inline: max(28px, calc((100vw - 1480px) / 2));
+  border-inline: 0;
+  border-bottom-color: rgba(231, 161, 62, 0.42);
+  border-radius: 0;
+  background: rgba(12, 10, 8, 0.93);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+}
+
+.nav-links {
+  align-self: stretch;
+  align-items: center;
+}
+
+.nav-links a {
+  position: relative;
+  color: #d8c3a5;
+}
+
+.nav-links a:first-child {
+  color: var(--gold);
+}
+
+.nav-links a:first-child::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -27px;
+  left: 0;
+  height: 3px;
+  border-radius: 99px 99px 0 0;
+  background: var(--amber);
+  box-shadow: 0 0 15px rgba(231, 161, 62, 0.8);
+}
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  min-height: 890px;
+  display: block;
+  padding-top: 92px;
+  padding-bottom: 64px;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  z-index: -2;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 100vw;
+  transform: translateX(-50%);
+  background-image:
+    linear-gradient(90deg, #0d0b09 0%, rgba(13, 11, 9, 0.97) 20%, rgba(13, 11, 9, 0.7) 45%, rgba(13, 11, 9, 0.08) 76%),
+    linear-gradient(0deg, #15120f 0%, transparent 28%, rgba(0, 0, 0, 0.12) 100%),
+    url("/hero-sourdough-v2.png");
+  background-position: center, center, center right;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  right: -6%;
+  bottom: 8%;
+  width: 48%;
+  height: 45%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(231, 161, 62, 0.13), transparent 68%);
+  filter: blur(28px);
+  pointer-events: none;
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+}
+
+.hero .eyebrow {
+  color: #e9a13a;
+  font-size: 13px;
+  text-shadow: 0 0 18px rgba(231, 161, 62, 0.28);
+}
+
+.hero h1 {
+  max-width: 760px;
+  margin: 18px 0 20px;
+  color: #f5e4c8;
+  font-size: clamp(58px, 6vw, 86px);
+  line-height: 1.04;
+  text-shadow: 0 5px 28px rgba(0, 0, 0, 0.72);
+}
+
+.hero-copy > p:last-of-type {
+  max-width: 590px;
+  color: #d2bfa6;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+}
+
+.hero-actions a {
+  box-shadow: 0 0 24px rgba(231, 161, 62, 0.3);
+}
+
+.hero .climate-card {
+  position: relative;
+  z-index: 2;
+  bottom: auto;
+  left: 0;
+  width: min(620px, 51vw);
+  margin-top: 38px;
+  padding: 20px 24px;
+  border-color: rgba(231, 161, 62, 0.48);
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(27, 22, 17, 0.92), rgba(12, 10, 8, 0.88));
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.36), inset 0 1px rgba(255, 255, 255, 0.035);
+}
+
+.hero .climate-value strong {
+  font-size: 48px;
+}
+
+.hero .climate-card > input {
+  margin: 18px 0 4px;
+}
+
+.hero .climate-grid {
+  margin-top: 15px;
+}
+
+.hero .climate-card > p {
+  margin-top: 12px;
+}
+
+@media (max-width: 920px) {
+  .nav.shell {
+    padding-inline: 24px;
+  }
+
+  .hero {
+    min-height: 880px;
+    padding-top: 72px;
+  }
+
+  .hero::before {
+    background-image:
+      linear-gradient(90deg, #0d0b09 0%, rgba(13, 11, 9, 0.9) 40%, rgba(13, 11, 9, 0.24) 100%),
+      linear-gradient(0deg, #15120f 0%, transparent 38%),
+      url("/hero-sourdough-v2.png");
+    background-position: center, center, 62% center;
+  }
+
+  .hero .climate-card {
+    width: min(680px, 100%);
+  }
+}
+
+@media (max-width: 600px) {
+  .nav.shell {
+    height: 76px;
+    padding-inline: 14px;
+  }
+
+  .hero {
+    min-height: auto;
+    padding: 72px 0 36px;
+  }
+
+  .hero::before {
+    opacity: 0.78;
+    background-position: center, center, 64% top;
+  }
+
+  .hero h1 {
+    font-size: 45px;
+  }
+
+  .hero .climate-card {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    width: 100%;
+    margin-top: 42px;
+  }
+}
+
+/* Match the workflow scrollbar to the dark amber visual system. */
+html,
+body {
+  overflow-x: clip;
+}
+
+.phase-nav {
+  scrollbar-width: thin;
+  scrollbar-color: #d9912f rgba(241, 198, 110, 0.08);
+}
+
+.phase-nav::-webkit-scrollbar {
+  width: 9px;
+}
+
+.phase-nav::-webkit-scrollbar-track {
+  border: 1px solid rgba(241, 198, 110, 0.08);
+  border-radius: 99px;
+  background: rgba(15, 12, 10, 0.72);
+}
+
+.phase-nav::-webkit-scrollbar-thumb {
+  min-height: 72px;
+  border: 2px solid #17130f;
+  border-radius: 99px;
+  background: linear-gradient(180deg, #f1c66e, #d88624);
+  box-shadow: inset 0 0 0 1px rgba(255, 239, 204, 0.16), 0 0 12px rgba(231, 161, 62, 0.22);
+}
+
+.phase-nav::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #f8d78d, #e7a13e);
+}

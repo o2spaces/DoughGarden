@@ -1,0 +1,146 @@
+/* Compact headings and persistent-setting controls. */
+.hero h1 {
+  font-size: clamp(48px, 5vw, 72px);
+}
+
+.section header h2 {
+  font-size: clamp(23px, 2vw, 31px);
+}
+
+.tracker-intro h2 {
+  font-size: 23px;
+}
+
+.starter-strip h2 {
+  font-size: 21px;
+}
+
+.setting-actions,
+.transfer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.setting-actions {
+  margin-top: 18px;
+}
+
+.setting-actions.section-wide {
+  grid-column: 1 / -1;
+}
+
+.setting-actions.compact {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.starter-actions {
+  margin-top: 14px;
+}
+
+.setting-actions button,
+.transfer-actions button,
+.tracker-fields button {
+  min-height: 42px;
+  border: 1px solid rgba(231, 161, 62, 0.55);
+  border-radius: 11px;
+  padding: 0 18px;
+  background: linear-gradient(180deg, #eda73f, #d78b25);
+  color: #25180d;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(231, 161, 62, 0.13);
+}
+
+.setting-actions button.secondary,
+.transfer-actions button.secondary,
+.tracker-fields button.secondary {
+  background: rgba(28, 23, 19, 0.78);
+  color: #d9bea0;
+  border-color: rgba(241, 198, 110, 0.22);
+  box-shadow: none;
+}
+
+.setting-actions button:hover,
+.transfer-actions button:hover,
+.tracker-fields button:hover {
+  transform: translateY(-1px);
+  border-color: var(--gold);
+}
+
+.tracker-fields {
+  grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) auto auto;
+}
+
+.data-transfer {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 30px;
+  margin-top: 84px;
+  padding: 28px 30px;
+  border: 1px solid rgba(241, 198, 110, 0.25);
+  border-radius: 22px;
+  background: radial-gradient(circle at 90% 10%, rgba(231, 161, 62, 0.12), transparent 42%), linear-gradient(145deg, #251d17, #181512);
+}
+
+.data-transfer h2 {
+  margin: 5px 0 4px;
+  font: 500 27px/1.35 var(--font-mitr), sans-serif;
+}
+
+.data-transfer p:last-child {
+  margin: 0;
+  color: #958571;
+  font-size: 13px;
+}
+
+.transfer-actions input {
+  display: none;
+}
+
+@media (max-width: 920px) {
+  .tracker-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .data-transfer {
+    grid-template-columns: 1fr;
+  }
+
+  .transfer-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 600px) {
+  .hero h1 {
+    font-size: 39px;
+  }
+
+  .section header h2 {
+    font-size: 23px;
+  }
+
+  .tracker-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .setting-actions,
+  .transfer-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .setting-actions button,
+  .transfer-actions button {
+    padding-inline: 10px;
+  }
+
+  .data-transfer {
+    margin-top: 60px;
+    padding: 22px;
+  }
+}
