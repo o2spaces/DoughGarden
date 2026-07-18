@@ -105,6 +105,7 @@ export default function Home() {
   const [alertSound, setAlertSound] = useState<AlertSound>("bell");
   const [soundMenuOpen, setSoundMenuOpen] = useState(false);
   const [targetBakeAt, setTargetBakeAt] = useState("");
+  const [activeNav, setActiveNav] = useState("day-tracker");
   const [activePhase, setActivePhase] = useState(0);
   const [phaseStart, setPhaseStart] = useState<number | null>(null);
   const [phaseEnd, setPhaseEnd] = useState<number | null>(null);
@@ -303,6 +304,33 @@ export default function Home() {
     return () => window.clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    const sectionIds = ["day-tracker", "recipe", "proof", "baking", "assistant"];
+    let frame = 0;
+    const updateActiveNav = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        const marker = window.scrollY + 130;
+        let current = sectionIds[0];
+        sectionIds.forEach(id => {
+          const section = document.getElementById(id);
+          if (section && section.getBoundingClientRect().top + window.scrollY <= marker) current = id;
+        });
+        setActiveNav(current);
+      });
+    };
+    updateActiveNav();
+    window.addEventListener("scroll", updateActiveNav, { passive: true });
+    window.addEventListener("resize", updateActiveNav);
+    window.addEventListener("hashchange", updateActiveNav);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", updateActiveNav);
+      window.removeEventListener("resize", updateActiveNav);
+      window.removeEventListener("hashchange", updateActiveNav);
+    };
+  }, []);
+
   const requestNotifications = async () => {
     if (!("Notification" in window)) { setToast("เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน"); return; }
     const result = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
@@ -425,7 +453,7 @@ export default function Home() {
     {toast && <button className="toast" onClick={() => setToast("")}>✓ {toast}</button>}
     <nav className="nav shell">
       <a className="brand" href="#top"><span>D</span><strong>DoughGarden<small>กระดุ๊กกระดิ๊ก กระจุ๊กกระจิ๊กหัวใจ</small></strong></a>
-      <div className="nav-links"><a href="#day-tracker">เดย์แทร็กเกอร์</a><a href="#recipe">สูตร</a><a href="#proof">ไฟนอลพรูฟ</a><a href="#baking">การอบ</a><a href="#assistant">ผู้ช่วยทำขนมปัง</a></div>
+      <div className="nav-links">{[["day-tracker","เดย์แทร็กเกอร์"],["recipe","สูตร"],["proof","ไฟนอลพรูฟ"],["baking","การอบ"],["assistant","ผู้ช่วยทำขนมปัง"]].map(([id,label])=><a href={`#${id}`} className={activeNav===id?"active":""} aria-current={activeNav===id?"page":undefined} onClick={()=>setActiveNav(id)} key={id}>{label}</a>)}</div>
       <div className="nav-actions"><div className="sound-picker"><button type="button" className={`speaker-btn ${alertSound!=="none"?"on":""}`} aria-label="เลือกเสียงแจ้งเตือน" aria-expanded={soundMenuOpen} onClick={()=>setSoundMenuOpen(!soundMenuOpen)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16 8.5c1.4 1.8 1.4 5.2 0 7M18.7 6c3 3.2 3 8.8 0 12"/></svg></button>{soundMenuOpen&&<div className="sound-popover" role="dialog" aria-label="เลือกเสียงแจ้งเตือน"><div className="sound-popover-head"><strong>เสียงแจ้งเตือน</strong><button type="button" onClick={()=>setSoundMenuOpen(false)}>×</button></div><p>แตะชื่อเสียงเพื่อเลือกและลองฟัง</p>{([['bell','ริงริงคลาสสิก','จังหวะเสียงเรียกเข้าชัดเจน'],['chime','ดิจิทัลคอล','จังหวะสั้น กระชับ'],['soft','ริงโทนนุ่มนวล','เบากว่า เหมาะกับช่วงกลางคืน'],['none','ปิดเสียง','ใช้เฉพาะกล่องแจ้งเตือน']] as [AlertSound,string,string][]).map(([key,label,description])=><button type="button" className={`sound-choice ${alertSound===key?"active":""}`} onClick={()=>changeAlertSound(key)} key={key}><span>{key==='none'?'×':'♪'}</span><strong>{label}<small>{description}</small></strong><b>{alertSound===key?'✓':''}</b></button>)}</div>}</div><button className={`notify-btn ${notifyStatus === "granted" ? "on" : ""}`} onClick={requestNotifications}>{notifyStatus === "granted" ? "● ทดสอบแจ้งเตือน" : "◌ เปิดแจ้งเตือน"}</button></div>
     </nav>
 

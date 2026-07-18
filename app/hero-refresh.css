@@ -18,13 +18,14 @@
 .nav-links a {
   position: relative;
   color: #d8c3a5;
+  transition: color .2s ease;
 }
 
-.nav-links a:first-child {
+.nav-links a.active {
   color: var(--gold);
 }
 
-.nav-links a:first-child::after {
+.nav-links a::after {
   content: "";
   position: absolute;
   right: 0;
@@ -34,6 +35,14 @@
   border-radius: 99px 99px 0 0;
   background: var(--amber);
   box-shadow: 0 0 15px rgba(231, 161, 62, 0.8);
+  opacity: 0;
+  transform: scaleX(.35);
+  transition: opacity .2s ease, transform .2s ease;
+}
+
+.nav-links a.active::after {
+  opacity: 1;
+  transform: scaleX(1);
 }
 
 .hero {
@@ -56,7 +65,7 @@
   transform: translateX(-50%);
   background-image:
     linear-gradient(90deg, #0d0b09 0%, rgba(13, 11, 9, 0.97) 20%, rgba(13, 11, 9, 0.7) 45%, rgba(13, 11, 9, 0.08) 76%),
-    linear-gradient(0deg, #15120f 0%, transparent 28%, rgba(0, 0, 0, 0.12) 100%),
+    linear-gradient(0deg, #15120f 0%, rgba(21, 18, 15, 0.82) 10%, transparent 42%, rgba(0, 0, 0, 0.12) 100%),
     url("/hero-sourdough-v2.png");
   background-position: center, center, center right;
   background-repeat: no-repeat;
@@ -67,13 +76,12 @@
   content: "";
   position: absolute;
   z-index: -1;
-  right: -6%;
-  bottom: 8%;
-  width: 48%;
-  height: 45%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(231, 161, 62, 0.13), transparent 68%);
-  filter: blur(28px);
+  bottom: -1px;
+  left: 50%;
+  width: 100vw;
+  height: 230px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, transparent 0%, rgba(21, 18, 15, 0.7) 56%, #15120f 100%);
   pointer-events: none;
 }
 
