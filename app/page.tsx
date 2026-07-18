@@ -24,6 +24,7 @@ const DEFAULT_SETTINGS = {
   trayWidth: 30, trayLength: 20, steamMinutes: 20,
   ovenSeal: "normal" as "tight" | "normal" | "leaky",
   alertSound: "bell" as AlertSound,
+  targetBakeAt: "",
 };
 
 type SavedSettings = typeof DEFAULT_SETTINGS;
@@ -51,6 +52,7 @@ const normalizeSettings = (data: Record<string, unknown> | null | undefined): Sa
   steamMinutes: validNumber(data?.steamMinutes, DEFAULT_SETTINGS.steamMinutes),
   ovenSeal: data?.ovenSeal === "tight" || data?.ovenSeal === "normal" || data?.ovenSeal === "leaky" ? data.ovenSeal : DEFAULT_SETTINGS.ovenSeal,
   alertSound: data?.alertSound === "bell" || data?.alertSound === "chime" || data?.alertSound === "soft" || data?.alertSound === "none" ? data.alertSound : DEFAULT_SETTINGS.alertSound,
+  targetBakeAt: typeof data?.targetBakeAt === "string" ? data.targetBakeAt : DEFAULT_SETTINGS.targetBakeAt,
 });
 
 const clamp = (n: number, min = 0) => Math.max(min, Number.isFinite(n) ? n : min);
@@ -102,6 +104,7 @@ export default function Home() {
   const [ovenSeal, setOvenSeal] = useState<"tight" | "normal" | "leaky">("normal");
   const [alertSound, setAlertSound] = useState<AlertSound>("bell");
   const [soundMenuOpen, setSoundMenuOpen] = useState(false);
+  const [targetBakeAt, setTargetBakeAt] = useState("");
   const [activePhase, setActivePhase] = useState(0);
   const [phaseStart, setPhaseStart] = useState<number | null>(null);
   const [phaseEnd, setPhaseEnd] = useState<number | null>(null);
@@ -292,7 +295,7 @@ export default function Home() {
         setWholeWheat(settings.wholeWheat); setTargetDough(settings.targetDough); setHydration(settings.hydration); setStarterPercent(settings.starterPercent); setLoafCount(settings.loafCount); setLoavesPerBake(Math.min(settings.loafCount,settings.loavesPerBake));
         setProofMode(settings.proofMode); setColdHours(settings.coldHours); setFridgeTemp(settings.fridgeTemp);
         setBakeMode(settings.bakeMode); setSteamWater(settings.steamWater); setOvenVolume(settings.ovenVolume);
-        setTrayWidth(settings.trayWidth); setTrayLength(settings.trayLength); setSteamMinutes(settings.steamMinutes); setOvenSeal(settings.ovenSeal); setAlertSound(settings.alertSound);
+        setTrayWidth(settings.trayWidth); setTrayLength(settings.trayLength); setSteamMinutes(settings.steamMinutes); setOvenSeal(settings.ovenSeal); setAlertSound(settings.alertSound); setTargetBakeAt(settings.targetBakeAt);
       } catch {
         // The tracker remains usable if local storage is unavailable.
       }
@@ -357,7 +360,7 @@ export default function Home() {
     if (activeYeastId === id) { setActiveYeastId(""); setYeastName(""); setYeastBirth(""); localStorage.removeItem("doughgarden-yeast"); }
     setToast("ลบรายการหัวเชื้อแล้ว");
   };
-  const currentSettings = (): SavedSettings => ({ temperature, humidity, starterOld, feedFlour, feedWater, wholeWheat, targetDough, hydration, starterPercent, loafCount, loavesPerBake, proofMode, coldHours, fridgeTemp, bakeMode, steamWater, ovenVolume, trayWidth, trayLength, steamMinutes, ovenSeal, alertSound });
+  const currentSettings = (): SavedSettings => ({ temperature, humidity, starterOld, feedFlour, feedWater, wholeWheat, targetDough, hydration, starterPercent, loafCount, loavesPerBake, proofMode, coldHours, fridgeTemp, bakeMode, steamWater, ovenVolume, trayWidth, trayLength, steamMinutes, ovenSeal, alertSound, targetBakeAt });
   const saveSettings = () => {
     localStorage.setItem("doughgarden-settings", JSON.stringify(currentSettings()));
     setToast("บันทึกค่าที่ปรับไว้ในเครื่องนี้แล้ว");
@@ -388,7 +391,7 @@ export default function Home() {
       setWholeWheat(settings.wholeWheat); setTargetDough(settings.targetDough); setHydration(settings.hydration); setStarterPercent(settings.starterPercent); setLoafCount(settings.loafCount); setLoavesPerBake(Math.min(settings.loafCount,settings.loavesPerBake));
       setProofMode(settings.proofMode); setColdHours(settings.coldHours); setFridgeTemp(settings.fridgeTemp);
       setBakeMode(settings.bakeMode); setSteamWater(settings.steamWater); setOvenVolume(settings.ovenVolume);
-      setTrayWidth(settings.trayWidth); setTrayLength(settings.trayLength); setSteamMinutes(settings.steamMinutes); setOvenSeal(settings.ovenSeal); setAlertSound(settings.alertSound);
+      setTrayWidth(settings.trayWidth); setTrayLength(settings.trayLength); setSteamMinutes(settings.steamMinutes); setOvenSeal(settings.ovenSeal); setAlertSound(settings.alertSound); setTargetBakeAt(settings.targetBakeAt);
       if (payload?.yeast?.name) setYeastName(payload.yeast.name);
       if (typeof payload?.yeast?.birth === "string") setYeastBirth(payload.yeast.birth);
       localStorage.setItem("doughgarden-settings", JSON.stringify(settings));
@@ -398,6 +401,24 @@ export default function Home() {
     event.target.value = "";
   };
   const totalHours = phases.reduce((sum, p) => sum + p.hours, 0) + Math.max(0,bakeBatches-1)*(bakeCycleHours+.2);
+  const hoursUntilFirstBake = phases.slice(0, 8).reduce((sum, phase) => sum + phase.hours, 0);
+  const bakePlan = useMemo(() => {
+    if (!targetBakeAt) return null;
+    const firstBake = new Date(targetBakeAt);
+    if (Number.isNaN(firstBake.getTime())) return null;
+    const start = new Date(firstBake.getTime() - hoursUntilFirstBake * 3600000);
+    const allBakesDone = new Date(firstBake.getTime() + (bakeBatches * bakeCycleHours + Math.max(0, bakeBatches - 1) * .2) * 3600000);
+    return { firstBake, start, allBakesDone, startsInPast: start.getTime() < Date.now() };
+  }, [targetBakeAt, hoursUntilFirstBake, bakeBatches, bakeCycleHours]);
+  const thaiDateTime = (date: Date) => date.toLocaleString("th-TH", { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const targetBakeDate = targetBakeAt.split("T")[0] || "";
+  const targetBakeTime = targetBakeAt.split("T")[1] || "";
+  const setBakeDate = (date: string) => setTargetBakeAt(date ? `${date}T${targetBakeTime || "09:00"}` : "");
+  const setBakeTime = (time: string) => {
+    const localDate = new Date();
+    localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
+    setTargetBakeAt(time ? `${targetBakeDate || localDate.toISOString().slice(0, 10)}T${time}` : "");
+  };
   const starterHydration = ((starterOld / 2 + feedWater) / Math.max(.1, starterOld / 2 + feedFlour)) * 100;
 
   return <main>
@@ -411,6 +432,12 @@ export default function Home() {
     <section className="hero shell" id="top">
       <div className="hero-copy"><p className="eyebrow">อะแดปทีฟเบรดแอสซิสแทนต์</p><h1>ทุกขั้นตอน<br/><em>ในจังหวะที่พอดี</em></h1><p>คำนวณเวลาตามอุณหภูมิจริง บอกวิธีทำ เกณฑ์สังเกต และแจ้งเตือนตั้งแต่เลี้ยงหัวเชื้อจนขนมปังเย็นพร้อมตัด</p><div className="hero-actions"><a href="#assistant">เริ่มผู้ช่วยทำขนมปัง</a><span>รวมประมาณ <b>{duration(totalHours)}</b></span></div></div>
       <div className="climate-card"><div className="climate-value"><span>อุณหภูมิห้อง</span><strong>{temperature}<small>°C</small></strong></div><input aria-label="อุณหภูมิห้อง" type="range" min="18" max="35" step=".5" value={temperature} onChange={e=>setTemperature(+e.target.value)}/><div className="scale"><span>18° เย็น</span><span>26° ฐาน</span><span>35° ร้อน</span></div><div className="climate-grid"><label>ความชื้น<strong>{humidity}%</strong><input aria-label="ความชื้น" type="range" min="35" max="95" value={humidity} onChange={e=>setHumidity(+e.target.value)}/></label><div><span>บัลก์อะแดปทีฟ</span><strong>{duration(adaptive.bulk)}</strong></div><div><span>รูมพรูฟ</span><strong>{duration(adaptive.roomProof)}</strong></div></div><p>เวลาจะปรับทันทีเมื่อเปลี่ยนอุณหภูมิ แต่ให้ยืนยันด้วยสภาพโดว์เสมอ</p><div className="setting-actions compact"><button onClick={saveSettings}>บันทึกค่า</button><button className="secondary" onClick={resetClimate}>รีเซ็ต</button></div></div>
+    </section>
+
+    <section className="bake-planner shell" aria-labelledby="bake-planner-title">
+      <div className="bake-planner-copy"><p className="section-kicker">แพลนเวลาอบ</p><h2 id="bake-planner-title">อยากอบวันไหน<br/>ต้องเริ่มทำเมื่อไร</h2><span>ระบบคำนวณย้อนกลับตามอุณหภูมิ สูตร ไฟนอลพรูฟ และจำนวนโลฟที่เลือกไว้</span></div>
+      <div className="bake-planner-inputs"><label>วันที่อยากอบ<input aria-label="วันที่อยากอบ" type="date" value={targetBakeDate} onChange={e=>setBakeDate(e.target.value)}/></label><label>เวลาเข้าอบรอบแรก<input aria-label="เวลาเข้าอบรอบแรก" type="time" value={targetBakeTime} onChange={e=>setBakeTime(e.target.value)}/></label></div>
+      <div className={`bake-plan-result ${bakePlan?.startsInPast?"warning":""}`}>{bakePlan?<><div><span>อยากอบ</span><strong>{thaiDateTime(bakePlan.firstBake)}</strong></div><i>←</i><div className="start-answer"><span>ต้องเริ่มทำ</span><strong>{thaiDateTime(bakePlan.start)}</strong></div><small>คำนวณย้อนกลับ {duration(hoursUntilFirstBake)}{loafCount>1?` · ทำ ${loafCount} โลฟ · อบ ${bakeBatches} รอบ`:""}</small>{bakeBatches>1&&<small>อบครบทุกรอบประมาณ {thaiDateTime(bakePlan.allBakesDone)}</small>}{bakePlan.startsInPast&&<em>เวลาที่ต้องเริ่มผ่านไปแล้ว กรุณาเลือกเวลาอบที่ช้ากว่านี้</em>}</>:<><div className="plan-placeholder"><span>เลือกวันที่และเวลาอยากอบ</span><strong>แล้วเวลาที่ต้องเริ่มทำจะแสดงตรงนี้</strong></div></>}</div>
     </section>
 
     <section className="day-tracker shell" id="day-tracker">

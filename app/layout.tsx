@@ -10,6 +10,7 @@ import "./settings-controls.css";
 import "./saved-starters.css";
 import "./milestone-timer.css";
 import "./multi-loaf.css";
+import "./bake-planner.css";
 
 const anuphan = Anuphan({
   variable: "--font-anuphan",
