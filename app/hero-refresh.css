@@ -70,19 +70,12 @@
   background-position: center, center, center right;
   background-repeat: no-repeat;
   background-size: cover;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 58%, rgba(0, 0, 0, 0.88) 70%, rgba(0, 0, 0, 0.42) 84%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 58%, rgba(0, 0, 0, 0.88) 70%, rgba(0, 0, 0, 0.42) 84%, transparent 100%);
 }
 
 .hero::after {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  bottom: -1px;
-  left: 50%;
-  width: 100vw;
-  height: 230px;
-  transform: translateX(-50%);
-  background: linear-gradient(180deg, transparent 0%, rgba(21, 18, 15, 0.7) 56%, #15120f 100%);
-  pointer-events: none;
+  display: none;
 }
 
 .hero-copy {
