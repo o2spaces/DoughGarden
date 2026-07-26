@@ -440,6 +440,18 @@ export default function Home() {
     return { firstBake, start, allBakesDone, startsInPast: start.getTime() < Date.now() };
   }, [targetBakeAt, hoursUntilFirstBake, bakeBatches, bakeCycleHours]);
   const thaiDateTime = (date: Date) => date.toLocaleString("th-TH", { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const compactThaiDateTime = (date: Date) => date.toLocaleString("th-TH", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const phaseTimeline = useMemo(() => {
+    if (!bakePlan) return null;
+    let cursor = new Date(bakePlan.start);
+    return phases.map((phase, index) => {
+      if (index === 8) cursor = new Date(bakePlan.firstBake);
+      const start = new Date(cursor);
+      const end = new Date(start.getTime() + phase.hours * 3600000);
+      cursor = end;
+      return { start, end };
+    });
+  }, [bakePlan, phases]);
   const targetBakeDate = targetBakeAt.split("T")[0] || "";
   const targetBakeTime = targetBakeAt.split("T")[1] || "";
   const setBakeDate = (date: string) => setTargetBakeAt(date ? `${date}T${targetBakeTime || "09:00"}` : "");
@@ -513,9 +525,10 @@ export default function Home() {
       <div className="setting-actions section-wide"><button onClick={saveSettings}>บันทึกค่าไฟนอลพรูฟและการอบ</button><button className="secondary" onClick={resetProofBake}>รีเซ็ตส่วนนี้</button></div>
     </section>
 
-    <section className="section shell" id="assistant"><header><p className="section-kicker">03 — ไกด์เด็ดเวิร์กโฟลว์</p><h2>ผู้ช่วยทำขนมปังทีละขั้น</h2><span>เวิร์กโฟลว์ใช้ไฟนอลพรูฟและวิธีอบที่เลือกไว้ด้านบนโดยอัตโนมัติ</span></header>
-      <div className="workflow"><div className="phase-nav">{phases.map((phase,index)=><button key={phase.title} className={`${index===activePhase?"active":""} ${index<activePhase?"done":""}`} onClick={()=>selectPhase(index)}><span>{index<activePhase?"✓":phase.icon}</span><div><strong>{phase.title}</strong><small>{phase.subtitle}</small></div><b>{duration(phase.hours)}</b></button>)}</div>
+    <section className="section shell" id="assistant"><header><p className="section-kicker">03 — ไกด์เด็ดเวิร์กโฟลว์</p><h2>ผู้ช่วยทำขนมปังทีละขั้น</h2><span>{bakePlan?"แสดงวันและเวลาเริ่ม–เสร็จจากแผนเวลาอบที่เลือกไว้ด้านบน":"เลือกวันและเวลาในแผนเวลาอบ แล้วตารางของทุกขั้นตอนจะแสดงที่นี่"}</span></header>
+      <div className="workflow"><div className="phase-nav">{phases.map((phase,index)=>{const timing=phaseTimeline?.[index];return <button key={phase.title} className={`${index===activePhase?"active":""} ${index<activePhase?"done":""}`} onClick={()=>selectPhase(index)}><span>{index<activePhase?"✓":phase.icon}</span><div><strong>{phase.title}</strong><small>{phase.subtitle}</small>{timing&&<span className="phase-nav-time"><time>เริ่ม {compactThaiDateTime(timing.start)}</time><time>เสร็จ {compactThaiDateTime(timing.end)}</time></span>}</div><b>{duration(phase.hours)}</b></button>})}</div>
       <article className="guide-card"><div className="guide-top"><div><p>ขั้นตอน {activePhase+1} จาก {phases.length}</p><h3>{phases[activePhase].title}</h3><span>{phases[activePhase].subtitle}</span></div><div className="phase-temp">{phases[activePhase].temp}</div></div>
+        {phaseTimeline&&<div className="phase-date-time"><div><span>เริ่มขั้นตอน</span><strong>{thaiDateTime(phaseTimeline[activePhase].start)}</strong></div><i>→</i><div><span>เสร็จประมาณ</span><strong>{thaiDateTime(phaseTimeline[activePhase].end)}</strong></div></div>}
         <div className="timer"><span>{running && phaseEnd ? activePhase===2&&phaseStart ? countdown(Math.min(phaseEnd,phaseStart+(Math.floor(Math.max(0,now-phaseStart)/1800000)+1)*1800000)-now) : countdown(phaseEnd-now) : activePhase===2 ? "30 นาที" : duration(phases[activePhase].hours)}</span><small>{running ? activePhase===2&&phaseStart ? `รอบที่ ${Math.min(3,Math.floor(Math.max(0,now-phaseStart)/1800000)+1)} จาก 3` : `สิ้นสุดประมาณ ${clock(new Date(phaseEnd!))}` : activePhase===2 ? "นับถอยหลังแยกรอบละ 30 นาที" : "เวลาที่แนะนำ"}</small></div>
         {activePhase===2&&<div className="milestone-schedule"><p>ตัวนับถอยหลังการพับโดว์ 3 รอบ</p><div>{STRENGTH_MILESTONES.map((milestone,index)=>{const target=phaseStart?phaseStart+milestone.minutes*60000:0;const previousTarget=phaseStart?phaseStart+index*30*60000:0;const reached=Boolean(phaseStart&&now>=target);const current=Boolean(running&&phaseStart&&now>=previousTarget&&now<target);return <span className={`${reached?"reached":""} ${current?"current":""}`} key={milestone.minutes}><b>{reached?"✓":index+1}</b><strong>{reached?"ครบแล้ว":current?countdown(target-now):running?"รอรอบก่อน":"30:00"}</strong><small>{milestone.title}</small></span>})}</div></div>}
         <div className="instruction"><h4>วิธีทำในขั้นตอนนี้</h4><ol>{phases[activePhase].guide.map((g,i)=><li key={g}><span>{i+1}</span>{g}</li>)}</ol></div>
