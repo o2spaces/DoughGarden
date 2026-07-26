@@ -8,6 +8,28 @@ type AlertSound = "bell" | "chime" | "soft" | "none";
 type Phase = { icon: string; title: string; subtitle: string; hours: number; temp: string; guide: string[]; cue: string };
 type SavedYeast = { id: string; name: string; birth: string; savedAt: string };
 type TimerMilestone = { minutes: number; title: string; body: string };
+type LevainStage = "fed" | "bubbles" | "rising" | "doubled" | "peak" | "falling";
+type SavedRecipe = {
+  id: string; name: string; savedAt: string; targetDough: number; hydration: number;
+  starterPercent: number; saltPercent: number; oilPercent: number; apFlour: number;
+  wholeWheat: number; ryeFlour: number; doughTemperature: number;
+};
+type LevainObservation = { id: string; at: string; rise: number; stage: LevainStage; note: string };
+type LevainBuild = {
+  startedAt: string; temperature: number; starterName: string; observations: LevainObservation[];
+};
+
+const RECIPE_PRESETS = [
+  { id:"thai-balanced", name:"ครัวไทยบาลานซ์", description:"ฟูดี เนื้อชุ่ม จัดการง่าย", apFlour:10, wholeWheat:10, ryeFlour:0, hydration:71, starterPercent:20, saltPercent:2, oilPercent:0, doughTemperature:26 },
+  { id:"soft-high", name:"นุ่มและขึ้นสูง", description:"Bread 80% · AP 15% · Rye 5%", apFlour:15, wholeWheat:0, ryeFlour:5, hydration:71, starterPercent:20, saltPercent:2, oilPercent:2, doughTemperature:26 },
+  { id:"aromatic-rye", name:"หอมไรย์ 5%", description:"ชุ่ม หอม หมักไวขึ้นเล็กน้อย", apFlour:10, wholeWheat:5, ryeFlour:5, hydration:72, starterPercent:20, saltPercent:2, oilPercent:0, doughTemperature:25 },
+  { id:"open-crumb", name:"อาร์ติซานโพรงเปิด", description:"แป้งแรง 90% · โฮลวีท 10%", apFlour:0, wholeWheat:10, ryeFlour:0, hydration:75, starterPercent:20, saltPercent:2, oilPercent:0, doughTemperature:25 },
+] as const;
+
+const LEVAIN_STAGE_LABELS: Record<LevainStage, string> = {
+  fed:"เพิ่งให้อาหาร", bubbles:"เริ่มมีฟอง", rising:"กำลังขึ้น",
+  doubled:"ขึ้นสองเท่า", peak:"ยอดโดม / พีค", falling:"เริ่มยุบ",
+};
 
 const STRENGTH_MILESTONES: TimerMilestone[] = [
   { minutes: 30, title: "พับโดว์รอบที่ 1", body: "ครบ 30 นาที — สเตรตช์แอนด์โฟลด์ให้ครบ 4 ด้าน" },
@@ -17,7 +39,8 @@ const STRENGTH_MILESTONES: TimerMilestone[] = [
 
 const DEFAULT_SETTINGS = {
   temperature: 28, humidity: 70, starterOld: 20, feedFlour: 40, feedWater: 40,
-  wholeWheat: 30, targetDough: 800, hydration: 72, starterPercent: 20,
+  wholeWheat: 10, apFlour: 10, ryeFlour: 0, targetDough: 800, hydration: 71,
+  starterPercent: 20, saltPercent: 2, oilPercent: 0, doughTemperature: 26,
   loafCount: 1, loavesPerBake: 1,
   proofMode: "cold" as ProofMode, coldHours: 12, fridgeTemp: 4,
   bakeMode: "dutch" as BakeMode, steamWater: 200, ovenVolume: 60,
@@ -36,9 +59,14 @@ const normalizeSettings = (data: Record<string, unknown> | null | undefined): Sa
   feedFlour: validNumber(data?.feedFlour, DEFAULT_SETTINGS.feedFlour),
   feedWater: validNumber(data?.feedWater, DEFAULT_SETTINGS.feedWater),
   wholeWheat: validNumber(data?.wholeWheat, DEFAULT_SETTINGS.wholeWheat),
+  apFlour: validNumber(data?.apFlour, data && "wholeWheat" in data ? 0 : DEFAULT_SETTINGS.apFlour),
+  ryeFlour: validNumber(data?.ryeFlour, DEFAULT_SETTINGS.ryeFlour),
   targetDough: validNumber(data?.targetDough, DEFAULT_SETTINGS.targetDough),
   hydration: validNumber(data?.hydration, DEFAULT_SETTINGS.hydration),
   starterPercent: validNumber(data?.starterPercent, DEFAULT_SETTINGS.starterPercent),
+  saltPercent: validNumber(data?.saltPercent, DEFAULT_SETTINGS.saltPercent),
+  oilPercent: validNumber(data?.oilPercent, DEFAULT_SETTINGS.oilPercent),
+  doughTemperature: validNumber(data?.doughTemperature, DEFAULT_SETTINGS.doughTemperature),
   loafCount: Math.min(6, Math.max(1, Math.round(validNumber(data?.loafCount, DEFAULT_SETTINGS.loafCount)))),
   loavesPerBake: Math.min(6, Math.max(1, Math.round(validNumber(data?.loavesPerBake, DEFAULT_SETTINGS.loavesPerBake)))),
   proofMode: data?.proofMode === "room" || data?.proofMode === "cold" || data?.proofMode === "combo" ? data.proofMode : DEFAULT_SETTINGS.proofMode,
@@ -84,10 +112,18 @@ export default function Home() {
   const [starterOld, setStarterOld] = useState(20);
   const [feedFlour, setFeedFlour] = useState(40);
   const [feedWater, setFeedWater] = useState(40);
-  const [wholeWheat, setWholeWheat] = useState(30);
+  const [wholeWheat, setWholeWheat] = useState(10);
+  const [apFlour, setApFlour] = useState(10);
+  const [ryeFlour, setRyeFlour] = useState(0);
   const [targetDough, setTargetDough] = useState(800);
-  const [hydration, setHydration] = useState(72);
+  const [hydration, setHydration] = useState(71);
   const [starterPercent, setStarterPercent] = useState(20);
+  const [saltPercent, setSaltPercent] = useState(2);
+  const [oilPercent, setOilPercent] = useState(0);
+  const [doughTemperature, setDoughTemperature] = useState(26);
+  const [recipeName, setRecipeName] = useState("สูตรครัวไทยของฉัน");
+  const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
+  const [activeRecipeId, setActiveRecipeId] = useState("");
   const [loafCount, setLoafCount] = useState(1);
   const [loavesPerBake, setLoavesPerBake] = useState(1);
   const [proofMode, setProofMode] = useState<ProofMode>("cold");
@@ -117,34 +153,63 @@ export default function Home() {
   const [yeastBirth, setYeastBirth] = useState("");
   const [savedYeasts, setSavedYeasts] = useState<SavedYeast[]>([]);
   const [activeYeastId, setActiveYeastId] = useState("");
+  const [levainStartedAt, setLevainStartedAt] = useState("");
+  const [levainTemperature, setLevainTemperature] = useState(28);
+  const [levainRise, setLevainRise] = useState(0);
+  const [levainStage, setLevainStage] = useState<LevainStage>("fed");
+  const [levainNote, setLevainNote] = useState("");
+  const [levainObservations, setLevainObservations] = useState<LevainObservation[]>([]);
   const [today, setToday] = useState("");
   const alertedMilestones = useRef<Set<number>>(new Set());
   const audioContextRef = useRef<AudioContext | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
 
   const adaptive = useMemo(() => {
-    const tempFactor = Math.pow(2, (26 - temperature) / 10);
+    const tempFactor = Math.pow(2, (26 - doughTemperature) / 10);
+    const roomTempFactor = Math.pow(2, (26 - temperature) / 10);
     const humidityFactor = humidity < 55 ? 1.06 : humidity > 82 ? 0.96 : 1;
-    const wholeFactor = 1 - wholeWheat * 0.0015;
+    const wholeFactor = 1 - (wholeWheat + ryeFlour * 1.4) * 0.0015;
     const starterFactor = Math.pow(20 / Math.max(starterPercent, 5), 0.42);
     const bulk = 4.5 * tempFactor * humidityFactor * wholeFactor * starterFactor;
-    const roomProof = 2.1 * tempFactor * humidityFactor;
-    const starterPeak = 6 * tempFactor * Math.pow(Math.max(feedFlour / Math.max(starterOld, 1), .25) / 2, .22);
+    const roomProof = 2.1 * roomTempFactor * humidityFactor;
+    const starterPeak = 6 * roomTempFactor * Math.pow(Math.max(feedFlour / Math.max(starterOld, 1), .25) / 2, .22);
     return { tempFactor, bulk, roomProof, starterPeak };
-  }, [temperature, humidity, wholeWheat, starterPercent, feedFlour, starterOld]);
+  }, [temperature, doughTemperature, humidity, wholeWheat, ryeFlour, starterPercent, feedFlour, starterOld]);
 
   const recipe = useMemo(() => {
     const totalDough = targetDough * loafCount;
-    const totalFlour = totalDough / (1 + hydration / 100 + .02);
+    const totalFlour = totalDough / (1 + hydration / 100 + saltPercent / 100 + oilPercent / 100);
     const levain = totalFlour * starterPercent / 100;
     const levainFlour = levain / 2;
     const levainWater = levain / 2;
     const whole = totalFlour * wholeWheat / 100;
-    const white = Math.max(0, totalFlour - whole - levainFlour);
+    const ap = totalFlour * apFlour / 100;
+    const rye = totalFlour * ryeFlour / 100;
+    const breadPercent = Math.max(0, 100 - wholeWheat - apFlour - ryeFlour);
+    const breadTotal = totalFlour * breadPercent / 100;
+    const bread = Math.max(0, breadTotal - levainFlour);
     const water = Math.max(0, totalFlour * hydration / 100 - levainWater);
-    const salt = totalFlour * .02;
-    return { totalDough, totalFlour, levain, whole, white, water, salt, baked: totalDough * .997 * .86, bakedEach: targetDough * .997 * .86 };
-  }, [targetDough, loafCount, hydration, starterPercent, wholeWheat]);
+    const salt = totalFlour * saltPercent / 100;
+    const oil = totalFlour * oilPercent / 100;
+    return { totalDough, totalFlour, levain, whole, ap, rye, bread, breadPercent, water, salt, oil, baked: totalDough * .997 * .86, bakedEach: targetDough * .997 * .86 };
+  }, [targetDough, loafCount, hydration, starterPercent, saltPercent, oilPercent, wholeWheat, apFlour, ryeFlour]);
+
+  const bulkRiseTarget = useMemo(() => {
+    const coldTarget = doughTemperature >= 29 ? 25 : doughTemperature >= 27 ? 30 : doughTemperature >= 24 ? 50 : 75;
+    return proofMode === "room" ? Math.min(80, coldTarget + 15) : coldTarget;
+  }, [doughTemperature, proofMode]);
+
+  const levainPeakHours = useMemo(() => {
+    const tempFactor = Math.pow(2, (26 - levainTemperature) / 10);
+    return 6 * tempFactor * Math.pow(Math.max(feedFlour / Math.max(starterOld, 1), .25) / 2, .22);
+  }, [levainTemperature, feedFlour, starterOld]);
+
+  const levainReadiness = useMemo(() => {
+    if (levainStage === "falling") return { key:"past", label:"เลยพีคแล้ว", detail:"เริ่มยุบ ควรให้อาหารใหม่หรือใช้ทันทีถ้ายังมีกำลัง" };
+    if (levainStage === "peak" || (levainStage === "doubled" && levainRise >= 100)) return { key:"ready", label:"พร้อมใช้", detail:"ขึ้นอย่างน้อยสองเท่า มีฟองทั่ว และยอดยังนูน" };
+    if (levainStage === "rising" || levainStage === "doubled" || levainRise >= 70) return { key:"near", label:"ใกล้พร้อม", detail:"รอให้ขึ้นเต็มกำลังและยอดโดมก่อนนำไปผสม" };
+    return { key:"waiting", label:"กำลังพัฒนา", detail:"ติดตามเปอร์เซ็นต์การขึ้น ฟอง และรูปทรงของยอดต่อ" };
+  }, [levainStage, levainRise]);
 
   const yeastAge = useMemo(() => {
     if (!yeastBirth || !today) return { days: 0, years: 0, months: 0, ready: false };
@@ -157,7 +222,7 @@ export default function Home() {
   }, [yeastBirth, today]);
 
   const finalProofHours = proofMode === "room" ? adaptive.roomProof : proofMode === "cold" ? coldHours : .75 * adaptive.tempFactor + coldHours;
-  const fermentolyseHours = temperature >= 30 ? .33 : temperature >= 27 ? .5 : .67;
+  const fermentolyseHours = doughTemperature >= 30 ? .33 : doughTemperature >= 27 ? .5 : .67;
   const bakeBatches = Math.ceil(loafCount / Math.min(loafCount, loavesPerBake));
   const extraShapingHours = Math.max(0, loafCount - 1) * 13 / 60;
   const bakeCycleHours = (bakeMode === "dutch" ? .33 : steamMinutes / 60) + .38;
@@ -171,10 +236,10 @@ export default function Home() {
   }, [ovenVolume, trayWidth, trayLength, steamMinutes, ovenSeal]);
 
   const phases = useMemo<Phase[]>(() => [
-    { icon:"01", title:"เฟอร์เมนโตไลซ์", subtitle:"ละลายหัวเชื้อในน้ำ ใส่แป้งแล้วพัก", hours:fermentolyseHours, temp:`${temperature}°C`, cue:"หัวเชื้อกระจายทั่ว แป้งดูดน้ำ ไม่มีผงแห้ง และโดว์เริ่มยืด", guide:[`ละลายหัวเชื้อ ${round(recipe.levain)} กรัมในน้ำ โดยเก็บน้ำไว้ 20–30 กรัมสำหรับละลายเกลือ`, "ใส่แป้งขาวและแป้งโฮลวีท ผสมจนไม่เหลือผงแห้ง ไม่ต้องนวดให้เนียน", `คลุมและพัก ${duration(fermentolyseHours)} ที่ ${temperature}°C — ขั้นตอนนี้มีหัวเชื้อแล้ว จึงไม่ควรพักนานเกินไป`] },
-    { icon:"02", title:"มิกซ์แอนด์ดีเวลลอป", subtitle:"เติมน้ำเกลือและพัฒนากลูเตน", hours:.25, temp:`${temperature}°C`, cue:"โดว์ดูดน้ำเกลือหมด เนียนขึ้น จับตัวเป็นก้อน และดึงได้โดยไม่ขาดทันที", guide:["ละลายเกลือในน้ำ 20–30 กรัมที่เก็บไว้", "ค่อย ๆ เทลงโดว์ ใช้วิธีบีบและพับจนโดว์ดูดน้ำเกลือหมด", "พัก 5 นาที แล้วใช้รูโบด์หรือสแลปแอนด์โฟลด์ 5–8 นาทีตามความแข็งแรง"] },
-    { icon:"03", title:"สเตร็งธ์บิลดิง", subtitle:"พับโดว์ 3 รอบ", hours:1.5, temp:`${temperature}°C`, cue:"หลังพับรอบสุดท้ายโดว์ตั้งทรง ผิวตึง และมีฟองเล็กด้านข้าง", guide:["นาที 30: สเตรตช์แอนด์โฟลด์รอบที่ 1 ให้ครบ 4 ด้าน", "นาที 60: คอยล์โฟลด์รอบที่ 2 อย่างนุ่มนวล", "นาที 90: คอยล์โฟลด์รอบที่ 3 แล้วปล่อยโดว์พัก"] },
-    { icon:"04", title:"บัลก์เฟอร์เมนเทชัน", subtitle:"หมักรวมแบบอะแดปทีฟ", hours:Math.max(.5, adaptive.bulk - 1.5), temp:`${temperature}°C`, cue:temperature >= 27 ? "เล็งปริมาตรเพิ่ม 30–40% มีฟองริมภาชนะ และผิวโค้ง" : "เล็งปริมาตรเพิ่ม 50–60% มีฟองริมภาชนะ และโดว์สั่นดึ๋ง", guide:[`บัลก์รวมประมาณ ${duration(adaptive.bulk)} ที่ ${temperature}°C`, "ทำเครื่องหมายระดับเริ่มต้นบนภาชนะใสเพื่อดูเปอร์เซ็นต์การขึ้น", "อย่ารอให้ขึ้นเท่าตัว เพราะโดว์ยังหมักต่อระหว่างขึ้นรูปและไฟนอลพรูฟ"] },
+    { icon:"01", title:"เฟอร์เมนโตไลซ์", subtitle:"ละลายหัวเชื้อในน้ำ ใส่แป้งแล้วพัก", hours:fermentolyseHours, temp:`โดว์ ${doughTemperature}°C`, cue:"หัวเชื้อกระจายทั่ว แป้งดูดน้ำ ไม่มีผงแห้ง และโดว์เริ่มยืด", guide:[`ละลายหัวเชื้อ ${round(recipe.levain)} กรัมในน้ำ โดยเก็บน้ำไว้ 20–30 กรัมสำหรับละลายเกลือ`, "ใส่แป้ง Bread / AP / Whole Wheat / Rye ตามสูตรที่เลือก ผสมจนไม่เหลือผงแห้ง ไม่ต้องนวดให้เนียน", `คลุมและพัก ${duration(fermentolyseHours)} — หลังผสมวัดอุณหภูมิกลางโด เป้าหมาย ${doughTemperature}°C`] },
+    { icon:"02", title:"มิกซ์แอนด์ดีเวลลอป", subtitle:"เติมน้ำเกลือและพัฒนากลูเตน", hours:.25, temp:`โดว์ ${doughTemperature}°C`, cue:"โดว์ดูดน้ำเกลือหมด เนียนขึ้น จับตัวเป็นก้อน และดึงได้โดยไม่ขาดทันที", guide:["ละลายเกลือในน้ำ 20–30 กรัมที่เก็บไว้", "ค่อย ๆ เทลงโดว์ ใช้วิธีบีบและพับจนโดว์ดูดน้ำเกลือหมด", oilPercent>0?`เมื่อโดว์เริ่มมีกลูเตน ใส่น้ำมัน ${round(recipe.oil)} กรัม แล้วพับจนซึมหมด`:"พัก 5 นาที แล้วใช้รูโบด์หรือสแลปแอนด์โฟลด์ 5–8 นาทีตามความแข็งแรง"] },
+    { icon:"03", title:"สเตร็งธ์บิลดิง", subtitle:"พับโดว์ 3 รอบ", hours:1.5, temp:`โดว์ ${doughTemperature}°C`, cue:"หลังพับรอบสุดท้ายโดว์ตั้งทรง ผิวตึง และมีฟองเล็กด้านข้าง", guide:["นาที 30: สเตรตช์แอนด์โฟลด์รอบที่ 1 ให้ครบ 4 ด้าน", "นาที 60: คอยล์โฟลด์รอบที่ 2 อย่างนุ่มนวล", "นาที 90: คอยล์โฟลด์รอบที่ 3 แล้วหยุดจับโดว์เพื่อรักษาฟอง"] },
+    { icon:"04", title:"บัลก์เฟอร์เมนเทชัน", subtitle:`เป้าหมายขึ้นประมาณ ${bulkRiseTarget}%`, hours:Math.max(.5, adaptive.bulk - 1.5), temp:`โดว์ ${doughTemperature}°C`, cue:`เล็งปริมาตรเพิ่มประมาณ ${bulkRiseTarget}% ผิวเริ่มนูน มีฟองริมกล่อง และโดว์สั่นคล้ายเจล`, guide:[`บัลก์รวมประมาณ ${duration(adaptive.bulk)} ที่อุณหภูมิกลางโด ${doughTemperature}°C`, `ทำเครื่องหมายระดับเริ่มต้นในกล่องผนังตรง และเริ่มขึ้นรูปเมื่อเพิ่มประมาณ ${bulkRiseTarget}%`, proofMode==="room"?"รูมพรูฟยังหมักต่อ แต่เย็นเร็วกว่าการเข้าตู้ ให้ยืนยันด้วยสภาพโดว์":"โดอุ่นยังหมักต่อระหว่างขึ้นรูปและช่วงแรกในตู้เย็น จึงไม่ควรรอให้ขึ้นสองเท่า"] },
     { icon:"05", title:"พรีเชปและเบนช์เรสต์", subtitle:loafCount>1?`แบ่งและพรีเชป ${loafCount} โลฟ`:"ขึ้นรูปเบื้องต้น", hours:(20+Math.max(0,loafCount-1)*5)/60, temp:"อุณหภูมิห้อง", cue:"ก้อนคลายตัวเล็กน้อยแต่ยังรักษาทรง ไม่แผ่แบน", guide:[loafCount>1?`ชั่งและแบ่งโดว์เป็น ${loafCount} ก้อน ก้อนละประมาณ ${targetDough} กรัม`:"เทโดว์ลงโต๊ะโดยรักษาแก๊ส ใช้ที่ตัดรวบให้เป็นก้อนกลม", "รวบแต่ละก้อนให้กลมโดยรักษาแก๊ส แล้วพัก 15–20 นาที", "ถ้าโดว์แผ่มาก ให้รวบซ้ำเบา ๆ และพักอีก 10 นาที"] },
     { icon:"06", title:"ไฟนอลเชป", subtitle:loafCount>1?`ขึ้นรูป ${loafCount} โลฟและลงตะกร้า`:"ขึ้นรูปและลงตะกร้า", hours:(15+Math.max(0,loafCount-1)*8)/60, temp:"อุณหภูมิห้อง", cue:"ผิวด้านนอกตึง รอยต่อปิดสนิท โดยไม่ฉีกผิวโดว์", guide:["โรยแป้งบาง ๆ พลิกด้านเรียบลง แล้วพับสร้างแรงตึง", loafCount>1?`ขึ้นรูปทีละก้อน ใช้เวลารวมประมาณ ${15+Math.max(0,loafCount-1)*8} นาที`:"ม้วนให้แน่นพอดี ไม่บีบไล่แก๊สทั้งหมด", "วางด้านรอยต่อขึ้นในตะกร้าที่โรยแป้งข้าวเจ้า"] },
     { icon:"07", title:"ไฟนอลพรูฟ", subtitle:proofMode === "room" ? "นอกตู้เย็น" : proofMode === "cold" ? "ในตู้เย็น" : "ผสมรูม + โคลด์", hours:finalProofHours, temp:proofMode === "room" ? `${temperature}°C` : `${fridgeTemp}°C`, cue:proofMode === "room" ? "กดนิ้วแล้วรอยบุ๋มเด้งกลับช้า ๆ และเหลือรอยตื้น" : "โดว์เย็นและแน่นขึ้น ปริมาตรเพิ่มเล็กน้อย ตัดลายได้คม", guide:proofMode === "room" ? [`พักประมาณ ${duration(adaptive.roomProof)} ที่ ${temperature}°C`, "คลุมถุงเพื่อกันผิวแห้ง เริ่มทดสอบกดนิ้วก่อนครบเวลา 20 นาที", "เด้งกลับเร็ว = ยังอ่อน / ไม่เด้งเลย = เกิน / เด้งช้า = พร้อมอบ"] : proofMode === "cold" ? [`ปิดถุงให้สนิท แช่ ${fridgeTemp}°C ประมาณ ${coldHours} ชั่วโมง`, "นำออกจากตู้เย็นแล้วกรีดและอบได้ทันที ไม่ต้องคืนอุณหภูมิ", "ตู้เย็นเกิน 6°C โดว์จะหมักเร็วขึ้น ควรลดเวลาโคลด์พรูฟ"] : [`พักนอกตู้ประมาณ ${duration(.75 * adaptive.tempFactor)} ก่อนเข้าตู้เย็น`, `แช่ ${fridgeTemp}°C ต่ออีก ${coldHours} ชั่วโมง`, "เหมาะเมื่อบัลก์จบค่อนข้างเร็วและต้องการเพิ่มกลิ่นรส"] },
@@ -182,7 +247,7 @@ export default function Home() {
     { icon:"09", title:"สตีมเบก", subtitle:bakeMode === "dutch" ? `อบปิดฝา · ${bakeBatches} รอบอบ` : `อบเปิดพร้อมไอน้ำ · ${bakeBatches} รอบอบ`, hours:bakeMode === "dutch" ? .33 : steamMinutes / 60, temp:"240–250°C", cue:"ก้อนขยายเต็มที่ รอยกรีดเปิดและเริ่มเกิดหูขนมปัง", guide:bakeMode === "dutch" ? [`อบพร้อมกัน ${Math.min(loafCount,loavesPerBake)} โลฟ · รวม ${bakeBatches} รอบอบ`, "ยกโดว์ลงดัตช์โอเวนร้อน ปิดฝา และอบ 20 นาทีที่ 240–250°C", bakeBatches>1?"จบรอบดรายเบกแล้ว อุ่นหม้อกลับให้ร้อน 10–15 นาทีก่อนรอบถัดไป":"ไม่จำเป็นต้องใส่น้ำ เพราะความชื้นจากโดว์ถูกกักไว้ในหม้อ"] : [`อบพร้อมกัน ${Math.min(loafCount,loavesPerBake)} โลฟ · รวม ${bakeBatches} รอบอบ`, `เทน้ำเดือด ${steamWater} มล. ลงถาดโลหะร้อน แล้วอบ ${steamMinutes} นาที`, "เทน้ำจากด้านข้างอย่างระวังไอน้ำลวก และอย่าราดโดนกระจกเตา"] },
     { icon:"10", title:"ดรายเบก", subtitle:"ไล่ความชื้นและทำสี", hours:.38, temp:"220–230°C", cue:"เปลือกน้ำตาลเข้มทั่ว เคาะก้นมีเสียงโปร่ง อุณหภูมิแกน 96–98°C", guide:bakeMode === "dutch" ? ["เปิดฝา ลดไฟเหลือ 220–230°C แล้วอบต่อ 20–25 นาที", "ถ้าสีเร็วให้ลดเหลือ 210°C แต่ไม่ควรรีบนำออก", "แง้มประตูเตา 3–5 นาทีท้ายเพื่อเปลือกกรอบ"] : ["นำถาดน้ำออกหรือระบายไอน้ำ ลดไฟเหลือ 220–230°C", "อบต่อ 20–25 นาที หมุนก้อนถ้าสีไม่สม่ำเสมอ", "แง้มประตูเตา 3–5 นาทีท้ายเพื่อเปลือกกรอบ"] },
     { icon:"11", title:"คูลดาวน์", subtitle:"พักให้เนื้อเซ็ตตัว", hours:2, temp:"อุณหภูมิห้อง", cue:"ก้อนเย็นเกือบสนิท เปลือกแห้ง และไอน้ำภายในกระจายตัวแล้ว", guide:["ย้ายขึ้นตะแกรงทันที ให้อากาศผ่านรอบก้อน", "รออย่างน้อย 2 ชั่วโมงก่อนตัด; ก้อนใหญ่รอ 3 ชั่วโมง", "การตัดเร็วทำให้เนื้อเหนียวและดูเหมือนอบไม่สุก"] },
-  ], [temperature, fermentolyseHours, recipe.levain, adaptive.bulk, adaptive.roomProof, adaptive.tempFactor, proofMode, finalProofHours, fridgeTemp, coldHours, bakeMode, steamWater, steamMinutes, loafCount, loavesPerBake, bakeBatches, targetDough]);
+  ], [temperature, doughTemperature, fermentolyseHours, recipe.levain, recipe.oil, oilPercent, bulkRiseTarget, adaptive.bulk, adaptive.roomProof, adaptive.tempFactor, proofMode, finalProofHours, fridgeTemp, coldHours, bakeMode, steamWater, steamMinutes, loafCount, loavesPerBake, bakeBatches, targetDough]);
 
   const playAlertSound = (sound: AlertSound = alertSound) => {
     if (sound === "none" || typeof window === "undefined" || !("AudioContext" in window)) return;
@@ -291,10 +356,30 @@ export default function Home() {
             if (validList[0]) setActiveYeastId(validList[0].id);
           }
         }
+        const recipeList = JSON.parse(localStorage.getItem("doughgarden-recipes") || "[]");
+        if (Array.isArray(recipeList)) {
+          const validRecipes = recipeList.filter((item): item is SavedRecipe => Boolean(item?.id && item?.name && typeof item?.hydration === "number"));
+          setSavedRecipes(validRecipes);
+        }
+        const levainBuild = JSON.parse(localStorage.getItem("doughgarden-levain-build") || "null") as LevainBuild | null;
+        if (levainBuild?.startedAt) {
+          setLevainStartedAt(levainBuild.startedAt);
+          setLevainTemperature(validNumber(levainBuild.temperature, temperature));
+          if (levainBuild.starterName) setYeastName(levainBuild.starterName);
+          if (Array.isArray(levainBuild.observations)) {
+            const observations = levainBuild.observations.filter(item => item?.id && item?.at && typeof item?.rise === "number");
+            setLevainObservations(observations);
+            const latest = observations[observations.length - 1];
+            if (latest) { setLevainRise(latest.rise); setLevainStage(latest.stage); }
+          }
+        }
         const settings = normalizeSettings(JSON.parse(localStorage.getItem("doughgarden-settings") || "null"));
         setTemperature(settings.temperature); setHumidity(settings.humidity);
         setStarterOld(settings.starterOld); setFeedFlour(settings.feedFlour); setFeedWater(settings.feedWater);
-        setWholeWheat(settings.wholeWheat); setTargetDough(settings.targetDough); setHydration(settings.hydration); setStarterPercent(settings.starterPercent); setLoafCount(settings.loafCount); setLoavesPerBake(Math.min(settings.loafCount,settings.loavesPerBake));
+        setWholeWheat(settings.wholeWheat); setApFlour(settings.apFlour); setRyeFlour(settings.ryeFlour);
+        setTargetDough(settings.targetDough); setHydration(settings.hydration); setStarterPercent(settings.starterPercent);
+        setSaltPercent(settings.saltPercent); setOilPercent(settings.oilPercent); setDoughTemperature(settings.doughTemperature);
+        setLoafCount(settings.loafCount); setLoavesPerBake(Math.min(settings.loafCount,settings.loavesPerBake));
         setProofMode(settings.proofMode); setColdHours(settings.coldHours); setFridgeTemp(settings.fridgeTemp);
         setBakeMode(settings.bakeMode); setSteamWater(settings.steamWater); setOvenVolume(settings.ovenVolume);
         setTrayWidth(settings.trayWidth); setTrayLength(settings.trayLength); setSteamMinutes(settings.steamMinutes); setOvenSeal(settings.ovenSeal); setAlertSound(settings.alertSound); setTargetBakeAt(settings.targetBakeAt);
@@ -389,14 +474,79 @@ export default function Home() {
     if (activeYeastId === id) { setActiveYeastId(""); setYeastName(""); setYeastBirth(""); localStorage.removeItem("doughgarden-yeast"); }
     setToast("ลบรายการหัวเชื้อแล้ว");
   };
-  const currentSettings = (): SavedSettings => ({ temperature, humidity, starterOld, feedFlour, feedWater, wholeWheat, targetDough, hydration, starterPercent, loafCount, loavesPerBake, proofMode, coldHours, fridgeTemp, bakeMode, steamWater, ovenVolume, trayWidth, trayLength, steamMinutes, ovenSeal, alertSound, targetBakeAt });
+  const applyRecipe = (values: Pick<SavedRecipe, "name" | "targetDough" | "hydration" | "starterPercent" | "saltPercent" | "oilPercent" | "apFlour" | "wholeWheat" | "ryeFlour" | "doughTemperature">, id = "") => {
+    setRecipeName(values.name); setTargetDough(values.targetDough); setHydration(values.hydration);
+    setStarterPercent(values.starterPercent); setSaltPercent(values.saltPercent); setOilPercent(values.oilPercent);
+    setApFlour(values.apFlour); setWholeWheat(values.wholeWheat); setRyeFlour(values.ryeFlour);
+    setDoughTemperature(values.doughTemperature); setActiveRecipeId(id);
+    setToast(`เปิดสูตร “${values.name}” แล้ว`);
+  };
+  const applyPreset = (preset: typeof RECIPE_PRESETS[number]) => {
+    applyRecipe({ ...preset, targetDough });
+    setActiveRecipeId("");
+  };
+  const setFlourPercent = (kind: "ap" | "whole" | "rye", raw: number) => {
+    const value = Math.max(0, Math.round(raw));
+    if (kind === "ap") setApFlour(Math.min(value, 90 - wholeWheat - ryeFlour));
+    if (kind === "whole") setWholeWheat(Math.min(value, 90 - apFlour - ryeFlour));
+    if (kind === "rye") setRyeFlour(Math.min(value, 90 - apFlour - wholeWheat));
+    setActiveRecipeId("");
+  };
+  const saveRecipe = () => {
+    const name = recipeName.trim() || `สูตร ${savedRecipes.length + 1}`;
+    const id = activeRecipeId || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const record: SavedRecipe = { id, name, savedAt:new Date().toISOString(), targetDough, hydration, starterPercent, saltPercent, oilPercent, apFlour, wholeWheat, ryeFlour, doughTemperature };
+    const next = [record, ...savedRecipes.filter(item => item.id !== id)];
+    localStorage.setItem("doughgarden-recipes", JSON.stringify(next));
+    setSavedRecipes(next); setActiveRecipeId(id); setRecipeName(name);
+    localStorage.setItem("doughgarden-settings", JSON.stringify(currentSettings()));
+    setToast(`บันทึกสูตร “${name}” แล้ว`);
+  };
+  const deleteRecipe = (id: string) => {
+    const next = savedRecipes.filter(item => item.id !== id);
+    localStorage.setItem("doughgarden-recipes", JSON.stringify(next));
+    setSavedRecipes(next);
+    if (activeRecipeId === id) setActiveRecipeId("");
+    setToast("ลบสูตรที่บันทึกแล้ว");
+  };
+  const localDateTimeValue = (date = new Date()) => {
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  };
+  const persistLevainBuild = (startedAt: string, observations: LevainObservation[]) => {
+    const build: LevainBuild = { startedAt, temperature:levainTemperature, starterName:yeastName.trim() || "หัวเชื้อของฉัน", observations };
+    localStorage.setItem("doughgarden-levain-build", JSON.stringify(build));
+  };
+  const startLevainBuild = () => {
+    const startedAt = levainStartedAt || localDateTimeValue();
+    const initial: LevainObservation = { id:`${Date.now()}`, at:new Date(startedAt).toISOString(), rise:0, stage:"fed", note:"เริ่มรอบการเลี้ยง" };
+    setLevainStartedAt(startedAt); setLevainRise(0); setLevainStage("fed"); setLevainNote(""); setLevainObservations([initial]);
+    persistLevainBuild(startedAt, [initial]);
+    setToast("เริ่มติดตามรอบการเลี้ยงหัวเชื้อแล้ว");
+  };
+  const addLevainObservation = (forceReady = false) => {
+    const startedAt = levainStartedAt || localDateTimeValue();
+    const stage: LevainStage = forceReady ? "peak" : levainStage;
+    const rise = forceReady ? Math.max(100, levainRise) : levainRise;
+    const observation: LevainObservation = { id:`${Date.now()}-${Math.random().toString(36).slice(2,6)}`, at:new Date().toISOString(), rise, stage, note:forceReady ? (levainNote.trim() || "ทำเครื่องหมายว่าพร้อมใช้") : levainNote.trim() };
+    const next = [...levainObservations, observation];
+    setLevainStartedAt(startedAt); setLevainStage(stage); setLevainRise(rise); setLevainNote(""); setLevainObservations(next);
+    persistLevainBuild(startedAt, next);
+    setToast(forceReady ? "ทำเครื่องหมายว่าหัวเชื้อพร้อมใช้แล้ว" : "บันทึกพัฒนาการหัวเชื้อแล้ว");
+  };
+  const resetLevainBuild = () => {
+    setLevainStartedAt(""); setLevainRise(0); setLevainStage("fed"); setLevainNote(""); setLevainObservations([]);
+    localStorage.removeItem("doughgarden-levain-build");
+    setToast("เริ่มรอบการเลี้ยงใหม่ได้แล้ว");
+  };
+  const currentSettings = (): SavedSettings => ({ temperature, humidity, starterOld, feedFlour, feedWater, wholeWheat, apFlour, ryeFlour, targetDough, hydration, starterPercent, saltPercent, oilPercent, doughTemperature, loafCount, loavesPerBake, proofMode, coldHours, fridgeTemp, bakeMode, steamWater, ovenVolume, trayWidth, trayLength, steamMinutes, ovenSeal, alertSound, targetBakeAt });
   const saveSettings = () => {
     localStorage.setItem("doughgarden-settings", JSON.stringify(currentSettings()));
     setToast("บันทึกค่าที่ปรับไว้ในเครื่องนี้แล้ว");
   };
   const resetClimate = () => { setTemperature(DEFAULT_SETTINGS.temperature); setHumidity(DEFAULT_SETTINGS.humidity); localStorage.setItem("doughgarden-settings", JSON.stringify({ ...currentSettings(), temperature: DEFAULT_SETTINGS.temperature, humidity: DEFAULT_SETTINGS.humidity })); setToast("รีเซ็ตอุณหภูมิและความชื้นแล้ว"); };
   const resetStarter = () => { setStarterOld(DEFAULT_SETTINGS.starterOld); setFeedFlour(DEFAULT_SETTINGS.feedFlour); setFeedWater(DEFAULT_SETTINGS.feedWater); localStorage.setItem("doughgarden-settings", JSON.stringify({ ...currentSettings(), starterOld: DEFAULT_SETTINGS.starterOld, feedFlour: DEFAULT_SETTINGS.feedFlour, feedWater: DEFAULT_SETTINGS.feedWater })); setToast("รีเซ็ตค่าหัวเชื้อแล้ว"); };
-  const resetRecipe = () => { setWholeWheat(DEFAULT_SETTINGS.wholeWheat); setTargetDough(DEFAULT_SETTINGS.targetDough); setHydration(DEFAULT_SETTINGS.hydration); setStarterPercent(DEFAULT_SETTINGS.starterPercent); setLoafCount(DEFAULT_SETTINGS.loafCount); setLoavesPerBake(DEFAULT_SETTINGS.loavesPerBake); localStorage.setItem("doughgarden-settings", JSON.stringify({ ...currentSettings(), wholeWheat: DEFAULT_SETTINGS.wholeWheat, targetDough: DEFAULT_SETTINGS.targetDough, hydration: DEFAULT_SETTINGS.hydration, starterPercent: DEFAULT_SETTINGS.starterPercent, loafCount: DEFAULT_SETTINGS.loafCount, loavesPerBake: DEFAULT_SETTINGS.loavesPerBake })); setToast("รีเซ็ตสูตรแล้ว"); };
+  const resetRecipe = () => { setRecipeName("สูตรครัวไทยของฉัน"); setActiveRecipeId(""); setWholeWheat(DEFAULT_SETTINGS.wholeWheat); setApFlour(DEFAULT_SETTINGS.apFlour); setRyeFlour(DEFAULT_SETTINGS.ryeFlour); setTargetDough(DEFAULT_SETTINGS.targetDough); setHydration(DEFAULT_SETTINGS.hydration); setStarterPercent(DEFAULT_SETTINGS.starterPercent); setSaltPercent(DEFAULT_SETTINGS.saltPercent); setOilPercent(DEFAULT_SETTINGS.oilPercent); setDoughTemperature(DEFAULT_SETTINGS.doughTemperature); setLoafCount(DEFAULT_SETTINGS.loafCount); setLoavesPerBake(DEFAULT_SETTINGS.loavesPerBake); localStorage.setItem("doughgarden-settings", JSON.stringify({ ...currentSettings(), wholeWheat: DEFAULT_SETTINGS.wholeWheat, apFlour:DEFAULT_SETTINGS.apFlour, ryeFlour:DEFAULT_SETTINGS.ryeFlour, targetDough: DEFAULT_SETTINGS.targetDough, hydration: DEFAULT_SETTINGS.hydration, starterPercent: DEFAULT_SETTINGS.starterPercent, saltPercent:DEFAULT_SETTINGS.saltPercent, oilPercent:DEFAULT_SETTINGS.oilPercent, doughTemperature:DEFAULT_SETTINGS.doughTemperature, loafCount: DEFAULT_SETTINGS.loafCount, loavesPerBake: DEFAULT_SETTINGS.loavesPerBake })); setToast("รีเซ็ตสูตรแล้ว"); };
   const resetProofBake = () => {
     setProofMode(DEFAULT_SETTINGS.proofMode); setColdHours(DEFAULT_SETTINGS.coldHours); setFridgeTemp(DEFAULT_SETTINGS.fridgeTemp);
     setBakeMode(DEFAULT_SETTINGS.bakeMode); setSteamWater(DEFAULT_SETTINGS.steamWater); setOvenVolume(DEFAULT_SETTINGS.ovenVolume);
@@ -405,7 +555,7 @@ export default function Home() {
     setToast("รีเซ็ตไฟนอลพรูฟและการอบแล้ว");
   };
   const exportSettings = () => {
-    const payload = { app: "DoughGarden", version: 1, exportedAt: new Date().toISOString(), settings: currentSettings(), yeast: { name: yeastName.trim() || "เจ้าก้อนแป้ง", birth: yeastBirth } };
+    const payload = { app: "DoughGarden", version: 2, exportedAt: new Date().toISOString(), settings: currentSettings(), yeast: { name: yeastName.trim() || "เจ้าก้อนแป้ง", birth: yeastBirth }, recipes:savedRecipes, levainBuild:{ startedAt:levainStartedAt, temperature:levainTemperature, starterName:yeastName.trim() || "หัวเชื้อของฉัน", observations:levainObservations } };
     const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
     const link = document.createElement("a"); link.href = url; link.download = `DoughGarden-settings-${new Date().toISOString().slice(0,10)}.json`; link.click();
     URL.revokeObjectURL(url); setToast("ส่งออกไฟล์ค่าตั้งแล้ว");
@@ -417,12 +567,24 @@ export default function Home() {
       const settings = normalizeSettings(payload?.settings || payload);
       setTemperature(settings.temperature); setHumidity(settings.humidity);
       setStarterOld(settings.starterOld); setFeedFlour(settings.feedFlour); setFeedWater(settings.feedWater);
-      setWholeWheat(settings.wholeWheat); setTargetDough(settings.targetDough); setHydration(settings.hydration); setStarterPercent(settings.starterPercent); setLoafCount(settings.loafCount); setLoavesPerBake(Math.min(settings.loafCount,settings.loavesPerBake));
+      setWholeWheat(settings.wholeWheat); setApFlour(settings.apFlour); setRyeFlour(settings.ryeFlour);
+      setTargetDough(settings.targetDough); setHydration(settings.hydration); setStarterPercent(settings.starterPercent);
+      setSaltPercent(settings.saltPercent); setOilPercent(settings.oilPercent); setDoughTemperature(settings.doughTemperature);
+      setLoafCount(settings.loafCount); setLoavesPerBake(Math.min(settings.loafCount,settings.loavesPerBake));
       setProofMode(settings.proofMode); setColdHours(settings.coldHours); setFridgeTemp(settings.fridgeTemp);
       setBakeMode(settings.bakeMode); setSteamWater(settings.steamWater); setOvenVolume(settings.ovenVolume);
       setTrayWidth(settings.trayWidth); setTrayLength(settings.trayLength); setSteamMinutes(settings.steamMinutes); setOvenSeal(settings.ovenSeal); setAlertSound(settings.alertSound); setTargetBakeAt(settings.targetBakeAt);
       if (payload?.yeast?.name) setYeastName(payload.yeast.name);
       if (typeof payload?.yeast?.birth === "string") setYeastBirth(payload.yeast.birth);
+      if (Array.isArray(payload?.recipes)) { setSavedRecipes(payload.recipes); localStorage.setItem("doughgarden-recipes", JSON.stringify(payload.recipes)); }
+      if (payload?.levainBuild?.startedAt) {
+        setLevainStartedAt(payload.levainBuild.startedAt); setLevainTemperature(validNumber(payload.levainBuild.temperature, settings.temperature));
+        const observations = Array.isArray(payload.levainBuild.observations) ? payload.levainBuild.observations : [];
+        setLevainObservations(observations);
+        const latest = observations[observations.length - 1];
+        if (latest) { setLevainRise(validNumber(latest.rise,0)); setLevainStage(LEVAIN_STAGE_LABELS[latest.stage as LevainStage] ? latest.stage : "fed"); }
+        localStorage.setItem("doughgarden-levain-build", JSON.stringify(payload.levainBuild));
+      }
       localStorage.setItem("doughgarden-settings", JSON.stringify(settings));
       if (payload?.yeast) localStorage.setItem("doughgarden-yeast", JSON.stringify(payload.yeast));
       setToast("นำเข้าค่าตั้งสำเร็จแล้ว");
@@ -436,9 +598,10 @@ export default function Home() {
     const firstBake = new Date(targetBakeAt);
     if (Number.isNaN(firstBake.getTime())) return null;
     const start = new Date(firstBake.getTime() - hoursUntilFirstBake * 3600000);
+    const feedStarterAt = new Date(start.getTime() - levainPeakHours * 3600000);
     const allBakesDone = new Date(firstBake.getTime() + (bakeBatches * bakeCycleHours + Math.max(0, bakeBatches - 1) * .2) * 3600000);
-    return { firstBake, start, allBakesDone, startsInPast: start.getTime() < Date.now() };
-  }, [targetBakeAt, hoursUntilFirstBake, bakeBatches, bakeCycleHours]);
+    return { firstBake, start, feedStarterAt, allBakesDone, startsInPast: start.getTime() < Date.now() };
+  }, [targetBakeAt, hoursUntilFirstBake, levainPeakHours, bakeBatches, bakeCycleHours]);
   const thaiDateTime = (date: Date) => date.toLocaleString("th-TH", { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
   const compactThaiDateTime = (date: Date) => date.toLocaleString("th-TH", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
   const phaseTimeline = useMemo(() => {
@@ -461,6 +624,8 @@ export default function Home() {
     setTargetBakeAt(time ? `${targetBakeDate || localDate.toISOString().slice(0, 10)}T${time}` : "");
   };
   const starterHydration = ((starterOld / 2 + feedWater) / Math.max(.1, starterOld / 2 + feedFlour)) * 100;
+  const levainPredictedPeak = levainStartedAt ? new Date(new Date(levainStartedAt).getTime() + levainPeakHours * 3600000) : null;
+  const latestLevainObservation = levainObservations[levainObservations.length - 1];
 
   return <main>
     {toast && <button className="toast" onClick={() => setToast("")}>✓ {toast}</button>}
@@ -478,7 +643,7 @@ export default function Home() {
     <section className="bake-planner shell" aria-labelledby="bake-planner-title">
       <div className="bake-planner-copy"><p className="section-kicker">แพลนเวลาอบ</p><h2 id="bake-planner-title">อยากอบวันไหน<br/>ต้องเริ่มทำเมื่อไร</h2><span>ระบบคำนวณย้อนกลับตามอุณหภูมิ สูตร ไฟนอลพรูฟ และจำนวนโลฟที่เลือกไว้</span></div>
       <div className="bake-planner-inputs"><label>วันที่อยากอบ<input aria-label="วันที่อยากอบ" type="date" value={targetBakeDate} onChange={e=>setBakeDate(e.target.value)}/></label><label>เวลาเข้าอบรอบแรก<input aria-label="เวลาเข้าอบรอบแรก" type="time" value={targetBakeTime} onChange={e=>setBakeTime(e.target.value)}/></label></div>
-      <div className={`bake-plan-result ${bakePlan?.startsInPast?"warning":""}`}>{bakePlan?<><div><span>อยากอบ</span><strong>{thaiDateTime(bakePlan.firstBake)}</strong></div><i>←</i><div className="start-answer"><span>ต้องเริ่มทำ</span><strong>{thaiDateTime(bakePlan.start)}</strong></div><small>คำนวณย้อนกลับ {duration(hoursUntilFirstBake)}{loafCount>1?` · ทำ ${loafCount} โลฟ · อบ ${bakeBatches} รอบ`:""}</small>{bakeBatches>1&&<small>อบครบทุกรอบประมาณ {thaiDateTime(bakePlan.allBakesDone)}</small>}{bakePlan.startsInPast&&<em>เวลาที่ต้องเริ่มผ่านไปแล้ว กรุณาเลือกเวลาอบที่ช้ากว่านี้</em>}</>:<><div className="plan-placeholder"><span>เลือกวันที่และเวลาอยากอบ</span><strong>แล้วเวลาที่ต้องเริ่มทำจะแสดงตรงนี้</strong></div></>}</div>
+      <div className={`bake-plan-result ${bakePlan?.startsInPast?"warning":""}`}>{bakePlan?<><div><span>อยากอบ</span><strong>{thaiDateTime(bakePlan.firstBake)}</strong></div><i>←</i><div className="start-answer"><span>ต้องเริ่มทำโดว์</span><strong>{thaiDateTime(bakePlan.start)}</strong></div><small className="starter-plan-time">เลี้ยงหัวเชื้อสำหรับรอบนี้ประมาณ <b>{thaiDateTime(bakePlan.feedStarterAt)}</b> · คาดว่าพีคใน {duration(levainPeakHours)}</small><small>คำนวณย้อนกลับ {duration(hoursUntilFirstBake)}{loafCount>1?` · ทำ ${loafCount} โลฟ · อบ ${bakeBatches} รอบ`:""}</small>{bakeBatches>1&&<small>อบครบทุกรอบประมาณ {thaiDateTime(bakePlan.allBakesDone)}</small>}{bakePlan.startsInPast&&<em>เวลาที่ต้องเริ่มผ่านไปแล้ว กรุณาเลือกเวลาอบที่ช้ากว่านี้</em>}</>:<><div className="plan-placeholder"><span>เลือกวันที่และเวลาอยากอบ</span><strong>แล้วเวลาที่ต้องเริ่มทำจะแสดงตรงนี้</strong></div></>}</div>
     </section>
 
     <section className="day-tracker shell" id="day-tracker">
@@ -497,10 +662,37 @@ export default function Home() {
     </section>
     <div className="shell setting-actions starter-actions"><button onClick={saveSettings}>บันทึกค่าการเลี้ยงหัวเชื้อ</button><button className="secondary" onClick={resetStarter}>รีเซ็ต</button></div>
 
-    <section className="section shell" id="recipe"><header><p className="section-kicker">01 — เรซิพี</p><h2>ตั้งสูตรและขนาดก้อน</h2><span>สูตรทั้งหมดคำนวณรวมแป้งและน้ำในหัวเชื้อแล้ว</span></header>
-      <div className="recipe-grid"><div className="control-card"><div className="control-row"><label>โฮลวีท <strong>{wholeWheat}%</strong></label><input type="range" min="0" max="80" step="5" value={wholeWheat} onChange={e=>setWholeWheat(+e.target.value)}/></div><div className="control-row"><label>ไฮเดรชัน <strong>{hydration}%</strong></label><input type="range" min="55" max="90" value={hydration} onChange={e=>setHydration(+e.target.value)}/></div><div className="control-row"><label>หัวเชื้อ <strong>{starterPercent}%</strong></label><input type="range" min="5" max="35" value={starterPercent} onChange={e=>setStarterPercent(+e.target.value)}/></div><div className="loaf-settings"><div><span>จำนวนโลฟ</span><div className="loaf-buttons">{[1,2,3,4,5,6].map(n=><button type="button" className={loafCount===n?"selected":""} onClick={()=>{setLoafCount(n);setLoavesPerBake(current=>Math.min(current,n));}} key={n}>{n}</button>)}</div></div>{loafCount>1&&<div><span>เตาอบพร้อมกัน</span><div className="loaf-buttons">{Array.from({length:loafCount},(_,i)=>i+1).map(n=><button type="button" className={loavesPerBake===n?"selected":""} onClick={()=>setLoavesPerBake(n)} key={n}>{n}</button>)}</div></div>}</div><label className="weight-input">น้ำหนักโดว์ต่อโลฟ <span><input type="number" min="300" max="1800" value={targetDough} onChange={e=>setTargetDough(clamp(+e.target.value,300))}/> กรัม</span></label><div className="presets">{[600,800,1000,1200].map(n=><button className={targetDough===n?"selected":""} onClick={()=>setTargetDough(n)} key={n}>{n} กรัม</button>)}</div><div className="multi-loaf-time"><span>เวลาหมักใช้ร่วมกัน</span><strong>เพิ่มขึ้นรูป {duration(extraShapingHours)}</strong><strong>อบ {bakeBatches} รอบ</strong></div></div>
-      <div className="formula-card"><div className="formula-head"><div><span>ยัวร์ฟอร์มูลา · {loafCount} โลฟ</span><h3>{wholeWheat ? `โฮลวีท ${wholeWheat}%` : "คลาสสิกไวต์"}</h3><small>{loafCount} × {targetDough} กรัม</small></div><strong>{recipe.totalDough}<small> กรัม</small></strong></div><div className="ingredients"><p><span>แป้งขาว</span><b>{round(recipe.white)} กรัม</b></p><p><span>แป้งโฮลวีท</span><b>{round(recipe.whole)} กรัม</b></p><p><span>น้ำ</span><b>{round(recipe.water)} กรัม</b></p><p><span>หัวเชื้อ 100%</span><b>{round(recipe.levain)} กรัม</b></p><p><span>เกลือ 2%</span><b>{round(recipe.salt)} กรัม</b></p></div><div className="weight-flow"><span>รวม {recipe.totalDough} กรัม</span><i>→</i><span>หลังอบต่อโลฟ <b>{Math.round(recipe.bakedEach)} กรัม</b> · รวม <b>{Math.round(recipe.baked)} กรัม</b></span></div></div></div>
-      <div className="setting-actions section-wide"><button onClick={saveSettings}>บันทึกค่าสูตร</button><button className="secondary" onClick={resetRecipe}>รีเซ็ตสูตร</button></div>
+    <section className="levain-tracker shell" id="levain-tracker">
+      <div className="levain-heading"><p className="section-kicker">เลอแวงบิลด์ — {yeastName.trim() || "หัวเชื้อสำหรับรอบนี้"}</p><h2>ติดตามพัฒนาการก่อนนำไปทำขนมปัง</h2><p>บันทึกเปอร์เซ็นต์การขึ้นและสภาพจริง ไม่ตัดสินจากเวลาเพียงอย่างเดียว</p></div>
+      <div className={`levain-readiness ${levainReadiness.key}`}><span>สถานะปัจจุบัน</span><strong>{levainReadiness.label}</strong><p>{levainReadiness.detail}</p><div><b>{levainRise}%</b><i><em style={{width:`${Math.min(150,levainRise)/1.5}%`}}/></i></div>{levainPredictedPeak&&<small>คาดว่าพีคประมาณ {thaiDateTime(levainPredictedPeak)}</small>}</div>
+      <div className="levain-controls">
+        <label>เริ่มให้อาหาร<input type="datetime-local" value={levainStartedAt} onChange={e=>setLevainStartedAt(e.target.value)}/></label>
+        <label>อุณหภูมิหัวเชื้อ<span><input type="number" min="18" max="35" step=".5" value={levainTemperature} onChange={e=>setLevainTemperature(clamp(+e.target.value,18))}/> °C</span></label>
+        <label className="levain-rise-control">ปริมาตรเพิ่มขึ้น <strong>{levainRise}%</strong><input type="range" min="0" max="150" step="5" value={levainRise} onChange={e=>setLevainRise(+e.target.value)}/></label>
+        <label>ลักษณะที่เห็น<select value={levainStage} onChange={e=>setLevainStage(e.target.value as LevainStage)}>{(Object.entries(LEVAIN_STAGE_LABELS) as [LevainStage,string][]).map(([key,label])=><option value={key} key={key}>{label}</option>)}</select></label>
+        <label className="levain-note">โน้ต<textarea value={levainNote} maxLength={180} onChange={e=>setLevainNote(e.target.value)} placeholder="เช่น ฟองทั่ว ยอดยังนูน กลิ่นโยเกิร์ตอ่อน ๆ"/></label>
+        <div className="levain-actions"><button type="button" onClick={startLevainBuild}>เริ่มรอบใหม่</button><button type="button" onClick={()=>addLevainObservation(false)}>＋ บันทึกพัฒนาการ</button><button type="button" className="ready" onClick={()=>addLevainObservation(true)}>✓ พร้อมใช้ทำขนมปัง</button><button type="button" className="secondary" onClick={resetLevainBuild}>รีเซ็ตแทร็กเกอร์</button></div>
+      </div>
+      <div className="levain-history"><div className="levain-history-head"><strong>ไทม์ไลน์รอบการเลี้ยง</strong><span>{levainObservations.length} บันทึก · อัตราเลี้ยง {round(starterOld)} : {round(feedFlour)} : {round(feedWater)}</span></div>{levainObservations.length?<div className="levain-observations">{[...levainObservations].reverse().map((item,index)=><article className={index===0?"latest":""} key={item.id}><time>{thaiDateTime(new Date(item.at))}</time><strong>{LEVAIN_STAGE_LABELS[item.stage]} · ขึ้น {item.rise}%</strong>{item.note&&<p>{item.note}</p>}</article>)}</div>:<p className="levain-empty">กด “เริ่มรอบใหม่” หลังให้อาหาร แล้วกลับมาบันทึกทุกครั้งที่เห็นการเปลี่ยนแปลง</p>}</div>
+      {latestLevainObservation&&<div className="levain-use-note"><b>ข้อมูลล่าสุด</b><span>{LEVAIN_STAGE_LABELS[latestLevainObservation.stage]} · {latestLevainObservation.rise}%</span><small>ก่อนใช้จริงควรเห็นฟองทั่ว ยอดยังนูน และไม่เริ่มยุบ</small></div>}
+    </section>
+
+    <section className="section shell" id="recipe"><header><p className="section-kicker">01 — เรซิพีไลบรารี</p><h2>เลือก ปรับ และบันทึกสูตร</h2><span>สัดส่วนแป้งรวม 100% และคำนวณแป้ง/น้ำที่อยู่ในหัวเชื้อแล้ว</span></header>
+      <div className="recipe-preset-grid">{RECIPE_PRESETS.map(preset=><button type="button" onClick={()=>applyPreset(preset)} key={preset.id}><span>{preset.name}</span><small>{preset.description}</small><b>น้ำ {preset.hydration}% · Starter {preset.starterPercent}%</b></button>)}</div>
+      <div className="recipe-grid">
+        <div className="control-card">
+          <div className="recipe-name-field"><label>ชื่อสูตรของฉัน<input type="text" maxLength={60} value={recipeName} onChange={e=>setRecipeName(e.target.value)} placeholder="เช่น สูตรวันอาทิตย์"/></label><span>{activeRecipeId?"กำลังแก้สูตรที่บันทึกไว้":"บันทึกเป็นสูตรใหม่"}</span></div>
+          <div className="flour-mix"><div className="bread-share"><span>แป้งขนมปัง (Bread Flour)</span><strong>{recipe.breadPercent}%</strong><small>ส่วนที่เหลืออัตโนมัติ · อย่างน้อย 10%</small></div><label>แป้งอเนกประสงค์ (AP)<span><input type="number" min="0" max="90" value={apFlour} onChange={e=>setFlourPercent("ap",+e.target.value)}/>%</span></label><label>โฮลวีท<span><input type="number" min="0" max="90" value={wholeWheat} onChange={e=>setFlourPercent("whole",+e.target.value)}/>%</span></label><label>ไรย์<span><input type="number" min="0" max="30" value={ryeFlour} onChange={e=>setFlourPercent("rye",+e.target.value)}/>%</span></label></div>
+          <div className="control-row"><label>ไฮเดรชันจริง <strong>{hydration}%</strong></label><input type="range" min="55" max="90" value={hydration} onChange={e=>{setHydration(+e.target.value);setActiveRecipeId("");}}/></div>
+          <div className="control-row"><label>หัวเชื้อ 100% Hydration <strong>{starterPercent}%</strong></label><input type="range" min="5" max="35" value={starterPercent} onChange={e=>{setStarterPercent(+e.target.value);setActiveRecipeId("");}}/></div>
+          <div className="recipe-minor-settings"><label>เกลือ<span><input type="number" min="1" max="3" step=".1" value={saltPercent} onChange={e=>setSaltPercent(clamp(+e.target.value,1))}/>%</span></label><label>น้ำมัน<span><input type="number" min="0" max="5" step=".5" value={oilPercent} onChange={e=>setOilPercent(clamp(+e.target.value))}/>%</span></label><label>อุณหภูมิกลางโดเป้าหมาย<span><input type="number" min="20" max="30" step=".5" value={doughTemperature} onChange={e=>setDoughTemperature(clamp(+e.target.value,20))}/>°C</span></label></div>
+          <div className="loaf-settings"><div><span>จำนวนโลฟ</span><div className="loaf-buttons">{[1,2,3,4,5,6].map(n=><button type="button" className={loafCount===n?"selected":""} onClick={()=>{setLoafCount(n);setLoavesPerBake(current=>Math.min(current,n));}} key={n}>{n}</button>)}</div></div>{loafCount>1&&<div><span>เตาอบพร้อมกัน</span><div className="loaf-buttons">{Array.from({length:loafCount},(_,i)=>i+1).map(n=><button type="button" className={loavesPerBake===n?"selected":""} onClick={()=>setLoavesPerBake(n)} key={n}>{n}</button>)}</div></div>}</div>
+          <label className="weight-input">น้ำหนักโดว์ต่อโลฟ <span><input type="number" min="300" max="1800" value={targetDough} onChange={e=>setTargetDough(clamp(+e.target.value,300))}/> กรัม</span></label><div className="presets">{[600,800,950,1000,1200].map(n=><button className={targetDough===n?"selected":""} onClick={()=>setTargetDough(n)} key={n}>{n} กรัม</button>)}</div><div className="multi-loaf-time"><span>เวลาหมักใช้ร่วมกัน</span><strong>เพิ่มขึ้นรูป {duration(extraShapingHours)}</strong><strong>อบ {bakeBatches} รอบ</strong></div>
+        </div>
+        <div className="formula-card"><div className="formula-head"><div><span>ยัวร์ฟอร์มูลา · {loafCount} โลฟ</span><h3>{recipeName.trim() || "สูตรกำหนดเอง"}</h3><small>{loafCount} × {targetDough} กรัม · Bulk เป้าหมาย {bulkRiseTarget}%</small></div><strong>{recipe.totalDough}<small> กรัม</small></strong></div><div className="ingredients"><p><span>แป้งขนมปัง</span><b>{round(recipe.bread)} กรัม</b></p>{apFlour>0&&<p><span>แป้งอเนกประสงค์</span><b>{round(recipe.ap)} กรัม</b></p>}{wholeWheat>0&&<p><span>แป้งโฮลวีท</span><b>{round(recipe.whole)} กรัม</b></p>}{ryeFlour>0&&<p><span>แป้งไรย์</span><b>{round(recipe.rye)} กรัม</b></p>}<p><span>น้ำเย็น</span><b>{round(recipe.water)} กรัม</b></p><p><span>หัวเชื้อ 100%</span><b>{round(recipe.levain)} กรัม</b></p><p><span>เกลือ {saltPercent}%</span><b>{round(recipe.salt)} กรัม</b></p>{oilPercent>0&&<p><span>น้ำมัน {oilPercent}%</span><b>{round(recipe.oil)} กรัม</b></p>}</div><div className="bulk-target-card"><span>เป้าหมายบัลก์จากอุณหภูมิกลางโด</span><strong>ขึ้นประมาณ {bulkRiseTarget}%</strong><small>โดว์ {doughTemperature}°C · {proofMode==="room"?"Final Proof อุณหภูมิห้อง":"ขึ้นรูปแล้วเข้าตู้เย็น"} · ใช้สภาพโดว์ยืนยันเสมอ</small></div><div className="weight-flow"><span>รวม {recipe.totalDough} กรัม</span><i>→</i><span>หลังอบต่อโลฟ <b>{Math.round(recipe.bakedEach)} กรัม</b> · รวม <b>{Math.round(recipe.baked)} กรัม</b></span></div></div>
+      </div>
+      <div className="setting-actions section-wide"><button onClick={saveRecipe}>{activeRecipeId?"อัปเดตสูตรนี้":"บันทึกเป็นสูตรใหม่"}</button><button className="secondary" onClick={resetRecipe}>เริ่มสูตรใหม่</button></div>
+      <div className="saved-recipes"><div className="saved-recipes-head"><strong>สูตรที่บันทึกไว้</strong><span>{savedRecipes.length} สูตร · เลือกกลับมาใช้หรือแก้ไขได้</span></div>{savedRecipes.length?<div className="saved-recipe-list">{savedRecipes.map(item=><article className={item.id===activeRecipeId?"active":""} key={item.id}><button type="button" onClick={()=>applyRecipe(item,item.id)}><strong>{item.name}</strong><span>Bread {Math.max(0,100-item.apFlour-item.wholeWheat-item.ryeFlour)}% · AP {item.apFlour}% · Whole {item.wholeWheat}% · Rye {item.ryeFlour}%</span><small>น้ำ {item.hydration}% · Starter {item.starterPercent}% · โดว์ {item.doughTemperature}°C</small></button><button type="button" className="delete" onClick={()=>deleteRecipe(item.id)}>ลบ</button></article>)}</div>:<p className="saved-recipe-empty">เลือกสูตรแนะนำหรือปรับค่าด้านบน แล้วกด “บันทึกเป็นสูตรใหม่”</p>}</div>
     </section>
 
     <section className="section shell setup-section" id="proof"><header><p className="section-kicker">02 — พรีแพร์ยัวร์โพรเซส</p><h2>ตั้งค่าไฟนอลพรูฟและวิธีอบ</h2><span>เลือกสองส่วนนี้ก่อนเริ่มเวิร์กโฟลว์ ระบบจะนำค่าไปปรับขั้นตอนและเวลาให้ทันที</span></header>
@@ -536,7 +728,7 @@ export default function Home() {
         <div className="guide-actions"><button className="start" onClick={startPhase}>{running?"เริ่มนับใหม่":"▶ เริ่มจับเวลา"}</button><button className="next" onClick={completePhase} disabled={activePhase===phases.length-1}>ทำเสร็จแล้ว · ขั้นต่อไป →</button></div>
       </article></div>
     </section>
-    <section className="data-transfer shell" id="data-transfer"><div><p className="section-kicker">แบ็กอัปค่าตั้ง</p><h2>ส่งออกและนำเข้าค่า</h2><p>เก็บสูตร อุณหภูมิ วิธีพรูฟ วิธีอบ และข้อมูลหัวเชื้อเป็นไฟล์เดียว เพื่อนำไปใช้ต่อบนเครื่องอื่น</p></div><div className="transfer-actions"><button onClick={exportSettings}>↓ ส่งออกค่า</button><button className="secondary" onClick={()=>importRef.current?.click()}>↑ นำเข้าค่า</button><input ref={importRef} type="file" accept="application/json,.json" onChange={importSettings}/></div></section>
+    <section className="data-transfer shell" id="data-transfer"><div><p className="section-kicker">แบ็กอัปค่าตั้ง</p><h2>ส่งออกและนำเข้าค่า</h2><p>เก็บคลังสูตร อุณหภูมิ วิธีพรูฟ วิธีอบ หัวเชื้อ และไทม์ไลน์ Levain Build เป็นไฟล์เดียว</p></div><div className="transfer-actions"><button onClick={exportSettings}>↓ ส่งออกค่า</button><button className="secondary" onClick={()=>importRef.current?.click()}>↑ นำเข้าค่า</button><input ref={importRef} type="file" accept="application/json,.json" onChange={importSettings}/></div></section>
     <footer><div className="shell"><span>DoughGarden<small>กระดุ๊กกระดิ๊ก กระจุ๊กกระจิ๊กหัวใจ</small></span><p>อะแดปทีฟไทม์เป็นค่าประมาณ—อุณหภูมิโดว์ ความแข็งแรงของหัวเชื้อ และชนิดแป้งทำให้เวลาเปลี่ยนได้ ให้สภาพโดว์เป็นคำตอบสุดท้าย</p><a href="#top">กลับด้านบน ↑</a></div></footer>
   </main>;
 }

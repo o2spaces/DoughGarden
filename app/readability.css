@@ -1,0 +1,154 @@
+/* Raise secondary text to a comfortable minimum without enlarging headings. */
+.bake-planner-copy > span,
+.bake-planner-inputs label,
+.bake-plan-result div > span,
+.bake-plan-result > small,
+.bake-plan-result > em {
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.phase-nav-time {
+  gap: 4px;
+  font-size: 11px !important;
+  line-height: 1.55;
+}
+
+.phase-date-time div > span {
+  font-size: 11px;
+}
+
+.phase-date-time div > strong {
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.scale,
+.climate-card > p,
+.mini-input label,
+.starter-result span,
+.starter-result small {
+  font-size: 13px;
+}
+
+.climate-grid > label,
+.climate-grid > div {
+  font-size: 13px;
+}
+
+.formula-head span,
+.accordion-head b,
+.guide-top p,
+.instruction li span,
+.bake-steps b,
+.calc-fields label,
+.formula-values b {
+  font-size: 12px;
+}
+
+.saved-starters-head span,
+.starter-select span,
+.tracker-fields label small,
+.starter-delete {
+  font-size: 12px;
+}
+
+.starter-select b,
+.saved-empty,
+.age-display > span,
+.age-display p,
+.tracker-fields label,
+.loaf-settings > div > span,
+.formula-head > div > small {
+  font-size: 13px;
+}
+
+.multi-loaf-time {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.multi-loaf-time strong {
+  font-size: 13px;
+}
+
+.sound-popover > p {
+  font-size: 11px;
+}
+
+.sound-choice > strong {
+  font-size: 13px;
+}
+
+.sound-choice small {
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.milestone-schedule > p {
+  font-size: 12px;
+}
+
+.milestone-schedule span > b,
+.milestone-schedule span > small {
+  font-size: 11px;
+}
+
+.milestone-schedule span > strong {
+  font-size: 13px;
+}
+
+/* Keep the new recipe library and levain tracker legible on dark backgrounds. */
+.recipe-preset-grid small,
+.recipe-name-field label,
+.flour-mix label,
+.recipe-minor-settings label,
+.saved-recipe-list span,
+.saved-recipe-list small,
+.saved-recipes-head span,
+.bulk-target-card span,
+.bulk-target-card small {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.recipe-preset-grid b,
+.recipe-name-field > span,
+.bread-share span,
+.bread-share small {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.levain-heading > p:last-child,
+.levain-readiness > p,
+.levain-controls > label,
+.levain-history-head span,
+.levain-observations strong,
+.levain-observations p,
+.levain-empty,
+.levain-use-note {
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.levain-readiness > span,
+.levain-readiness > small,
+.levain-observations time {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+@media (max-width: 600px) {
+  .phase-nav-time {
+    font-size: 10px !important;
+  }
+
+  .bake-planner-copy > span,
+  .bake-planner-inputs label,
+  .bake-plan-result div > span,
+  .bake-plan-result > small,
+  .bake-plan-result > em {
+    font-size: 11px;
+  }
+}
