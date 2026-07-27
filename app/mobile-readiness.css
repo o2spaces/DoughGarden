@@ -1,0 +1,181 @@
+/*
+ * Final mobile-readiness pass.
+ * Loaded last so these rules safely improve small-screen usability without
+ * changing the recipe engine, saved data, or desktop layout.
+ */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  background: var(--bg);
+}
+
+body {
+  min-width: 0;
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+}
+
+img,
+svg {
+  max-width: 100%;
+}
+
+.shell,
+.recipe-grid,
+.workflow,
+.bake-guide,
+.proof-grid,
+.formula-card,
+.control-card,
+.guide-card,
+.data-transfer,
+.day-tracker,
+.levain-tracker,
+.recipe-preset-grid,
+.saved-recipe-list,
+.flour-mix,
+.recipe-minor-settings,
+.tracker-fields,
+.starter-strip > *,
+.section header > * {
+  min-width: 0;
+}
+
+.recipe-name-field input,
+.saved-recipe-list strong,
+.saved-recipe-list span,
+.levain-observations p,
+.phase-nav-time {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  /*
+   * 12px is the minimum for supporting copy. Main form controls stay at 16px
+   * to prevent Safari from zooming the page when an input receives focus.
+   */
+  .phase-nav-time,
+  .bake-planner-copy > span,
+  .bake-planner-inputs label,
+  .bake-plan-result div > span,
+  .bake-plan-result > small,
+  .bake-plan-result > em,
+  .brand > strong small {
+    font-size: 12px !important;
+    line-height: 1.55;
+  }
+
+  input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  button,
+  [role="button"] {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .speaker-btn,
+  .loaf-buttons button,
+  .alert-sound-control select,
+  .alert-sound-control button,
+  .levain-actions button,
+  .setting-actions button,
+  .transfer-actions button,
+  .tracker-fields button {
+    min-height: 44px;
+    height: auto;
+  }
+
+  .hero-actions a {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mode-tabs {
+    padding-bottom: 4px;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sound-popover {
+    right: max(14px, env(safe-area-inset-right));
+    left: max(14px, env(safe-area-inset-left));
+  }
+
+  .toast {
+    max-width: calc(100% - 28px);
+    white-space: normal;
+    text-align: center;
+  }
+
+  footer > div {
+    padding-bottom: max(25px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Keep the full header usable on 320–340px-wide phones. */
+@media (max-width: 340px) {
+  .nav.shell {
+    gap: 8px;
+    padding-inline: 10px;
+  }
+
+  .nav-actions {
+    gap: 5px;
+  }
+
+  .brand {
+    gap: 7px;
+  }
+
+  .brand > strong small {
+    display: none;
+  }
+
+  .notify-btn {
+    padding-inline: 9px;
+  }
+
+  .hero h1 {
+    font-size: 36px;
+  }
+
+  .climate-card,
+  .control-card,
+  .formula-card,
+  .guide-card,
+  .proof-grid article,
+  .method-hero,
+  .bake-steps,
+  .accordion-body {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .setting-actions,
+  .transfer-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .nav.shell {
+    height: 64px;
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-left: max(14px, env(safe-area-inset-left));
+  }
+
+  .sound-popover {
+    top: 58px;
+    max-height: calc(100dvh - 70px);
+    overflow-y: auto;
+  }
+}

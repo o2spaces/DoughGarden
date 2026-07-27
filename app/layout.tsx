@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Anuphan, Mitr } from "next/font/google";
 import "./globals.css";
 import "./accordion.css";
@@ -14,6 +14,7 @@ import "./bake-planner.css";
 import "./recipe-library.css";
 import "./levain-tracker.css";
 import "./readability.css";
+import "./mobile-readiness.css";
 
 const anuphan = Anuphan({
   variable: "--font-anuphan",
@@ -38,6 +39,13 @@ export const metadata: Metadata = {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#15120f",
 };
 
 export default function RootLayout({
