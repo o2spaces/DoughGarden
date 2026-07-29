@@ -12,7 +12,8 @@ type LevainStage = "fed" | "bubbles" | "rising" | "doubled" | "peak" | "falling"
 type SavedRecipe = {
   id: string; name: string; savedAt: string; targetDough: number; hydration: number;
   starterPercent: number; saltPercent: number; oilPercent: number; apFlour: number;
-  wholeWheat: number; ryeFlour: number; doughTemperature: number;
+  speltFlour: number; wholeWheat: number; ryeFlour: number; doughTemperature: number;
+  flourProfile: string;
 };
 type LevainObservation = { id: string; at: string; rise: number; stage: LevainStage; note: string };
 type LevainBuild = {
@@ -20,10 +21,12 @@ type LevainBuild = {
 };
 
 const RECIPE_PRESETS = [
-  { id:"thai-balanced", name:"ครัวไทยบาลานซ์", description:"ฟูดี เนื้อชุ่ม จัดการง่าย", apFlour:10, wholeWheat:10, ryeFlour:0, hydration:71, starterPercent:20, saltPercent:2, oilPercent:0, doughTemperature:26 },
-  { id:"soft-high", name:"นุ่มและขึ้นสูง", description:"Bread 80% · AP 15% · Rye 5%", apFlour:15, wholeWheat:0, ryeFlour:5, hydration:71, starterPercent:20, saltPercent:2, oilPercent:2, doughTemperature:26 },
-  { id:"aromatic-rye", name:"หอมไรย์ 5%", description:"ชุ่ม หอม หมักไวขึ้นเล็กน้อย", apFlour:10, wholeWheat:5, ryeFlour:5, hydration:72, starterPercent:20, saltPercent:2, oilPercent:0, doughTemperature:25 },
-  { id:"open-crumb", name:"อาร์ติซานโพรงเปิด", description:"แป้งแรง 90% · โฮลวีท 10%", apFlour:0, wholeWheat:10, ryeFlour:0, hydration:75, starterPercent:20, saltPercent:2, oilPercent:0, doughTemperature:25 },
+  { id:"venus-spelt-large", name:"ก้อนใหญ่ (ฟูสูง) · Venus–Spelt", description:"แป้งเท่ากัน · ฟูสูงกว่า · Venus 70 / Spelt 15 / Whole 10 / Rye 5", targetDough:950, apFlour:0, speltFlour:15, wholeWheat:10, ryeFlour:5, hydration:73, starterPercent:20, saltPercent:2, oilPercent:0, doughTemperature:26, flourProfile:"NS-Venus ญี่ปุ่น · สเปลต์เยอรมัน · โฮลวีตเยอรมัน · ไรย์เยอรมัน · ปริมาณแป้งเท่ากับสูตรก้อนเล็ก แต่คาดว่าจะขึ้นฟูและมีปริมาตรมากกว่า" },
+  { id:"tfm-french-small", name:"ก้อนเล็ก (ฟูน้อย) · TFM–French Grain", description:"แป้งเท่ากัน · ฟูน้อยกว่า · TFM 75 / Whole Wheat 20 / Rye 5", targetDough:950, apFlour:0, speltFlour:0, wholeWheat:20, ryeFlour:5, hydration:73, starterPercent:20, saltPercent:2, oilPercent:0, doughTemperature:26, flourProfile:"TFM แป้งขนมปังโปรตีนสูง · โฮลวีตฝรั่งเศส · ไรย์ฝรั่งเศส · ปริมาณแป้งเท่ากับสูตรก้อนใหญ่ แต่คาดว่าจะฟูน้อยกว่าและเนื้อแน่นกว่า" },
+  { id:"thai-balanced", name:"ครัวไทยบาลานซ์", description:"ฟูดี เนื้อชุ่ม จัดการง่าย", targetDough:800, apFlour:10, speltFlour:0, wholeWheat:10, ryeFlour:0, hydration:71, starterPercent:20, saltPercent:2, oilPercent:0, doughTemperature:26, flourProfile:"" },
+  { id:"soft-high", name:"นุ่มและขึ้นสูง", description:"Bread 80% · AP 15% · Rye 5%", targetDough:800, apFlour:15, speltFlour:0, wholeWheat:0, ryeFlour:5, hydration:71, starterPercent:20, saltPercent:2, oilPercent:2, doughTemperature:26, flourProfile:"" },
+  { id:"aromatic-rye", name:"หอมไรย์ 5%", description:"ชุ่ม หอม หมักไวขึ้นเล็กน้อย", targetDough:800, apFlour:10, speltFlour:0, wholeWheat:5, ryeFlour:5, hydration:72, starterPercent:20, saltPercent:2, oilPercent:0, doughTemperature:25, flourProfile:"" },
+  { id:"open-crumb", name:"อาร์ติซานโพรงเปิด", description:"แป้งแรง 90% · โฮลวีท 10%", targetDough:800, apFlour:0, speltFlour:0, wholeWheat:10, ryeFlour:0, hydration:75, starterPercent:20, saltPercent:2, oilPercent:0, doughTemperature:25, flourProfile:"" },
 ] as const;
 
 const LEVAIN_STAGE_LABELS: Record<LevainStage, string> = {
@@ -39,7 +42,7 @@ const STRENGTH_MILESTONES: TimerMilestone[] = [
 
 const DEFAULT_SETTINGS = {
   temperature: 28, humidity: 70, starterOld: 20, feedFlour: 40, feedWater: 40,
-  wholeWheat: 10, apFlour: 10, ryeFlour: 0, targetDough: 800, hydration: 71,
+  wholeWheat: 10, apFlour: 10, speltFlour: 0, ryeFlour: 0, flourProfile: "", targetDough: 800, hydration: 71,
   starterPercent: 20, saltPercent: 2, oilPercent: 0, doughTemperature: 26,
   loafCount: 1, loavesPerBake: 1,
   proofMode: "cold" as ProofMode, coldHours: 12, fridgeTemp: 4,
@@ -60,7 +63,9 @@ const normalizeSettings = (data: Record<string, unknown> | null | undefined): Sa
   feedWater: validNumber(data?.feedWater, DEFAULT_SETTINGS.feedWater),
   wholeWheat: validNumber(data?.wholeWheat, DEFAULT_SETTINGS.wholeWheat),
   apFlour: validNumber(data?.apFlour, data && "wholeWheat" in data ? 0 : DEFAULT_SETTINGS.apFlour),
+  speltFlour: validNumber(data?.speltFlour, DEFAULT_SETTINGS.speltFlour),
   ryeFlour: validNumber(data?.ryeFlour, DEFAULT_SETTINGS.ryeFlour),
+  flourProfile: typeof data?.flourProfile === "string" ? data.flourProfile : DEFAULT_SETTINGS.flourProfile,
   targetDough: validNumber(data?.targetDough, DEFAULT_SETTINGS.targetDough),
   hydration: validNumber(data?.hydration, DEFAULT_SETTINGS.hydration),
   starterPercent: validNumber(data?.starterPercent, DEFAULT_SETTINGS.starterPercent),
@@ -82,6 +87,26 @@ const normalizeSettings = (data: Record<string, unknown> | null | undefined): Sa
   alertSound: data?.alertSound === "bell" || data?.alertSound === "chime" || data?.alertSound === "soft" || data?.alertSound === "none" ? data.alertSound : DEFAULT_SETTINGS.alertSound,
   targetBakeAt: typeof data?.targetBakeAt === "string" ? data.targetBakeAt : DEFAULT_SETTINGS.targetBakeAt,
 });
+
+const normalizeRecipe = (data: Record<string, unknown> | null | undefined): SavedRecipe | null => {
+  if (!data?.id || !data?.name || typeof data.hydration !== "number") return null;
+  return {
+    id: String(data.id),
+    name: String(data.name),
+    savedAt: typeof data.savedAt === "string" ? data.savedAt : new Date().toISOString(),
+    targetDough: validNumber(data.targetDough, DEFAULT_SETTINGS.targetDough),
+    hydration: validNumber(data.hydration, DEFAULT_SETTINGS.hydration),
+    starterPercent: validNumber(data.starterPercent, DEFAULT_SETTINGS.starterPercent),
+    saltPercent: validNumber(data.saltPercent, DEFAULT_SETTINGS.saltPercent),
+    oilPercent: validNumber(data.oilPercent, DEFAULT_SETTINGS.oilPercent),
+    apFlour: validNumber(data.apFlour, 0),
+    speltFlour: validNumber(data.speltFlour, 0),
+    wholeWheat: validNumber(data.wholeWheat, 0),
+    ryeFlour: validNumber(data.ryeFlour, 0),
+    doughTemperature: validNumber(data.doughTemperature, DEFAULT_SETTINGS.doughTemperature),
+    flourProfile: typeof data.flourProfile === "string" ? data.flourProfile : "",
+  };
+};
 
 const clamp = (n: number, min = 0) => Math.max(min, Number.isFinite(n) ? n : min);
 const round = (n: number) => Math.round(n * 10) / 10;
@@ -114,7 +139,9 @@ export default function Home() {
   const [feedWater, setFeedWater] = useState(40);
   const [wholeWheat, setWholeWheat] = useState(10);
   const [apFlour, setApFlour] = useState(10);
+  const [speltFlour, setSpeltFlour] = useState(0);
   const [ryeFlour, setRyeFlour] = useState(0);
+  const [flourProfile, setFlourProfile] = useState("");
   const [targetDough, setTargetDough] = useState(800);
   const [hydration, setHydration] = useState(71);
   const [starterPercent, setStarterPercent] = useState(20);
@@ -168,13 +195,13 @@ export default function Home() {
     const tempFactor = Math.pow(2, (26 - doughTemperature) / 10);
     const roomTempFactor = Math.pow(2, (26 - temperature) / 10);
     const humidityFactor = humidity < 55 ? 1.06 : humidity > 82 ? 0.96 : 1;
-    const wholeFactor = 1 - (wholeWheat + ryeFlour * 1.4) * 0.0015;
+    const wholeFactor = 1 - (wholeWheat + speltFlour * .5 + ryeFlour * 1.4) * 0.0015;
     const starterFactor = Math.pow(20 / Math.max(starterPercent, 5), 0.42);
     const bulk = 4.5 * tempFactor * humidityFactor * wholeFactor * starterFactor;
     const roomProof = 2.1 * roomTempFactor * humidityFactor;
     const starterPeak = 6 * roomTempFactor * Math.pow(Math.max(feedFlour / Math.max(starterOld, 1), .25) / 2, .22);
     return { tempFactor, bulk, roomProof, starterPeak };
-  }, [temperature, doughTemperature, humidity, wholeWheat, ryeFlour, starterPercent, feedFlour, starterOld]);
+  }, [temperature, doughTemperature, humidity, wholeWheat, speltFlour, ryeFlour, starterPercent, feedFlour, starterOld]);
 
   const recipe = useMemo(() => {
     const totalDough = targetDough * loafCount;
@@ -184,15 +211,16 @@ export default function Home() {
     const levainWater = levain / 2;
     const whole = totalFlour * wholeWheat / 100;
     const ap = totalFlour * apFlour / 100;
+    const spelt = totalFlour * speltFlour / 100;
     const rye = totalFlour * ryeFlour / 100;
-    const breadPercent = Math.max(0, 100 - wholeWheat - apFlour - ryeFlour);
+    const breadPercent = Math.max(0, 100 - wholeWheat - apFlour - speltFlour - ryeFlour);
     const breadTotal = totalFlour * breadPercent / 100;
     const bread = Math.max(0, breadTotal - levainFlour);
     const water = Math.max(0, totalFlour * hydration / 100 - levainWater);
     const salt = totalFlour * saltPercent / 100;
     const oil = totalFlour * oilPercent / 100;
-    return { totalDough, totalFlour, levain, whole, ap, rye, bread, breadPercent, water, salt, oil, baked: totalDough * .997 * .86, bakedEach: targetDough * .997 * .86 };
-  }, [targetDough, loafCount, hydration, starterPercent, saltPercent, oilPercent, wholeWheat, apFlour, ryeFlour]);
+    return { totalDough, totalFlour, levain, whole, ap, spelt, rye, bread, breadPercent, water, salt, oil, baked: totalDough * .997 * .86, bakedEach: targetDough * .997 * .86 };
+  }, [targetDough, loafCount, hydration, starterPercent, saltPercent, oilPercent, wholeWheat, apFlour, speltFlour, ryeFlour]);
 
   const bulkRiseTarget = useMemo(() => {
     const coldTarget = doughTemperature >= 29 ? 25 : doughTemperature >= 27 ? 30 : doughTemperature >= 24 ? 50 : 75;
@@ -358,7 +386,9 @@ export default function Home() {
         }
         const recipeList = JSON.parse(localStorage.getItem("doughgarden-recipes") || "[]");
         if (Array.isArray(recipeList)) {
-          const validRecipes = recipeList.filter((item): item is SavedRecipe => Boolean(item?.id && item?.name && typeof item?.hydration === "number"));
+          const validRecipes = recipeList
+            .map(item => normalizeRecipe(item))
+            .filter((item): item is SavedRecipe => item !== null);
           setSavedRecipes(validRecipes);
         }
         const levainBuild = JSON.parse(localStorage.getItem("doughgarden-levain-build") || "null") as LevainBuild | null;
@@ -376,7 +406,7 @@ export default function Home() {
         const settings = normalizeSettings(JSON.parse(localStorage.getItem("doughgarden-settings") || "null"));
         setTemperature(settings.temperature); setHumidity(settings.humidity);
         setStarterOld(settings.starterOld); setFeedFlour(settings.feedFlour); setFeedWater(settings.feedWater);
-        setWholeWheat(settings.wholeWheat); setApFlour(settings.apFlour); setRyeFlour(settings.ryeFlour);
+        setWholeWheat(settings.wholeWheat); setApFlour(settings.apFlour); setSpeltFlour(settings.speltFlour); setRyeFlour(settings.ryeFlour); setFlourProfile(settings.flourProfile);
         setTargetDough(settings.targetDough); setHydration(settings.hydration); setStarterPercent(settings.starterPercent);
         setSaltPercent(settings.saltPercent); setOilPercent(settings.oilPercent); setDoughTemperature(settings.doughTemperature);
         setLoafCount(settings.loafCount); setLoavesPerBake(Math.min(settings.loafCount,settings.loavesPerBake));
@@ -474,28 +504,30 @@ export default function Home() {
     if (activeYeastId === id) { setActiveYeastId(""); setYeastName(""); setYeastBirth(""); localStorage.removeItem("doughgarden-yeast"); }
     setToast("ลบรายการหัวเชื้อแล้ว");
   };
-  const applyRecipe = (values: Pick<SavedRecipe, "name" | "targetDough" | "hydration" | "starterPercent" | "saltPercent" | "oilPercent" | "apFlour" | "wholeWheat" | "ryeFlour" | "doughTemperature">, id = "") => {
+  const applyRecipe = (values: Pick<SavedRecipe, "name" | "targetDough" | "hydration" | "starterPercent" | "saltPercent" | "oilPercent" | "apFlour" | "speltFlour" | "wholeWheat" | "ryeFlour" | "doughTemperature" | "flourProfile">, id = "") => {
     setRecipeName(values.name); setTargetDough(values.targetDough); setHydration(values.hydration);
     setStarterPercent(values.starterPercent); setSaltPercent(values.saltPercent); setOilPercent(values.oilPercent);
-    setApFlour(values.apFlour); setWholeWheat(values.wholeWheat); setRyeFlour(values.ryeFlour);
+    setApFlour(values.apFlour); setSpeltFlour(values.speltFlour); setWholeWheat(values.wholeWheat); setRyeFlour(values.ryeFlour); setFlourProfile(values.flourProfile);
     setDoughTemperature(values.doughTemperature); setActiveRecipeId(id);
     setToast(`เปิดสูตร “${values.name}” แล้ว`);
   };
   const applyPreset = (preset: typeof RECIPE_PRESETS[number]) => {
-    applyRecipe({ ...preset, targetDough });
+    applyRecipe(preset);
     setActiveRecipeId("");
   };
-  const setFlourPercent = (kind: "ap" | "whole" | "rye", raw: number) => {
+  const setFlourPercent = (kind: "ap" | "spelt" | "whole" | "rye", raw: number) => {
     const value = Math.max(0, Math.round(raw));
-    if (kind === "ap") setApFlour(Math.min(value, 90 - wholeWheat - ryeFlour));
-    if (kind === "whole") setWholeWheat(Math.min(value, 90 - apFlour - ryeFlour));
-    if (kind === "rye") setRyeFlour(Math.min(value, 90 - apFlour - wholeWheat));
+    if (kind === "ap") setApFlour(Math.min(value, 90 - speltFlour - wholeWheat - ryeFlour));
+    if (kind === "spelt") setSpeltFlour(Math.min(value, 90 - apFlour - wholeWheat - ryeFlour));
+    if (kind === "whole") setWholeWheat(Math.min(value, 90 - apFlour - speltFlour - ryeFlour));
+    if (kind === "rye") setRyeFlour(Math.min(value, 90 - apFlour - speltFlour - wholeWheat));
+    setFlourProfile("");
     setActiveRecipeId("");
   };
   const saveRecipe = () => {
     const name = recipeName.trim() || `สูตร ${savedRecipes.length + 1}`;
     const id = activeRecipeId || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const record: SavedRecipe = { id, name, savedAt:new Date().toISOString(), targetDough, hydration, starterPercent, saltPercent, oilPercent, apFlour, wholeWheat, ryeFlour, doughTemperature };
+    const record: SavedRecipe = { id, name, savedAt:new Date().toISOString(), targetDough, hydration, starterPercent, saltPercent, oilPercent, apFlour, speltFlour, wholeWheat, ryeFlour, doughTemperature, flourProfile };
     const next = [record, ...savedRecipes.filter(item => item.id !== id)];
     localStorage.setItem("doughgarden-recipes", JSON.stringify(next));
     setSavedRecipes(next); setActiveRecipeId(id); setRecipeName(name);
@@ -539,14 +571,14 @@ export default function Home() {
     localStorage.removeItem("doughgarden-levain-build");
     setToast("เริ่มรอบการเลี้ยงใหม่ได้แล้ว");
   };
-  const currentSettings = (): SavedSettings => ({ temperature, humidity, starterOld, feedFlour, feedWater, wholeWheat, apFlour, ryeFlour, targetDough, hydration, starterPercent, saltPercent, oilPercent, doughTemperature, loafCount, loavesPerBake, proofMode, coldHours, fridgeTemp, bakeMode, steamWater, ovenVolume, trayWidth, trayLength, steamMinutes, ovenSeal, alertSound, targetBakeAt });
+  const currentSettings = (): SavedSettings => ({ temperature, humidity, starterOld, feedFlour, feedWater, wholeWheat, apFlour, speltFlour, ryeFlour, flourProfile, targetDough, hydration, starterPercent, saltPercent, oilPercent, doughTemperature, loafCount, loavesPerBake, proofMode, coldHours, fridgeTemp, bakeMode, steamWater, ovenVolume, trayWidth, trayLength, steamMinutes, ovenSeal, alertSound, targetBakeAt });
   const saveSettings = () => {
     localStorage.setItem("doughgarden-settings", JSON.stringify(currentSettings()));
     setToast("บันทึกค่าที่ปรับไว้ในเครื่องนี้แล้ว");
   };
   const resetClimate = () => { setTemperature(DEFAULT_SETTINGS.temperature); setHumidity(DEFAULT_SETTINGS.humidity); localStorage.setItem("doughgarden-settings", JSON.stringify({ ...currentSettings(), temperature: DEFAULT_SETTINGS.temperature, humidity: DEFAULT_SETTINGS.humidity })); setToast("รีเซ็ตอุณหภูมิและความชื้นแล้ว"); };
   const resetStarter = () => { setStarterOld(DEFAULT_SETTINGS.starterOld); setFeedFlour(DEFAULT_SETTINGS.feedFlour); setFeedWater(DEFAULT_SETTINGS.feedWater); localStorage.setItem("doughgarden-settings", JSON.stringify({ ...currentSettings(), starterOld: DEFAULT_SETTINGS.starterOld, feedFlour: DEFAULT_SETTINGS.feedFlour, feedWater: DEFAULT_SETTINGS.feedWater })); setToast("รีเซ็ตค่าหัวเชื้อแล้ว"); };
-  const resetRecipe = () => { setRecipeName("สูตรครัวไทยของฉัน"); setActiveRecipeId(""); setWholeWheat(DEFAULT_SETTINGS.wholeWheat); setApFlour(DEFAULT_SETTINGS.apFlour); setRyeFlour(DEFAULT_SETTINGS.ryeFlour); setTargetDough(DEFAULT_SETTINGS.targetDough); setHydration(DEFAULT_SETTINGS.hydration); setStarterPercent(DEFAULT_SETTINGS.starterPercent); setSaltPercent(DEFAULT_SETTINGS.saltPercent); setOilPercent(DEFAULT_SETTINGS.oilPercent); setDoughTemperature(DEFAULT_SETTINGS.doughTemperature); setLoafCount(DEFAULT_SETTINGS.loafCount); setLoavesPerBake(DEFAULT_SETTINGS.loavesPerBake); localStorage.setItem("doughgarden-settings", JSON.stringify({ ...currentSettings(), wholeWheat: DEFAULT_SETTINGS.wholeWheat, apFlour:DEFAULT_SETTINGS.apFlour, ryeFlour:DEFAULT_SETTINGS.ryeFlour, targetDough: DEFAULT_SETTINGS.targetDough, hydration: DEFAULT_SETTINGS.hydration, starterPercent: DEFAULT_SETTINGS.starterPercent, saltPercent:DEFAULT_SETTINGS.saltPercent, oilPercent:DEFAULT_SETTINGS.oilPercent, doughTemperature:DEFAULT_SETTINGS.doughTemperature, loafCount: DEFAULT_SETTINGS.loafCount, loavesPerBake: DEFAULT_SETTINGS.loavesPerBake })); setToast("รีเซ็ตสูตรแล้ว"); };
+  const resetRecipe = () => { setRecipeName("สูตรครัวไทยของฉัน"); setActiveRecipeId(""); setWholeWheat(DEFAULT_SETTINGS.wholeWheat); setApFlour(DEFAULT_SETTINGS.apFlour); setSpeltFlour(DEFAULT_SETTINGS.speltFlour); setRyeFlour(DEFAULT_SETTINGS.ryeFlour); setFlourProfile(DEFAULT_SETTINGS.flourProfile); setTargetDough(DEFAULT_SETTINGS.targetDough); setHydration(DEFAULT_SETTINGS.hydration); setStarterPercent(DEFAULT_SETTINGS.starterPercent); setSaltPercent(DEFAULT_SETTINGS.saltPercent); setOilPercent(DEFAULT_SETTINGS.oilPercent); setDoughTemperature(DEFAULT_SETTINGS.doughTemperature); setLoafCount(DEFAULT_SETTINGS.loafCount); setLoavesPerBake(DEFAULT_SETTINGS.loavesPerBake); localStorage.setItem("doughgarden-settings", JSON.stringify({ ...currentSettings(), wholeWheat: DEFAULT_SETTINGS.wholeWheat, apFlour:DEFAULT_SETTINGS.apFlour, speltFlour:DEFAULT_SETTINGS.speltFlour, ryeFlour:DEFAULT_SETTINGS.ryeFlour, flourProfile:DEFAULT_SETTINGS.flourProfile, targetDough: DEFAULT_SETTINGS.targetDough, hydration: DEFAULT_SETTINGS.hydration, starterPercent: DEFAULT_SETTINGS.starterPercent, saltPercent:DEFAULT_SETTINGS.saltPercent, oilPercent:DEFAULT_SETTINGS.oilPercent, doughTemperature:DEFAULT_SETTINGS.doughTemperature, loafCount: DEFAULT_SETTINGS.loafCount, loavesPerBake: DEFAULT_SETTINGS.loavesPerBake })); setToast("รีเซ็ตสูตรแล้ว"); };
   const resetProofBake = () => {
     setProofMode(DEFAULT_SETTINGS.proofMode); setColdHours(DEFAULT_SETTINGS.coldHours); setFridgeTemp(DEFAULT_SETTINGS.fridgeTemp);
     setBakeMode(DEFAULT_SETTINGS.bakeMode); setSteamWater(DEFAULT_SETTINGS.steamWater); setOvenVolume(DEFAULT_SETTINGS.ovenVolume);
@@ -555,7 +587,7 @@ export default function Home() {
     setToast("รีเซ็ตไฟนอลพรูฟและการอบแล้ว");
   };
   const exportSettings = () => {
-    const payload = { app: "DoughGarden", version: 2, exportedAt: new Date().toISOString(), settings: currentSettings(), yeast: { name: yeastName.trim() || "เจ้าก้อนแป้ง", birth: yeastBirth }, recipes:savedRecipes, levainBuild:{ startedAt:levainStartedAt, temperature:levainTemperature, starterName:yeastName.trim() || "หัวเชื้อของฉัน", observations:levainObservations } };
+    const payload = { app: "DoughGarden", version: 3, exportedAt: new Date().toISOString(), settings: currentSettings(), yeast: { name: yeastName.trim() || "เจ้าก้อนแป้ง", birth: yeastBirth }, recipes:savedRecipes, levainBuild:{ startedAt:levainStartedAt, temperature:levainTemperature, starterName:yeastName.trim() || "หัวเชื้อของฉัน", observations:levainObservations } };
     const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
     const link = document.createElement("a"); link.href = url; link.download = `DoughGarden-settings-${new Date().toISOString().slice(0,10)}.json`; link.click();
     URL.revokeObjectURL(url); setToast("ส่งออกไฟล์ค่าตั้งแล้ว");
@@ -567,7 +599,7 @@ export default function Home() {
       const settings = normalizeSettings(payload?.settings || payload);
       setTemperature(settings.temperature); setHumidity(settings.humidity);
       setStarterOld(settings.starterOld); setFeedFlour(settings.feedFlour); setFeedWater(settings.feedWater);
-      setWholeWheat(settings.wholeWheat); setApFlour(settings.apFlour); setRyeFlour(settings.ryeFlour);
+      setWholeWheat(settings.wholeWheat); setApFlour(settings.apFlour); setSpeltFlour(settings.speltFlour); setRyeFlour(settings.ryeFlour); setFlourProfile(settings.flourProfile);
       setTargetDough(settings.targetDough); setHydration(settings.hydration); setStarterPercent(settings.starterPercent);
       setSaltPercent(settings.saltPercent); setOilPercent(settings.oilPercent); setDoughTemperature(settings.doughTemperature);
       setLoafCount(settings.loafCount); setLoavesPerBake(Math.min(settings.loafCount,settings.loavesPerBake));
@@ -576,7 +608,10 @@ export default function Home() {
       setTrayWidth(settings.trayWidth); setTrayLength(settings.trayLength); setSteamMinutes(settings.steamMinutes); setOvenSeal(settings.ovenSeal); setAlertSound(settings.alertSound); setTargetBakeAt(settings.targetBakeAt);
       if (payload?.yeast?.name) setYeastName(payload.yeast.name);
       if (typeof payload?.yeast?.birth === "string") setYeastBirth(payload.yeast.birth);
-      if (Array.isArray(payload?.recipes)) { setSavedRecipes(payload.recipes); localStorage.setItem("doughgarden-recipes", JSON.stringify(payload.recipes)); }
+      if (Array.isArray(payload?.recipes)) {
+        const recipes = payload.recipes.map((item: Record<string, unknown>) => normalizeRecipe(item)).filter((item: SavedRecipe | null): item is SavedRecipe => item !== null);
+        setSavedRecipes(recipes); localStorage.setItem("doughgarden-recipes", JSON.stringify(recipes));
+      }
       if (payload?.levainBuild?.startedAt) {
         setLevainStartedAt(payload.levainBuild.startedAt); setLevainTemperature(validNumber(payload.levainBuild.temperature, settings.temperature));
         const observations = Array.isArray(payload.levainBuild.observations) ? payload.levainBuild.observations : [];
@@ -682,17 +717,18 @@ export default function Home() {
       <div className="recipe-grid">
         <div className="control-card">
           <div className="recipe-name-field"><label>ชื่อสูตรของฉัน<input type="text" maxLength={60} value={recipeName} onChange={e=>setRecipeName(e.target.value)} placeholder="เช่น สูตรวันอาทิตย์"/></label><span>{activeRecipeId?"กำลังแก้สูตรที่บันทึกไว้":"บันทึกเป็นสูตรใหม่"}</span></div>
-          <div className="flour-mix"><div className="bread-share"><span>แป้งขนมปัง (Bread Flour)</span><strong>{recipe.breadPercent}%</strong><small>ส่วนที่เหลืออัตโนมัติ · อย่างน้อย 10%</small></div><label>แป้งอเนกประสงค์ (AP)<span><input type="number" min="0" max="90" value={apFlour} onChange={e=>setFlourPercent("ap",+e.target.value)}/>%</span></label><label>โฮลวีท<span><input type="number" min="0" max="90" value={wholeWheat} onChange={e=>setFlourPercent("whole",+e.target.value)}/>%</span></label><label>ไรย์<span><input type="number" min="0" max="30" value={ryeFlour} onChange={e=>setFlourPercent("rye",+e.target.value)}/>%</span></label></div>
+          <div className="flour-mix"><div className="bread-share"><span>แป้งขนมปัง (Bread Flour)</span><strong>{recipe.breadPercent}%</strong><small>ส่วนที่เหลืออัตโนมัติ · อย่างน้อย 10%</small></div><label>แป้งอเนกประสงค์ (AP)<span><input type="number" min="0" max="90" value={apFlour} onChange={e=>setFlourPercent("ap",+e.target.value)}/>%</span></label><label>สเปลต์ (Spelt)<span><input type="number" min="0" max="40" value={speltFlour} onChange={e=>setFlourPercent("spelt",+e.target.value)}/>%</span></label><label>โฮลวีท<span><input type="number" min="0" max="90" value={wholeWheat} onChange={e=>setFlourPercent("whole",+e.target.value)}/>%</span></label><label>ไรย์<span><input type="number" min="0" max="30" value={ryeFlour} onChange={e=>setFlourPercent("rye",+e.target.value)}/>%</span></label></div>
+          {flourProfile&&<div className="flour-profile"><b>รายละเอียดสูตรนี้</b><span>{flourProfile}</span><small>คำว่า “ก้อนใหญ่/ก้อนเล็ก” หมายถึงปริมาตรหลังฟู ไม่ใช่ปริมาณแป้ง · ปรับเปอร์เซ็นต์แป้งเมื่อใด ระบบจะเปลี่ยนกลับเป็นสูตรกำหนดเอง</small></div>}
           <div className="control-row"><label>ไฮเดรชันจริง <strong>{hydration}%</strong></label><input type="range" min="55" max="90" value={hydration} onChange={e=>{setHydration(+e.target.value);setActiveRecipeId("");}}/></div>
           <div className="control-row"><label>หัวเชื้อ 100% Hydration <strong>{starterPercent}%</strong></label><input type="range" min="5" max="35" value={starterPercent} onChange={e=>{setStarterPercent(+e.target.value);setActiveRecipeId("");}}/></div>
           <div className="recipe-minor-settings"><label>เกลือ<span><input type="number" min="1" max="3" step=".1" value={saltPercent} onChange={e=>setSaltPercent(clamp(+e.target.value,1))}/>%</span></label><label>น้ำมัน<span><input type="number" min="0" max="5" step=".5" value={oilPercent} onChange={e=>setOilPercent(clamp(+e.target.value))}/>%</span></label><label>อุณหภูมิกลางโดเป้าหมาย<span><input type="number" min="20" max="30" step=".5" value={doughTemperature} onChange={e=>setDoughTemperature(clamp(+e.target.value,20))}/>°C</span></label></div>
           <div className="loaf-settings"><div><span>จำนวนโลฟ</span><div className="loaf-buttons">{[1,2,3,4,5,6].map(n=><button type="button" className={loafCount===n?"selected":""} onClick={()=>{setLoafCount(n);setLoavesPerBake(current=>Math.min(current,n));}} key={n}>{n}</button>)}</div></div>{loafCount>1&&<div><span>เตาอบพร้อมกัน</span><div className="loaf-buttons">{Array.from({length:loafCount},(_,i)=>i+1).map(n=><button type="button" className={loavesPerBake===n?"selected":""} onClick={()=>setLoavesPerBake(n)} key={n}>{n}</button>)}</div></div>}</div>
           <label className="weight-input">น้ำหนักโดว์ต่อโลฟ <span><input type="number" min="300" max="1800" value={targetDough} onChange={e=>setTargetDough(clamp(+e.target.value,300))}/> กรัม</span></label><div className="presets">{[600,800,950,1000,1200].map(n=><button className={targetDough===n?"selected":""} onClick={()=>setTargetDough(n)} key={n}>{n} กรัม</button>)}</div><div className="multi-loaf-time"><span>เวลาหมักใช้ร่วมกัน</span><strong>เพิ่มขึ้นรูป {duration(extraShapingHours)}</strong><strong>อบ {bakeBatches} รอบ</strong></div>
         </div>
-        <div className="formula-card"><div className="formula-head"><div><span>ยัวร์ฟอร์มูลา · {loafCount} โลฟ</span><h3>{recipeName.trim() || "สูตรกำหนดเอง"}</h3><small>{loafCount} × {targetDough} กรัม · Bulk เป้าหมาย {bulkRiseTarget}%</small></div><strong>{recipe.totalDough}<small> กรัม</small></strong></div><div className="ingredients"><p><span>แป้งขนมปัง</span><b>{round(recipe.bread)} กรัม</b></p>{apFlour>0&&<p><span>แป้งอเนกประสงค์</span><b>{round(recipe.ap)} กรัม</b></p>}{wholeWheat>0&&<p><span>แป้งโฮลวีท</span><b>{round(recipe.whole)} กรัม</b></p>}{ryeFlour>0&&<p><span>แป้งไรย์</span><b>{round(recipe.rye)} กรัม</b></p>}<p><span>น้ำเย็น</span><b>{round(recipe.water)} กรัม</b></p><p><span>หัวเชื้อ 100%</span><b>{round(recipe.levain)} กรัม</b></p><p><span>เกลือ {saltPercent}%</span><b>{round(recipe.salt)} กรัม</b></p>{oilPercent>0&&<p><span>น้ำมัน {oilPercent}%</span><b>{round(recipe.oil)} กรัม</b></p>}</div><div className="bulk-target-card"><span>เป้าหมายบัลก์จากอุณหภูมิกลางโด</span><strong>ขึ้นประมาณ {bulkRiseTarget}%</strong><small>โดว์ {doughTemperature}°C · {proofMode==="room"?"Final Proof อุณหภูมิห้อง":"ขึ้นรูปแล้วเข้าตู้เย็น"} · ใช้สภาพโดว์ยืนยันเสมอ</small></div><div className="weight-flow"><span>รวม {recipe.totalDough} กรัม</span><i>→</i><span>หลังอบต่อโลฟ <b>{Math.round(recipe.bakedEach)} กรัม</b> · รวม <b>{Math.round(recipe.baked)} กรัม</b></span></div></div>
+        <div className="formula-card"><div className="formula-head"><div><span>ยัวร์ฟอร์มูลา · {loafCount} โลฟ</span><h3>{recipeName.trim() || "สูตรกำหนดเอง"}</h3><small>{loafCount} × {targetDough} กรัม · Bulk เป้าหมาย {bulkRiseTarget}%</small></div><strong>{recipe.totalDough}<small> กรัม</small></strong></div><div className="ingredients"><p><span>แป้งขนมปัง</span><b>{round(recipe.bread)} กรัม</b></p>{apFlour>0&&<p><span>แป้งอเนกประสงค์</span><b>{round(recipe.ap)} กรัม</b></p>}{speltFlour>0&&<p><span>แป้งสเปลต์</span><b>{round(recipe.spelt)} กรัม</b></p>}{wholeWheat>0&&<p><span>แป้งโฮลวีท</span><b>{round(recipe.whole)} กรัม</b></p>}{ryeFlour>0&&<p><span>แป้งไรย์</span><b>{round(recipe.rye)} กรัม</b></p>}<p><span>น้ำเย็น</span><b>{round(recipe.water)} กรัม</b></p><p><span>หัวเชื้อ 100%</span><b>{round(recipe.levain)} กรัม</b></p><p><span>เกลือ {saltPercent}%</span><b>{round(recipe.salt)} กรัม</b></p>{oilPercent>0&&<p><span>น้ำมัน {oilPercent}%</span><b>{round(recipe.oil)} กรัม</b></p>}</div><div className="bulk-target-card"><span>เป้าหมายบัลก์จากอุณหภูมิกลางโด</span><strong>ขึ้นประมาณ {bulkRiseTarget}%</strong><small>โดว์ {doughTemperature}°C · {proofMode==="room"?"Final Proof อุณหภูมิห้อง":"ขึ้นรูปแล้วเข้าตู้เย็น"} · สูตรที่มีโฮลวีต/ไรย์อาจหมักเร็วขึ้น ใช้สภาพโดว์ยืนยันเสมอ</small></div><div className="weight-flow"><span>รวม {recipe.totalDough} กรัม</span><i>→</i><span>หลังอบต่อโลฟ <b>{Math.round(recipe.bakedEach)} กรัม</b> · รวม <b>{Math.round(recipe.baked)} กรัม</b></span></div></div>
       </div>
       <div className="setting-actions section-wide"><button onClick={saveRecipe}>{activeRecipeId?"อัปเดตสูตรนี้":"บันทึกเป็นสูตรใหม่"}</button><button className="secondary" onClick={resetRecipe}>เริ่มสูตรใหม่</button></div>
-      <div className="saved-recipes"><div className="saved-recipes-head"><strong>สูตรที่บันทึกไว้</strong><span>{savedRecipes.length} สูตร · เลือกกลับมาใช้หรือแก้ไขได้</span></div>{savedRecipes.length?<div className="saved-recipe-list">{savedRecipes.map(item=><article className={item.id===activeRecipeId?"active":""} key={item.id}><button type="button" onClick={()=>applyRecipe(item,item.id)}><strong>{item.name}</strong><span>Bread {Math.max(0,100-item.apFlour-item.wholeWheat-item.ryeFlour)}% · AP {item.apFlour}% · Whole {item.wholeWheat}% · Rye {item.ryeFlour}%</span><small>น้ำ {item.hydration}% · Starter {item.starterPercent}% · โดว์ {item.doughTemperature}°C</small></button><button type="button" className="delete" onClick={()=>deleteRecipe(item.id)}>ลบ</button></article>)}</div>:<p className="saved-recipe-empty">เลือกสูตรแนะนำหรือปรับค่าด้านบน แล้วกด “บันทึกเป็นสูตรใหม่”</p>}</div>
+      <div className="saved-recipes"><div className="saved-recipes-head"><strong>สูตรที่บันทึกไว้</strong><span>{savedRecipes.length} สูตร · เลือกกลับมาใช้หรือแก้ไขได้</span></div>{savedRecipes.length?<div className="saved-recipe-list">{savedRecipes.map(item=><article className={item.id===activeRecipeId?"active":""} key={item.id}><button type="button" onClick={()=>applyRecipe(item,item.id)}><strong>{item.name}</strong><span>Bread {Math.max(0,100-item.apFlour-item.speltFlour-item.wholeWheat-item.ryeFlour)}% · AP {item.apFlour}% · Spelt {item.speltFlour}% · Whole {item.wholeWheat}% · Rye {item.ryeFlour}%</span><small>น้ำ {item.hydration}% · Starter {item.starterPercent}% · โดว์ {item.doughTemperature}°C</small></button><button type="button" className="delete" onClick={()=>deleteRecipe(item.id)}>ลบ</button></article>)}</div>:<p className="saved-recipe-empty">เลือกสูตรแนะนำหรือปรับค่าด้านบน แล้วกด “บันทึกเป็นสูตรใหม่”</p>}</div>
     </section>
 
     <section className="section shell setup-section" id="proof"><header><p className="section-kicker">02 — พรีแพร์ยัวร์โพรเซส</p><h2>ตั้งค่าไฟนอลพรูฟและวิธีอบ</h2><span>เลือกสองส่วนนี้ก่อนเริ่มเวิร์กโฟลว์ ระบบจะนำค่าไปปรับขั้นตอนและเวลาให้ทันที</span></header>
