@@ -1,0 +1,184 @@
+.adaptive-source-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 22px;
+  color: #ad9d88;
+  font-size: 11px;
+}
+
+.adaptive-source-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: #17130f;
+}
+
+.adaptive-source-tabs button {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: #8f806d;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.adaptive-source-tabs button.active {
+  border-color: rgba(231, 161, 62, 0.5);
+  background: rgba(231, 161, 62, 0.13);
+  color: var(--gold);
+}
+
+.temperature-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+.temperature-inputs label {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 13px;
+  color: #887968;
+  font-size: 10px;
+}
+
+.temperature-inputs label.active {
+  border-color: rgba(231, 161, 62, 0.42);
+  background: rgba(231, 161, 62, 0.07);
+}
+
+.temperature-inputs label span {
+  display: flex;
+  justify-content: space-between;
+}
+
+.temperature-inputs label b {
+  color: var(--gold);
+}
+
+.temperature-inputs input {
+  width: 100%;
+  accent-color: var(--amber);
+}
+
+.bulk-ready-summary {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.bulk-ready-summary > div {
+  padding: 14px;
+  border: 1px solid rgba(145, 170, 136, 0.2);
+  border-radius: 14px;
+  background: rgba(145, 170, 136, 0.07);
+}
+
+.bulk-ready-summary span,
+.bulk-ready-summary small {
+  display: block;
+  color: #84917d;
+  font-size: 9px;
+}
+
+.bulk-ready-summary strong {
+  display: block;
+  margin: 4px 0;
+  color: #c5d4bd;
+  font-size: 17px;
+}
+
+.bulk-ready-summary .ready-window {
+  border-color: rgba(231, 161, 62, 0.32);
+  background: rgba(231, 161, 62, 0.08);
+}
+
+.bulk-ready-summary .ready-window span,
+.bulk-ready-summary .ready-window small {
+  color: #9c8465;
+}
+
+.bulk-ready-summary .ready-window strong {
+  color: var(--gold);
+}
+
+.real-ready-cues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 13px;
+}
+
+.real-ready-cues strong {
+  flex-basis: 100%;
+  color: #b7c8ae;
+  font-size: 10px;
+}
+
+.real-ready-cues span {
+  padding: 6px 9px;
+  border: 1px solid rgba(145, 170, 136, 0.16);
+  border-radius: 99px;
+  color: #91a489;
+  font-size: 9px;
+}
+
+.bulk-readiness-panel {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.bulk-readiness-panel > div {
+  padding: 12px;
+  border: 1px solid rgba(231, 161, 62, 0.2);
+  border-radius: 12px;
+  background: rgba(231, 161, 62, 0.06);
+}
+
+.bulk-readiness-panel span,
+.bulk-readiness-panel small {
+  display: block;
+  color: #8c7b68;
+  font-size: 9px;
+}
+
+.bulk-readiness-panel strong {
+  display: block;
+  margin: 4px 0;
+  color: var(--gold);
+  font-size: 13px;
+}
+
+@media (max-width: 600px) {
+  .adaptive-source-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .adaptive-source-tabs button {
+    min-height: 44px;
+  }
+
+  .temperature-inputs,
+  .bulk-ready-summary,
+  .bulk-readiness-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .bulk-ready-summary strong {
+    font-size: 16px;
+  }
+}

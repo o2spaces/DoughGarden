@@ -1,5 +1,7 @@
 # Deploy DoughGarden
 
+เวอร์ชัน 21 เพิ่ม Adaptive Timing ที่เลือกคำนวณจากอุณหภูมิห้องหรืออุณหภูมิโดว์จริง พร้อมช่วงเวลา Bulk ที่คาดว่าโดว์พร้อมและเกณฑ์ตรวจสภาพโดว์
+
 แพ็กเกจนี้ปรับเป็น Standard Next.js แล้ว โดยใช้ `next build --webpack` แทนคำสั่ง Build เฉพาะของ OpenAI Sites
 
 ## Vercel

@@ -14,6 +14,7 @@ import "./bake-planner.css";
 import "./recipe-library.css";
 import "./levain-tracker.css";
 import "./readability.css";
+import "./adaptive-temperature.css";
 import "./mobile-readiness.css";
 
 const anuphan = Anuphan({
@@ -31,7 +32,8 @@ const mitr = Mitr({
 
 export const metadata: Metadata = {
   title: "DoughGarden — Adaptive Sourdough Assistant",
-  description: "กระดุ๊กกระดิ๊ก กระจุ๊กกระจิ๊กหัวใจ — ผู้ช่วยทำซาวโดว์และ Day Tracker หัวเชื้อ",
+  description:
+    "กระดุ๊กกระดิ๊ก กระจุ๊กกระจิ๊กหัวใจ — ผู้ช่วยทำซาวโดว์และ Day Tracker หัวเชื้อ",
   other: {
     "codex-preview": "development",
   },
@@ -55,9 +57,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="th">
-      <body
-        className={`${anuphan.variable} ${mitr.variable} antialiased`}
-      >
+      <body className={`${anuphan.variable} ${mitr.variable} antialiased`}>
         {children}
       </body>
     </html>
