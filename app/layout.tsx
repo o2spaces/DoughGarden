@@ -15,6 +15,9 @@ import "./recipe-library.css";
 import "./levain-tracker.css";
 import "./readability.css";
 import "./adaptive-temperature.css";
+import "./live-bulk-tracker.css";
+import "./v23-calculators.css";
+import "./v24-learning.css";
 import "./mobile-readiness.css";
 
 const anuphan = Anuphan({

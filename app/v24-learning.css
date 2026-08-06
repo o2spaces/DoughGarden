@@ -1,0 +1,611 @@
+.recipe-learning-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 15px;
+  padding: 13px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.recipe-learning-badge.learned {
+  border-color: rgba(144, 174, 131, 0.34);
+  background: rgba(117, 151, 103, 0.08);
+}
+
+.recipe-learning-badge span,
+.recipe-learning-badge strong {
+  display: block;
+}
+
+.recipe-learning-badge span {
+  color: #8ba47f;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.recipe-learning-badge strong {
+  margin-top: 3px;
+  color: #d7e3d1;
+  font-size: 11px;
+}
+
+.recipe-learning-badge p {
+  max-width: 48%;
+  margin: 0;
+  color: #8f806f;
+  font-size: 9px;
+  line-height: 1.6;
+  text-align: right;
+}
+
+.banneton-section {
+  border-color: rgba(191, 146, 84, 0.19);
+  background:
+    radial-gradient(circle at 92% 10%, rgba(190, 124, 50, 0.13), transparent 30%),
+    #181410;
+}
+
+.banneton-grid {
+  display: grid;
+  grid-template-columns: 1.18fr 0.82fr;
+  gap: 18px;
+}
+
+.banneton-controls,
+.banneton-result {
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 20px;
+  background: rgba(10, 8, 7, 0.32);
+}
+
+.banneton-presets > span,
+.banneton-form-label,
+.journal-form-head span,
+.journal-history-head span,
+.journal-learning-summary span {
+  color: #8a7967;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.banneton-presets > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 9px;
+}
+
+.banneton-presets button,
+.banneton-shapes button {
+  min-height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  background: transparent;
+  color: #9b8a77;
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.banneton-presets button {
+  padding: 0 12px;
+}
+
+.banneton-presets button.active,
+.banneton-shapes button.active {
+  border-color: rgba(232, 165, 70, 0.7);
+  background: rgba(232, 165, 70, 0.1);
+  color: #edbd78;
+}
+
+.banneton-shapes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin: 18px 0 11px;
+}
+
+.banneton-shapes button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 58px;
+}
+
+.banneton-shapes b {
+  font-size: 22px;
+  font-weight: 400;
+}
+
+.banneton-dimensions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.banneton-dimensions label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 11px;
+  color: #817261;
+  font-size: 8px;
+}
+
+.banneton-dimensions label span {
+  color: #756656;
+  font-size: 8px;
+}
+
+.banneton-dimensions input {
+  width: calc(100% - 24px);
+  border: 0;
+  background: transparent;
+  color: #ead7bd;
+  font-size: 17px;
+  outline: 0;
+}
+
+.banneton-result {
+  text-align: center;
+}
+
+.banneton-result.good {
+  border-color: rgba(133, 169, 118, 0.34);
+}
+
+.banneton-illustration span {
+  display: grid;
+  place-items: center;
+  width: 94px;
+  height: 66px;
+  margin: 0 auto 13px;
+  border: 2px solid rgba(226, 169, 88, 0.62);
+  color: rgba(226, 169, 88, 0.5);
+  font: 600 12px/1 var(--font-mitr), sans-serif;
+  letter-spacing: 0.18em;
+  box-shadow: inset 0 0 0 7px rgba(226, 169, 88, 0.04);
+}
+
+.banneton-illustration span.round {
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+}
+
+.banneton-illustration span.oval {
+  border-radius: 50%;
+}
+
+.banneton-result > p,
+.banneton-result > span,
+.banneton-result > small {
+  color: #887967;
+  font-size: 8px;
+  line-height: 1.6;
+}
+
+.banneton-result > strong {
+  display: block;
+  margin: 4px 0 3px;
+  color: var(--gold);
+  font: 600 42px/1.1 var(--font-mitr), sans-serif;
+}
+
+.banneton-result > strong small {
+  margin-left: 5px;
+  font-size: 13px;
+}
+
+.banneton-fit {
+  margin: 14px 0 11px;
+  padding: 11px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.banneton-fit b {
+  color: #b8cbae;
+  font-size: 10px;
+}
+
+.banneton-fit p {
+  margin: 4px 0 0;
+  color: #817261;
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.banneton-result > button,
+.journal-save {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--amber);
+  border-radius: 10px;
+  background: var(--amber);
+  color: #26180d;
+  font-size: 9px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.banneton-result > small {
+  display: block;
+  margin-top: 10px;
+}
+
+.bake-journal-section {
+  background:
+    radial-gradient(circle at 0 0, rgba(107, 143, 95, 0.11), transparent 31%),
+    #151410;
+}
+
+.journal-learning-summary {
+  display: grid;
+  grid-template-columns: 1.25fr 1.25fr 0.9fr 1fr;
+  gap: 1px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(144, 174, 131, 0.2);
+  border-radius: 14px;
+  background: rgba(144, 174, 131, 0.08);
+}
+
+.journal-learning-summary > div {
+  padding: 13px 15px;
+  background: #191814;
+}
+
+.journal-learning-summary strong {
+  display: block;
+  margin-top: 5px;
+  color: #cad8c3;
+  font-size: 10px;
+}
+
+.journal-learning-summary .journal-adjustment strong {
+  color: #e4ae62;
+}
+
+.journal-grid {
+  display: grid;
+  grid-template-columns: 0.92fr 1.08fr;
+  gap: 16px;
+}
+
+.journal-form,
+.journal-history {
+  padding: 21px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 19px;
+  background: rgba(10, 9, 7, 0.3);
+}
+
+.journal-form-head,
+.journal-history-head,
+.journal-entry-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.journal-form-head h3,
+.journal-history-head h3 {
+  margin: 4px 0 0;
+  color: #dbcbb6;
+  font: 500 15px/1.4 var(--font-mitr), sans-serif;
+}
+
+.journal-form-head > button {
+  min-height: 38px;
+  padding: 0 11px;
+  border: 1px solid rgba(144, 174, 131, 0.3);
+  border-radius: 9px;
+  background: rgba(144, 174, 131, 0.08);
+  color: #a7bd9e;
+  font-size: 8px;
+  cursor: pointer;
+}
+
+.journal-bulk-time,
+.journal-notes {
+  display: block;
+  margin-top: 16px;
+  color: #8e7e6c;
+  font-size: 9px;
+}
+
+.journal-bulk-time > span {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin-top: 6px;
+  color: #766858;
+}
+
+.journal-bulk-time input {
+  width: 110px;
+  border: 0;
+  border-bottom: 1px solid #554738;
+  background: transparent;
+  color: var(--gold);
+  font: 500 25px/1.2 var(--font-mitr), sans-serif;
+  outline: 0;
+}
+
+.journal-bulk-time small {
+  display: block;
+  margin-top: 6px;
+  color: #74685b;
+  font-size: 8px;
+  line-height: 1.55;
+}
+
+.journal-rating {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  color: #8c7d6b;
+  font-size: 9px;
+}
+
+.journal-rating > div {
+  display: flex;
+  gap: 5px;
+}
+
+.journal-rating button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: transparent;
+  color: #756858;
+  cursor: pointer;
+}
+
+.journal-rating button.active {
+  border-color: rgba(230, 166, 75, 0.6);
+  background: rgba(230, 166, 75, 0.12);
+  color: #e8b974;
+}
+
+.journal-notes textarea {
+  width: 100%;
+  margin-top: 6px;
+  padding: 11px;
+  resize: vertical;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.16);
+  color: #d6c5b0;
+  font: inherit;
+  line-height: 1.6;
+  outline: 0;
+}
+
+.journal-save {
+  margin-top: 11px;
+}
+
+.journal-history-head > small {
+  max-width: 160px;
+  color: #706457;
+  font-size: 8px;
+  line-height: 1.5;
+  text-align: right;
+}
+
+.journal-list {
+  display: grid;
+  gap: 9px;
+  max-height: 520px;
+  margin-top: 13px;
+  overflow: auto;
+  padding-right: 3px;
+}
+
+.journal-list article {
+  padding: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.journal-list article.matching {
+  border-color: rgba(144, 174, 131, 0.25);
+}
+
+.journal-entry-top strong,
+.journal-entry-top span {
+  display: block;
+}
+
+.journal-entry-top strong {
+  color: #d7c7b3;
+  font-size: 10px;
+}
+
+.journal-entry-top span {
+  margin-top: 3px;
+  color: #746758;
+  font-size: 8px;
+}
+
+.journal-entry-top button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  background: transparent;
+  color: #8a6d60;
+  cursor: pointer;
+}
+
+.journal-entry-metrics {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr 1fr;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.journal-entry-metrics span {
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.journal-entry-metrics small,
+.journal-entry-metrics b {
+  display: block;
+}
+
+.journal-entry-metrics small {
+  color: #6f6356;
+  font-size: 7px;
+}
+
+.journal-entry-metrics b {
+  margin-top: 2px;
+  color: #b9a995;
+  font-size: 9px;
+}
+
+.journal-entry-metrics i {
+  color: #806a51;
+  font-style: normal;
+}
+
+.journal-entry-scores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.journal-entry-scores span {
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgba(144, 174, 131, 0.07);
+  color: #8fa286;
+  font-size: 7px;
+}
+
+.journal-list article > p {
+  margin: 8px 0 0;
+  color: #827364;
+  font-size: 8px;
+  line-height: 1.55;
+}
+
+.journal-empty {
+  display: grid;
+  place-items: center;
+  min-height: 240px;
+  color: #6f6458;
+  text-align: center;
+}
+
+.journal-empty span {
+  color: #8ba47f;
+  font-size: 26px;
+}
+
+.journal-empty h3,
+.journal-empty p {
+  margin: 4px 0;
+}
+
+.journal-empty h3 {
+  color: #b3a18c;
+  font: 500 14px/1.4 var(--font-mitr), sans-serif;
+}
+
+.journal-empty p {
+  max-width: 250px;
+  font-size: 8px;
+  line-height: 1.6;
+}
+
+@media (max-width: 920px) {
+  .banneton-grid,
+  .journal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .journal-learning-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .recipe-learning-badge {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .recipe-learning-badge p {
+    max-width: none;
+    text-align: left;
+  }
+
+  .banneton-controls,
+  .banneton-result,
+  .journal-form,
+  .journal-history {
+    padding: 16px;
+  }
+
+  .banneton-presets > div {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .banneton-presets button,
+  .banneton-shapes button,
+  .journal-form-head > button {
+    min-height: 44px;
+  }
+
+  .banneton-dimensions,
+  .journal-learning-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .journal-form-head,
+  .journal-history-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .journal-history-head > small {
+    max-width: none;
+    text-align: left;
+  }
+
+  .journal-rating button {
+    width: 38px;
+    height: 38px;
+  }
+
+  .journal-entry-metrics {
+    grid-template-columns: 1fr auto 1fr;
+  }
+
+  .journal-entry-metrics span:last-child {
+    grid-column: 1 / -1;
+  }
+}
