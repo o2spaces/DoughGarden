@@ -10,12 +10,12 @@
 
 .phase-nav-time {
   gap: 4px;
-  font-size: 11px !important;
+  font-size: 13px !important;
   line-height: 1.55;
 }
 
 .phase-date-time div > span {
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .phase-date-time div > strong {
@@ -73,7 +73,7 @@
 }
 
 .sound-popover > p {
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .sound-choice > strong {
@@ -81,7 +81,7 @@
 }
 
 .sound-choice small {
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.45;
 }
 
@@ -91,7 +91,7 @@
 
 .milestone-schedule span > b,
 .milestone-schedule span > small {
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .milestone-schedule span > strong {
@@ -141,7 +141,7 @@
 
 @media (max-width: 600px) {
   .phase-nav-time {
-    font-size: 10px !important;
+    font-size: 12px !important;
   }
 
   .bake-planner-copy > span,
@@ -149,6 +149,6 @@
   .bake-plan-result div > span,
   .bake-plan-result > small,
   .bake-plan-result > em {
-    font-size: 11px;
+    font-size: 13px;
   }
 }

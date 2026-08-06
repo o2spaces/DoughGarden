@@ -3702,7 +3702,7 @@ export default function Home() {
                 · ใช้สภาพโดว์ยืนยันเสมอ
               </small>
             </div>
-            <div className={`recipe-learning-badge ${recipeCalibration.count?"learned":"empty"}`}><div><span>V24 · ระบบเรียนรู้สูตรนี้</span><strong>{recipeCalibration.label}</strong></div><p>{recipeCalibration.count?`${recipeCalibration.count} ผลอบ · ความมั่นใจ ${recipeCalibration.confidence}% · เวลาบัลก์ถูกปรับ ${Math.round((recipeCalibration.factor-1)*100)}%`:`บันทึกผลอบใน Bake Journal แล้วรอบถัดไปจะปรับเวลาเฉพาะสูตรนี้`}</p></div>
+            <div className={`recipe-learning-badge ${recipeCalibration.count?"learned":"empty"}`}><div><span>V25 · ระบบเรียนรู้สูตรนี้</span><strong>{recipeCalibration.label}</strong></div><p>{recipeCalibration.count?`${recipeCalibration.count} ผลอบ · ความมั่นใจ ${recipeCalibration.confidence}% · เวลาบัลก์ถูกปรับ ${Math.round((recipeCalibration.factor-1)*100)}%`:`บันทึกผลอบใน Bake Journal แล้วรอบถัดไปจะปรับเวลาเฉพาะสูตรนี้`}</p></div>
             <div className="weight-flow">
               <span>รวม {recipe.totalDough} กรัม</span>
               <i>→</i>
@@ -3955,7 +3955,7 @@ export default function Home() {
 
       <section className="section shell banneton-section" id="banneton">
         <header>
-          <p className="section-kicker">01B — BANNETON CALCULATOR · V24</p>
+          <p className="section-kicker">01B — BANNETON CALCULATOR · V25</p>
           <h2>เลือกตะกร้าให้พอดีกับน้ำหนักโดว์</h2>
           <span>
             ใช้รูปทรงและขนาดด้านในของตะกร้าเพื่อประมาณน้ำหนักโดว์ที่พยุงทรงได้ดี
@@ -5128,7 +5128,7 @@ export default function Home() {
       </section>
       <section className="section shell bake-journal-section" id="bake-journal">
         <header>
-          <p className="section-kicker">05 — BAKE JOURNAL · V24</p>
+          <p className="section-kicker">05 — BAKE JOURNAL · V25</p>
           <h2>บันทึกผลจริง แล้วให้เว็บเรียนรู้สูตรนี้</h2>
           <span>
             เปรียบเทียบเวลาบัลก์ที่คำนวณกับเวลาที่โดว์พร้อมจริง

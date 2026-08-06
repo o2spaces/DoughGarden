@@ -22,7 +22,7 @@
 
 .recipe-learning-badge span {
   color: #8ba47f;
-  font-size: 8px;
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.12em;
 }
@@ -30,14 +30,14 @@
 .recipe-learning-badge strong {
   margin-top: 3px;
   color: #d7e3d1;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .recipe-learning-badge p {
   max-width: 48%;
   margin: 0;
   color: #8f806f;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.6;
   text-align: right;
 }
@@ -69,7 +69,7 @@
 .journal-history-head span,
 .journal-learning-summary span {
   color: #8a7967;
-  font-size: 8px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -89,7 +89,7 @@
   border-radius: 10px;
   background: transparent;
   color: #9b8a77;
-  font-size: 9px;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -138,12 +138,12 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 11px;
   color: #817261;
-  font-size: 8px;
+  font-size: 13px;
 }
 
 .banneton-dimensions label span {
   color: #756656;
-  font-size: 8px;
+  font-size: 13px;
 }
 
 .banneton-dimensions input {
@@ -190,7 +190,7 @@
 .banneton-result > span,
 .banneton-result > small {
   color: #887967;
-  font-size: 8px;
+  font-size: 13px;
   line-height: 1.6;
 }
 
@@ -215,13 +215,13 @@
 
 .banneton-fit b {
   color: #b8cbae;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .banneton-fit p {
   margin: 4px 0 0;
   color: #817261;
-  font-size: 8px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
@@ -233,7 +233,7 @@
   border-radius: 10px;
   background: var(--amber);
   color: #26180d;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
   cursor: pointer;
 }
@@ -269,7 +269,7 @@
   display: block;
   margin-top: 5px;
   color: #cad8c3;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .journal-learning-summary .journal-adjustment strong {
@@ -313,7 +313,7 @@
   border-radius: 9px;
   background: rgba(144, 174, 131, 0.08);
   color: #a7bd9e;
-  font-size: 8px;
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -322,7 +322,7 @@
   display: block;
   margin-top: 16px;
   color: #8e7e6c;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .journal-bulk-time > span {
@@ -347,7 +347,7 @@
   display: block;
   margin-top: 6px;
   color: #74685b;
-  font-size: 8px;
+  font-size: 13px;
   line-height: 1.55;
 }
 
@@ -358,7 +358,7 @@
   gap: 12px;
   margin-top: 8px;
   color: #8c7d6b;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .journal-rating > div {
@@ -403,7 +403,7 @@
 .journal-history-head > small {
   max-width: 160px;
   color: #706457;
-  font-size: 8px;
+  font-size: 13px;
   line-height: 1.5;
   text-align: right;
 }
@@ -435,13 +435,13 @@
 
 .journal-entry-top strong {
   color: #d7c7b3;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .journal-entry-top span {
   margin-top: 3px;
   color: #746758;
-  font-size: 8px;
+  font-size: 13px;
 }
 
 .journal-entry-top button {
@@ -475,13 +475,13 @@
 
 .journal-entry-metrics small {
   color: #6f6356;
-  font-size: 7px;
+  font-size: 13px;
 }
 
 .journal-entry-metrics b {
   margin-top: 2px;
   color: #b9a995;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .journal-entry-metrics i {
@@ -501,13 +501,13 @@
   border-radius: 6px;
   background: rgba(144, 174, 131, 0.07);
   color: #8fa286;
-  font-size: 7px;
+  font-size: 13px;
 }
 
 .journal-list article > p {
   margin: 8px 0 0;
   color: #827364;
-  font-size: 8px;
+  font-size: 13px;
   line-height: 1.55;
 }
 
@@ -536,7 +536,7 @@
 
 .journal-empty p {
   max-width: 250px;
-  font-size: 8px;
+  font-size: 13px;
   line-height: 1.6;
 }
 

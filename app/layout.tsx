@@ -19,6 +19,7 @@ import "./live-bulk-tracker.css";
 import "./v23-calculators.css";
 import "./v24-learning.css";
 import "./mobile-readiness.css";
+import "./v25-readability.css";
 
 const anuphan = Anuphan({
   variable: "--font-anuphan",

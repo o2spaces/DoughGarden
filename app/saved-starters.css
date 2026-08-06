@@ -18,7 +18,7 @@
 
 .saved-starters-head span {
   color: #817261;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .saved-starters-list {
@@ -72,20 +72,20 @@
 
 .starter-select span {
   margin-top: 3px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .starter-select b {
   margin-top: 7px;
   color: var(--gold);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
 }
 
 .tracker-fields label small {
   float: right;
   color: #6f6255;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .starter-delete {
@@ -93,7 +93,7 @@
   padding: 0 13px;
   border-left: 1px solid rgba(241, 198, 110, 0.1);
   color: #a77d69;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .starter-delete:hover {
@@ -108,7 +108,7 @@
   border-radius: 11px;
   color: #796c5d;
   text-align: center;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 @media (max-width: 920px) {

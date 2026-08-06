@@ -70,7 +70,7 @@ html {
 .sound-popover-head { display: flex; justify-content: space-between; align-items: center; }
 .sound-popover-head strong { color: var(--cream); font-size: 14px; }
 .sound-popover-head button { border: 0; background: transparent; color: #8f806e; font-size: 20px; cursor: pointer; }
-.sound-popover > p { margin: 3px 0 11px; color: #796b5c; font-size: 9px; }
+.sound-popover > p { margin: 3px 0 11px; color: #796b5c; font-size: 12px; }
 
 .sound-choice {
   display: grid;
@@ -89,8 +89,8 @@ html {
 .sound-choice:hover { background: rgba(231, 161, 62, 0.06); }
 .sound-choice.active { border-color: rgba(231, 161, 62, 0.35); background: rgba(231, 161, 62, 0.09); }
 .sound-choice > span { color: var(--gold); font-size: 15px; }
-.sound-choice > strong { color: #ddcbb4; font-size: 11px; }
-.sound-choice small { display: block; margin-top: 2px; color: #76695a; font-size: 8px; font-weight: 400; }
+.sound-choice > strong { color: #ddcbb4; font-size: 13px; }
+.sound-choice small { display: block; margin-top: 2px; color: #76695a; font-size: 13px; font-weight: 400; }
 .sound-choice > b { color: var(--gold); font-size: 12px; text-align: right; }
 
 .brand > strong small {
@@ -114,7 +114,7 @@ footer span small {
   }
 
   .brand > strong small {
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .speaker-btn { width: 36px; height: 36px; }

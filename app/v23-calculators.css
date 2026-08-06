@@ -25,7 +25,7 @@
 
 .ddt-copy > p:last-of-type {
   color: #91816f;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.75;
 }
 
@@ -33,7 +33,7 @@
   display: block;
   margin-top: 13px;
   color: #8ca184;
-  font-size: 8px;
+  font-size: 13px;
   line-height: 1.7;
   white-space: normal;
 }
@@ -53,7 +53,7 @@
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 11px;
   color: #887967;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .ddt-inputs label span {
@@ -81,7 +81,7 @@
 .ddt-result > span,
 .ddt-result > p {
   color: #8f806d;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .ddt-result > strong {
@@ -109,7 +109,7 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 9px;
   color: #7f7162;
-  font-size: 8px;
+  font-size: 13px;
 }
 
 .water-blend {
@@ -133,18 +133,18 @@
 
 .water-blend span {
   color: #77695a;
-  font-size: 7px;
+  font-size: 13px;
 }
 
 .water-blend strong {
   margin-top: 3px;
   color: #dac6ad;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .water-blend > b {
   color: #685848;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .ddt-actions {
@@ -160,7 +160,7 @@
   border-radius: 9px;
   background: var(--amber);
   color: #28190c;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -190,7 +190,7 @@
 
 .proof-adaptive-copy > span {
   color: #91aa88;
-  font-size: 8px;
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.13em;
 }
@@ -206,7 +206,7 @@
 .proof-adaptive-copy p,
 .proof-adaptive-action small {
   color: #817567;
-  font-size: 8px;
+  font-size: 13px;
   line-height: 1.65;
 }
 
@@ -229,13 +229,13 @@
 
 .proof-adaptive-metrics span {
   color: #74695d;
-  font-size: 7px;
+  font-size: 13px;
 }
 
 .proof-adaptive-metrics strong {
   margin-top: 4px;
   color: #c8d7c1;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .proof-adaptive-metrics .risk strong {
@@ -259,7 +259,7 @@
 
 .proof-adaptive-action span {
   color: #807466;
-  font-size: 8px;
+  font-size: 13px;
 }
 
 .proof-adaptive-action strong {
@@ -275,7 +275,7 @@
   border-radius: 9px;
   background: rgba(145, 170, 136, 0.12);
   color: #c5d5be;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
 }

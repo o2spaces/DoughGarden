@@ -1,0 +1,257 @@
+/* V25 readability pass: keep all operational text legible on dark surfaces. */
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+main p,
+main li,
+main label,
+main small,
+main time,
+main button,
+main input,
+main textarea {
+  line-height: 1.6;
+}
+
+main input,
+main textarea,
+main select,
+main button {
+  font-size: 13px;
+}
+
+input[type="number"] {
+  appearance: textfield;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.section-kicker,
+.eyebrow {
+  line-height: 1.5;
+}
+
+.section header > span,
+.recipe-learning-badge p,
+.banneton-result > p,
+.banneton-result > span,
+.banneton-result > small,
+.banneton-fit p,
+.journal-bulk-time small,
+.journal-history-head > small,
+.journal-list article > p,
+.journal-empty p {
+  color: #a69682;
+}
+
+.recipe-learning-badge span,
+.banneton-presets > span,
+.journal-form-head span,
+.journal-history-head span,
+.journal-learning-summary span {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+
+.recipe-learning-badge strong {
+  font-size: 14px;
+}
+
+.recipe-learning-badge p {
+  font-size: 12px;
+}
+
+.banneton-presets button,
+.banneton-shapes button,
+.banneton-result > button {
+  font-size: 13px;
+}
+
+.banneton-dimensions label,
+.banneton-dimensions label span,
+.banneton-result > p,
+.banneton-result > span,
+.banneton-result > small,
+.banneton-fit p {
+  font-size: 12px;
+}
+
+.banneton-fit b {
+  font-size: 14px;
+}
+
+.journal-learning-summary > div {
+  min-height: 76px;
+  padding: 16px 18px;
+}
+
+.journal-learning-summary strong {
+  margin-top: 7px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.journal-form-head h3,
+.journal-history-head h3 {
+  font-size: 18px;
+}
+
+.journal-form-head > button {
+  padding-inline: 15px;
+  font-size: 12px;
+}
+
+.journal-bulk-time,
+.journal-notes,
+.journal-rating {
+  font-size: 13px;
+}
+
+.journal-bulk-time small {
+  font-size: 12px;
+}
+
+.journal-rating button {
+  width: 38px;
+  height: 38px;
+  font-size: 13px;
+}
+
+.journal-history-head > small {
+  font-size: 12px;
+}
+
+.journal-list {
+  gap: 12px;
+}
+
+.journal-list article {
+  padding: 17px;
+}
+
+.journal-entry-top strong {
+  font-size: 15px;
+}
+
+.journal-entry-top span {
+  margin-top: 5px;
+  color: #a08f7a;
+  font-size: 12px;
+}
+
+.journal-entry-top button {
+  width: 38px;
+  height: 38px;
+  font-size: 16px;
+}
+
+.journal-entry-metrics {
+  margin-top: 13px;
+}
+
+.journal-entry-metrics span {
+  min-height: 58px;
+  padding: 10px 12px;
+}
+
+.journal-entry-metrics small {
+  color: #9a8b78;
+  font-size: 12px;
+}
+
+.journal-entry-metrics b {
+  margin-top: 4px;
+  font-size: 14px;
+}
+
+.journal-entry-scores {
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.journal-entry-scores span {
+  padding: 6px 9px;
+  color: #b2c4aa;
+  font-size: 12px;
+}
+
+.journal-list article > p {
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.phase-nav-time,
+.phase-nav-time time,
+.levain-observations time,
+.bulk-timeline-time span,
+.bulk-timeline-data small {
+  font-size: 12px !important;
+  line-height: 1.55;
+}
+
+.water-blend span,
+.proof-adaptive-copy > span,
+.proof-adaptive-copy p,
+.proof-adaptive-action small,
+.bulk-adaptive-tag,
+.live-bulk-source-note {
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+  .notify-btn {
+    padding-inline: 10px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  main input,
+  main textarea,
+  main select {
+    font-size: 16px;
+  }
+
+  .section-kicker,
+  .eyebrow {
+    font-size: 12px;
+  }
+
+  .journal-learning-summary > div {
+    min-height: 0;
+    padding: 16px;
+  }
+
+  .journal-form-head h3,
+  .journal-history-head h3 {
+    font-size: 17px;
+  }
+
+  .journal-rating {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .journal-rating > div {
+    width: 100%;
+  }
+
+  .journal-rating button {
+    flex: 1;
+    min-height: 44px;
+  }
+
+  .journal-entry-metrics span {
+    min-height: 62px;
+  }
+
+  .journal-entry-scores span {
+    padding: 7px 9px;
+  }
+}
