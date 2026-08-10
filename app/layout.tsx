@@ -22,6 +22,7 @@ import "./mobile-readiness.css";
 import "./v25-readability.css";
 import "./v26-single-page.css";
 import "./v27-learning.css";
+import "./v28-bread-builder.css";
 
 const anuphan = Anuphan({
   variable: "--font-anuphan",
@@ -37,7 +38,7 @@ const mitr = Mitr({
 });
 
 export const metadata: Metadata = {
-  title: "DoughGarden — Adaptive Sourdough Assistant",
+  title: "DoughGarden V28",
   description:
     "กระดุ๊กกระดิ๊ก กระจุ๊กกระจิ๊กหัวใจ — ผู้ช่วยทำซาวโดว์และ Day Tracker หัวเชื้อ",
   other: {

@@ -22,6 +22,50 @@ type ProofTension = "tight" | "soft" | "weak";
 type CrumbPattern = "dense" | "tunnel" | "wild" | "gummy" | "balanced";
 type FlavorTarget = "mild" | "balanced" | "tangy";
 type LessonLanguage = "all" | "th" | "en";
+type BreadFamily = "artisan" | "soft" | "high-hydration" | "specialty";
+type BreadFamilyFilter = "all" | BreadFamily;
+type BreadGoal = "balanced" | "open" | "soft" | "mild" | "grain";
+type BreadWorkflowKind =
+  | "artisan"
+  | "pan"
+  | "enriched"
+  | "focaccia"
+  | "ciabatta"
+  | "baguette"
+  | "pizza"
+  | "bagel"
+  | "rye";
+type BreadStyle = {
+  id: string;
+  name: string;
+  english: string;
+  icon: string;
+  family: BreadFamily;
+  difficulty: "เริ่มต้น" | "ปานกลาง" | "ขั้นสูง";
+  description: string;
+  texture: string;
+  flour: { bread: number; ap: number; spelt: number; whole: number; rye: number };
+  hydration: number;
+  hydrationRange: string;
+  starterPercent: number;
+  saltPercent: number;
+  oilPercent: number;
+  doughTemperature: number;
+  targetDough: number;
+  extras: { label: string; percent: number }[];
+  equipment: string[];
+  shape: string;
+  proof: string;
+  bake: string;
+  prepMethod: PrepMethod;
+  proofMode: ProofMode;
+  bakeMode: BakeMode;
+  levainFlour: "bread" | "rye";
+  workflowKind: BreadWorkflowKind;
+  goals: BreadGoal[];
+  method: string[];
+  warning?: string;
+};
 type LearningLesson = {
   id: string;
   step: number;
@@ -72,6 +116,8 @@ type SavedRecipe = {
   ryeFlour: number;
   doughTemperature: number;
   flourProfile: string;
+  breadStyleId?: string;
+  breadGoal?: BreadGoal;
 };
 type LevainObservation = {
   id: string;
@@ -120,10 +166,393 @@ type BakeEntry = {
   notes: string;
 };
 
+const BREAD_FAMILIES: { id: BreadFamilyFilter; label: string }[] = [
+  { id: "all", label: "ทั้งหมด" },
+  { id: "artisan", label: "เปลือกกรอบ" },
+  { id: "soft", label: "เนื้อนุ่ม" },
+  { id: "high-hydration", label: "โดว์น้ำสูง" },
+  { id: "specialty", label: "เฉพาะทาง" },
+];
+
+const BREAD_GOALS: { id: BreadGoal; label: string; detail: string }[] = [
+  { id: "balanced", label: "สมดุล", detail: "จัดการง่าย ฟูดี และคงรสของสูตรต้นแบบ" },
+  { id: "open", label: "โพรงเปิด", detail: "เพิ่มน้ำเล็กน้อยและเน้นการรักษาแก๊ส" },
+  { id: "soft", label: "นุ่มชุ่ม", detail: "เพิ่มความชุ่มและทำให้เปลือกบางลง" },
+  { id: "mild", label: "เปรี้ยวน้อย", detail: "ลดหัวเชื้อเล็กน้อยและใช้ช่วงพีคสด" },
+  { id: "grain", label: "ธัญพืชชัด", detail: "คงสัดส่วนโฮลเกรนและเน้นกลิ่นรส" },
+];
+
+const BREAD_STYLES: BreadStyle[] = [
+  {
+    id: "country",
+    name: "คันทรีซาวโดว์",
+    english: "Country Sourdough",
+    icon: "◒",
+    family: "artisan",
+    difficulty: "เริ่มต้น",
+    description: "ก้อนทรงอิสระ เปลือกกรอบ เนื้อชุ่ม และใช้ตะกร้าพรูฟ",
+    texture: "กรอบนอก · ชุ่มใน · โพรงปานกลาง",
+    flour: { bread: 80, ap: 10, spelt: 0, whole: 5, rye: 5 },
+    hydration: 73,
+    hydrationRange: "70–75%",
+    starterPercent: 20,
+    saltPercent: 2,
+    oilPercent: 0,
+    doughTemperature: 26,
+    targetDough: 950,
+    extras: [],
+    equipment: ["ตะกร้า Banneton", "Dutch Oven หรือ Baking Stone", "ที่กรีด"],
+    shape: "Preshape แล้วขึ้นรูป Boule หรือ Batard",
+    proof: "รูมพรูฟหรือ Cold Proof 8–16 ชม.",
+    bake: "ปิดฝา/มีไอน้ำช่วงแรก แล้วเปิดฝาทำสี",
+    prepMethod: "fermentolyse",
+    proofMode: "cold",
+    bakeMode: "dutch",
+    levainFlour: "bread",
+    workflowKind: "artisan",
+    goals: ["balanced", "open", "mild", "grain"],
+    method: ["พักแป้งหรือ Fermentolyse", "พัฒนากลูเตนและพับ 3 รอบ", "Bulk ถึงเป้าหมายตามอุณหภูมิโดว์", "Preshape และ Final Shape", "Cold Proof", "กรีด อบไอน้ำ และพักให้เย็น"],
+  },
+  {
+    id: "whole-wheat",
+    name: "โฮลวีท 50%",
+    english: "Whole Wheat Sourdough",
+    icon: "♨",
+    family: "artisan",
+    difficulty: "ปานกลาง",
+    description: "โฮลเกรนครึ่งสูตร กลิ่นข้าวสาลีชัดแต่ยังขึ้นทรงได้ดี",
+    texture: "ชุ่ม · โพรงละเอียด · รสธัญพืชชัด",
+    flour: { bread: 50, ap: 0, spelt: 0, whole: 50, rye: 0 },
+    hydration: 79,
+    hydrationRange: "76–82%",
+    starterPercent: 20,
+    saltPercent: 2,
+    oilPercent: 0,
+    doughTemperature: 25,
+    targetDough: 950,
+    extras: [],
+    equipment: ["ตะกร้า Banneton", "กล่องผนังตรง", "Dutch Oven"],
+    shape: "ขึ้นรูปให้ตึงพอดีโดยไม่ฉีกรำ",
+    proof: "จบบัลก์เร็วกว่าสูตรขาว แล้ว Cold Proof",
+    bake: "อบไอน้ำและทำสีเข้มเพื่อกลิ่นรส",
+    prepMethod: "autolyse",
+    proofMode: "cold",
+    bakeMode: "dutch",
+    levainFlour: "bread",
+    workflowKind: "artisan",
+    goals: ["balanced", "open", "mild", "grain"],
+    method: ["Autolyse ให้รำดูดน้ำ", "ผสมหัวเชื้อและเกลือ", "พับโดว์อย่างนุ่มนวล", "Bulk โดยดูปริมาตรและแรงเก็บทรง", "ขึ้นรูปและ Cold Proof", "อบจนแกนสุกและพักอย่างน้อย 3 ชม."],
+  },
+  {
+    id: "spelt-multigrain",
+    name: "สเปลต์มัลติเกรน",
+    english: "Spelt Multigrain",
+    icon: "✣",
+    family: "artisan",
+    difficulty: "ขั้นสูง",
+    description: "สเปลต์ โฮลวีท และไรย์รวม 50% เนื้อนุ่มและกลิ่นซับซ้อน",
+    texture: "นุ่มครีม · หอมถั่ว · โดว์ยืดง่าย",
+    flour: { bread: 50, ap: 0, spelt: 25, whole: 20, rye: 5 },
+    hydration: 85,
+    hydrationRange: "82–85%",
+    starterPercent: 17,
+    saltPercent: 1.9,
+    oilPercent: 0,
+    doughTemperature: 25,
+    targetDough: 1000,
+    extras: [],
+    equipment: ["ตะกร้าวงรี", "ที่ตัดโดว์", "Baking Stone หรือ Dutch Oven ใหญ่"],
+    shape: "Batard เบามือและ Bench Rest สั้น",
+    proof: "Cold Proof ข้ามคืน",
+    bake: "อบไอน้ำ 20 นาที แล้ว Dry Bake",
+    prepMethod: "autolyse",
+    proofMode: "cold",
+    bakeMode: "open",
+    levainFlour: "bread",
+    workflowKind: "artisan",
+    goals: ["balanced", "grain", "mild"],
+    method: ["Autolyse 45–60 นาที", "ผสมจนยืดหยุ่นแต่ไม่ตีเกิน", "พับ 3 รอบแล้วหยุดจับ", "จบบัลก์เมื่อโดว์พองและยังมีแรง", "Bench Rest สั้นและขึ้นรูปเบา", "Cold Proof แล้วอบด้วยไอน้ำ"],
+    warning: "สเปลต์ทำให้โดว์ยืดและแผ่ง่าย ไม่ควรนวดหรือพับมากเกินไป",
+  },
+  {
+    id: "deli-rye",
+    name: "เดลี่ไรย์",
+    english: "Light Deli Rye",
+    icon: "▰",
+    family: "specialty",
+    difficulty: "ปานกลาง",
+    description: "ไรย์ 20% พร้อม Rye Scald ให้เนื้อนุ่มชุ่มและเก็บได้นาน",
+    texture: "เนื้อละเอียด · ชุ่ม · หอมไรย์",
+    flour: { bread: 80, ap: 0, spelt: 0, whole: 0, rye: 20 },
+    hydration: 77,
+    hydrationRange: "75–77% + น้ำใน Scald",
+    starterPercent: 15,
+    saltPercent: 2.5,
+    oilPercent: 0,
+    doughTemperature: 26,
+    targetDough: 800,
+    extras: [{ label: "Rye Scald", percent: 5 }],
+    equipment: ["พิมพ์โลฟ 1 ปอนด์", "หม้อทำ Rye Scald", "ตะแกรงพัก"],
+    shape: "Preshape สั้นแล้วม้วนลงพิมพ์",
+    proof: "พรูฟในพิมพ์จนฟูใกล้ขอบ",
+    bake: "อบในพิมพ์ ไม่ต้องสร้างหูขนมปัง",
+    prepMethod: "autolyse",
+    proofMode: "room",
+    bakeMode: "open",
+    levainFlour: "rye",
+    workflowKind: "pan",
+    goals: ["balanced", "soft", "grain", "mild"],
+    method: ["ทำ Rye Scald แล้วพักให้เย็น", "ผสมโดว์และพัฒนาแรงปานกลาง", "Bulk จนพอง ไม่รอสองเท่า", "ม้วนลงพิมพ์", "Final Proof เทียบระดับขอบพิมพ์", "อบและพักให้เย็นสนิท"],
+  },
+  {
+    id: "high-rye",
+    name: "ไรย์ 90%",
+    english: "High-Rye Sourdough",
+    icon: "▥",
+    family: "specialty",
+    difficulty: "ขั้นสูง",
+    description: "ขนมปังไรย์เข้ม ใช้ Levain ใหญ่และพึ่งโครงสร้างแป้งมากกว่ากลูเตน",
+    texture: "แน่นชุ่ม · กลิ่นมอลต์ · หั่นบาง",
+    flour: { bread: 10, ap: 0, spelt: 0, whole: 0, rye: 90 },
+    hydration: 90,
+    hydrationRange: "88–92%",
+    starterPercent: 90,
+    saltPercent: 1.8,
+    oilPercent: 0,
+    doughTemperature: 28,
+    targetDough: 1200,
+    extras: [],
+    equipment: ["พิมพ์หรือภาชนะรองรับโดว์ไรย์", "พายเปียก", "ตะแกรงพัก"],
+    shape: "ตักหรือปาดลงพิมพ์ ไม่ใช้ Windowpane",
+    proof: "Bulk และ Final Proof สั้น",
+    bake: "อบจนสุก แล้วพัก 12–24 ชม. ก่อนตัด",
+    prepMethod: "fermentolyse",
+    proofMode: "room",
+    bakeMode: "open",
+    levainFlour: "rye",
+    workflowKind: "rye",
+    goals: ["balanced", "grain", "mild"],
+    method: ["สร้าง Rye Levain ที่มีแป้งหมักล่วงหน้าราว 45%", "ผสมเป็นเนื้อ Paste ไม่ทดสอบ Windowpane", "Bulk สั้น", "ปาดลงพิมพ์ด้วยมือเปียก", "Final Proof สั้นและอบ", "พัก 12–24 ชั่วโมงให้โครงสร้างเซ็ต"],
+    warning: "สูตรนี้ใช้ Levain 100% hydration ประมาณ 90% ของแป้งรวม เพื่อให้แป้งหมักล่วงหน้าราว 45%",
+  },
+  {
+    id: "sandwich",
+    name: "แซนด์วิชโลฟ",
+    english: "Sourdough Sandwich Bread",
+    icon: "▦",
+    family: "soft",
+    difficulty: "เริ่มต้น",
+    description: "เนื้อละเอียด นุ่ม หั่นง่าย และพรูฟในพิมพ์",
+    texture: "นุ่ม · ฟูสม่ำเสมอ · เปลือกบาง",
+    flour: { bread: 70, ap: 20, spelt: 0, whole: 10, rye: 0 },
+    hydration: 70,
+    hydrationRange: "68–72%",
+    starterPercent: 25,
+    saltPercent: 2,
+    oilPercent: 5,
+    doughTemperature: 26,
+    targetDough: 850,
+    extras: [{ label: "น้ำตาลหรือน้ำผึ้ง", percent: 5 }],
+    equipment: ["พิมพ์โลฟ", "เครื่องผสมหรือพื้นที่นวด", "แปรงทาเนย"],
+    shape: "ม้วนแน่นสม่ำเสมอแล้ววางในพิมพ์",
+    proof: "พรูฟจนยอดโดว์ใกล้หรือสูงกว่าขอบพิมพ์เล็กน้อย",
+    bake: "อบไฟอ่อนกว่า Artisan และทาเนยหลังอบ",
+    prepMethod: "fermentolyse",
+    proofMode: "room",
+    bakeMode: "open",
+    levainFlour: "bread",
+    workflowKind: "pan",
+    goals: ["balanced", "soft", "mild", "grain"],
+    method: ["ผสมและนวดจนกลูเตนแข็งแรง", "เติมไขมันหลังโดว์เริ่มเนียน", "Bulk จนพอง", "ไล่ฟองใหญ่และม้วนลงพิมพ์", "Final Proof ตามระดับพิมพ์", "อบ แกะพิมพ์ และพักบนตะแกรง"],
+  },
+  {
+    id: "milk-bread",
+    name: "มิลค์เบรด",
+    english: "Sourdough Milk Bread",
+    icon: "☁",
+    family: "soft",
+    difficulty: "ปานกลาง",
+    description: "โดว์นมและเนยพร้อม Tangzhong หรือ Sweet Levain เพื่อความนุ่มนาน",
+    texture: "นุ่มฟู · ฉีกเป็นเส้น · เปลือกบาง",
+    flour: { bread: 80, ap: 20, spelt: 0, whole: 0, rye: 0 },
+    hydration: 68,
+    hydrationRange: "65–72% ของเหลวรวม",
+    starterPercent: 30,
+    saltPercent: 1.8,
+    oilPercent: 0,
+    doughTemperature: 26,
+    targetDough: 850,
+    extras: [{ label: "เนย", percent: 15 }, { label: "น้ำตาล", percent: 8 }, { label: "ไข่", percent: 10 }],
+    equipment: ["พิมพ์โลฟสูง", "หม้อทำ Tangzhong", "เครื่องผสมแนะนำ"],
+    shape: "แบ่ง 3–4 ชิ้น รีด ม้วน และเรียงในพิมพ์",
+    proof: "อุ่นและชื้นจนยอดโดว์ถึงขอบพิมพ์",
+    bake: "ทาไข่ อบ 180–190°C และคลุมฟอยล์เมื่อสีพอ",
+    prepMethod: "fermentolyse",
+    proofMode: "room",
+    bakeMode: "open",
+    levainFlour: "bread",
+    workflowKind: "enriched",
+    goals: ["balanced", "soft", "mild"],
+    method: ["ทำ Tangzhong และพักให้เย็น", "ผสมแป้ง นม ไข่ และ Sweet Levain", "พัฒนากลูเตนก่อนเติมเนย", "Bulk ในที่อุ่น", "แบ่ง รีด ม้วน และลงพิมพ์", "Final Proof ทาไข่ อบ และพัก"],
+    warning: "โดว์ไขมันสูงหมักช้ากว่า Country Loaf และต้องสร้างกลูเตนก่อนเติมเนย",
+  },
+  {
+    id: "focaccia",
+    name: "โฟคัชชา",
+    english: "Sourdough Focaccia",
+    icon: "▧",
+    family: "high-hydration",
+    difficulty: "เริ่มต้น",
+    description: "โดว์น้ำสูง พรูฟและอบในถาด ไม่ต้องขึ้นรูปหรือตะกร้า",
+    texture: "ฟูเบา · ชุ่มน้ำมันมะกอก · ฐานกรอบ",
+    flour: { bread: 85, ap: 15, spelt: 0, whole: 0, rye: 0 },
+    hydration: 82,
+    hydrationRange: "78–85%",
+    starterPercent: 20,
+    saltPercent: 2.2,
+    oilPercent: 6,
+    doughTemperature: 26,
+    targetDough: 900,
+    extras: [],
+    equipment: ["ถาดโลหะขอบสูง", "น้ำมันมะกอก", "ที่แซะขอบ"],
+    shape: "ยืดลงถาดและกดหลุมก่อนอบ",
+    proof: "Final Proof ในถาดจนมีฟองทั่ว",
+    bake: "อบเปิดไฟแรงจนฐานและขอบกรอบ",
+    prepMethod: "fermentolyse",
+    proofMode: "room",
+    bakeMode: "open",
+    levainFlour: "bread",
+    workflowKind: "focaccia",
+    goals: ["balanced", "open", "soft", "mild"],
+    method: ["ผสมโดว์น้ำสูง", "พับในชาม 3–4 รอบ", "Bulk จนมีฟอง", "ย้ายลงถาดน้ำมัน", "Final Proof แล้วกดหลุมและใส่หน้า", "อบเปิดจนฐานกรอบ"],
+  },
+  {
+    id: "ciabatta",
+    name: "ชาบัตตา",
+    english: "Sourdough Ciabatta",
+    icon: "▱",
+    family: "high-hydration",
+    difficulty: "ขั้นสูง",
+    description: "โดว์น้ำสูงมาก เปลือกบาง และรักษาฟองโดยแทบไม่ขึ้นรูป",
+    texture: "โพรงใหญ่ · เบา · เปลือกบางกรอบ",
+    flour: { bread: 90, ap: 0, spelt: 0, whole: 10, rye: 0 },
+    hydration: 80,
+    hydrationRange: "78–82%",
+    starterPercent: 15,
+    saltPercent: 1.9,
+    oilPercent: 2,
+    doughTemperature: 25,
+    targetDough: 500,
+    extras: [],
+    equipment: ["กล่องสี่เหลี่ยม", "ที่ตัดโดว์", "ผ้าคูชหรือกระดาษอบ"],
+    shape: "เท แบ่ง และยืดเบา ๆ ไม่ม้วนแน่น",
+    proof: "พักก้อนสั้นเพื่อรักษาฟอง",
+    bake: "อบบน Stone/Steel พร้อมไอน้ำ",
+    prepMethod: "autolyse",
+    proofMode: "room",
+    bakeMode: "open",
+    levainFlour: "bread",
+    workflowKind: "ciabatta",
+    goals: ["balanced", "open", "mild"],
+    method: ["Autolyse และเติมน้ำส่วนที่สอง", "พัฒนาแรงด้วย Slap & Fold", "พับระหว่าง Bulk", "เทลงโต๊ะโดยไม่ไล่ฟอง", "แบ่งเป็นทรงสลิปเปอร์และพักสั้น", "อบไอน้ำจนสุกเต็มที่"],
+    warning: "ต้องอบให้แกนสุกจริง มิฉะนั้นเนื้อจะชื้นและเหนียว",
+  },
+  {
+    id: "baguette",
+    name: "บาแก็ต",
+    english: "Sourdough Baguette",
+    icon: "╱",
+    family: "artisan",
+    difficulty: "ขั้นสูง",
+    description: "ก้อนยาว เปลือกบางกรอบ ต้องขึ้นรูปและกรีดแม่นยำ",
+    texture: "เบา · เปลือกบาง · โพรงยาว",
+    flour: { bread: 90, ap: 10, spelt: 0, whole: 0, rye: 0 },
+    hydration: 70,
+    hydrationRange: "68–72%",
+    starterPercent: 20,
+    saltPercent: 2,
+    oilPercent: 0,
+    doughTemperature: 25,
+    targetDough: 350,
+    extras: [],
+    equipment: ["ผ้าคูช", "Baking Stone/Steel", "ใบมีดกรีด"],
+    shape: "Preshape ทรงกระบอกแล้วม้วนยาว",
+    proof: "พรูฟบนผ้าคูช",
+    bake: "กรีดซ้อน 3–5 รอยและใช้ไอน้ำแรงช่วงแรก",
+    prepMethod: "autolyse",
+    proofMode: "cold",
+    bakeMode: "open",
+    levainFlour: "bread",
+    workflowKind: "baguette",
+    goals: ["balanced", "open", "mild"],
+    method: ["Autolyse และผสม", "พับ 2–3 รอบระหว่าง Bulk", "Cold Ferment หรือพักข้ามคืน", "แบ่งและ Preshape", "ขึ้นรูปยาว พรูฟบนคูช", "กรีดซ้อนและอบไอน้ำ"],
+  },
+  {
+    id: "pizza",
+    name: "พิซซ่าซาวโดว์",
+    english: "Sourdough Pizza",
+    icon: "△",
+    family: "high-hydration",
+    difficulty: "เริ่มต้น",
+    description: "แบ่งเป็นลูกและหมักเย็น ปรับขนาดตามเส้นผ่านศูนย์กลางพิซซ่า",
+    texture: "ขอบพอง · กลางบาง · เคี้ยวหนึบ",
+    flour: { bread: 80, ap: 20, spelt: 0, whole: 0, rye: 0 },
+    hydration: 68,
+    hydrationRange: "65–72%",
+    starterPercent: 15,
+    saltPercent: 2.5,
+    oilPercent: 2,
+    doughTemperature: 24,
+    targetDough: 280,
+    extras: [],
+    equipment: ["กล่องหมักลูกโดว์", "Pizza Stone/Steel", "ไม้พายพิซซ่า"],
+    shape: "แบ่งเป็นลูก แล้วใช้นิ้วยืดจากกลางออกขอบ",
+    proof: "Cold Ferment 12–48 ชม. แล้วคืนอุณหภูมิ",
+    bake: "อบบนพื้นร้อนที่สุดของเตา",
+    prepMethod: "fermentolyse",
+    proofMode: "cold",
+    bakeMode: "open",
+    levainFlour: "bread",
+    workflowKind: "pizza",
+    goals: ["balanced", "open", "mild"],
+    method: ["ผสมและพัก", "พับสร้างแรง", "Bulk สั้น", "แบ่งและกลึงเป็นลูก", "Cold Ferment", "คืนอุณหภูมิ ยืด ใส่หน้า และอบร้อนจัด"],
+  },
+  {
+    id: "bagel",
+    name: "เบเกิล",
+    english: "Sourdough Bagel",
+    icon: "○",
+    family: "specialty",
+    difficulty: "ปานกลาง",
+    description: "โดว์แข็ง เคี้ยวหนึบ ขึ้นรูปวงและต้มก่อนอบ",
+    texture: "แน่นหนึบ · ผิวเงา · โพรงเล็ก",
+    flour: { bread: 100, ap: 0, spelt: 0, whole: 0, rye: 0 },
+    hydration: 58,
+    hydrationRange: "55–60%",
+    starterPercent: 20,
+    saltPercent: 2,
+    oilPercent: 0,
+    doughTemperature: 25,
+    targetDough: 120,
+    extras: [{ label: "น้ำตาลหรือมอลต์", percent: 3 }],
+    equipment: ["หม้อต้มน้ำ", "ถาดอบ", "ตะแกรงสะเด็ดน้ำ"],
+    shape: "ม้วนเชือกต่อปลายหรือเจาะกลาง",
+    proof: "พรูฟสั้นหรือแช่เย็นข้ามคืน",
+    bake: "ต้มทั้งสองด้าน แล้วจึงอบ",
+    prepMethod: "fermentolyse",
+    proofMode: "cold",
+    bakeMode: "open",
+    levainFlour: "bread",
+    workflowKind: "bagel",
+    goals: ["balanced", "mild", "grain"],
+    method: ["ผสมโดว์แข็งและนวดจนเนียน", "Bulk จนพองเล็กน้อย", "แบ่งและขึ้นรูปวง", "Cold Proof", "ต้มและใส่หน้า", "อบจนผิวเข้มเงา"],
+  },
+];
+
 const PAGE_ITEMS: { id: PageId; label: string; shortLabel: string; icon: string }[] = [
   { id: "home", label: "ภาพรวม", shortLabel: "ภาพรวม", icon: "⌂" },
   { id: "starter", label: "หัวเชื้อ", shortLabel: "หัวเชื้อ", icon: "◌" },
-  { id: "recipe", label: "สูตรและตะกร้า", shortLabel: "สูตร", icon: "▤" },
+  { id: "recipe", label: "เลือกทำขนมปัง", shortLabel: "ขนมปัง", icon: "▤" },
   { id: "proof", label: "พรูฟและอบ", shortLabel: "พรูฟ", icon: "◐" },
   { id: "bulk", label: "ไลฟ์บัลก์", shortLabel: "บัลก์", icon: "◎" },
   { id: "workflow", label: "ขั้นตอนทำ", shortLabel: "ขั้นตอน", icon: "→" },
@@ -695,6 +1124,18 @@ const normalizeRecipe = (
     ),
     flourProfile:
       typeof data.flourProfile === "string" ? data.flourProfile : "",
+    breadStyleId:
+      typeof data.breadStyleId === "string" &&
+      BREAD_STYLES.some((style) => style.id === data.breadStyleId)
+        ? data.breadStyleId
+        : "country",
+    breadGoal:
+      data.breadGoal === "open" ||
+      data.breadGoal === "soft" ||
+      data.breadGoal === "mild" ||
+      data.breadGoal === "grain"
+        ? data.breadGoal
+        : "balanced",
   };
 };
 
@@ -818,18 +1259,18 @@ export default function Home() {
   const [starterOld, setStarterOld] = useState(20);
   const [feedFlour, setFeedFlour] = useState(40);
   const [feedWater, setFeedWater] = useState(40);
-  const [wholeWheat, setWholeWheat] = useState(10);
+  const [wholeWheat, setWholeWheat] = useState(5);
   const [apFlour, setApFlour] = useState(10);
   const [speltFlour, setSpeltFlour] = useState(0);
-  const [ryeFlour, setRyeFlour] = useState(0);
+  const [ryeFlour, setRyeFlour] = useState(5);
   const [flourProfile, setFlourProfile] = useState("");
-  const [targetDough, setTargetDough] = useState(800);
-  const [hydration, setHydration] = useState(71);
+  const [targetDough, setTargetDough] = useState(950);
+  const [hydration, setHydration] = useState(73);
   const [starterPercent, setStarterPercent] = useState(20);
   const [saltPercent, setSaltPercent] = useState(2);
   const [oilPercent, setOilPercent] = useState(0);
   const [doughTemperature, setDoughTemperature] = useState(26);
-  const [recipeName, setRecipeName] = useState("สูตรครัวไทยของฉัน");
+  const [recipeName, setRecipeName] = useState("คันทรีซาวโดว์ · สมดุล");
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
   const [activeRecipeId, setActiveRecipeId] = useState("");
   const [loafCount, setLoafCount] = useState(1);
@@ -865,6 +1306,11 @@ export default function Home() {
   const [bannetonLength, setBannetonLength] = useState(22.9);
   const [bannetonDepth, setBannetonDepth] = useState(8.5);
   const [activePage, setActivePage] = useState<PageId>("home");
+  const [activeBreadStyleId, setActiveBreadStyleId] = useState("country");
+  const [breadFamilyFilter, setBreadFamilyFilter] =
+    useState<BreadFamilyFilter>("all");
+  const [breadGoal, setBreadGoal] = useState<BreadGoal>("balanced");
+  const [breadBuilderStep, setBreadBuilderStep] = useState(1);
   const [activeLessonId, setActiveLessonId] = useState(LEARNING_LESSONS[0].id);
   const [lessonLanguage, setLessonLanguage] =
     useState<LessonLanguage>("all");
@@ -921,6 +1367,14 @@ export default function Home() {
   const alertedMilestones = useRef<Set<number>>(new Set());
   const audioContextRef = useRef<AudioContext | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
+
+  const activeBreadStyle =
+    BREAD_STYLES.find((style) => style.id === activeBreadStyleId) ||
+    BREAD_STYLES[0];
+  const visibleBreadStyles =
+    breadFamilyFilter === "all"
+      ? BREAD_STYLES
+      : BREAD_STYLES.filter((style) => style.family === breadFamilyFilter);
 
   const recipeCalibration = useMemo(() => {
     const key = recipeName.trim().toLocaleLowerCase("th-TH");
@@ -1121,24 +1575,45 @@ export default function Home() {
 
   const recipe = useMemo(() => {
     const totalDough = targetDough * loafCount;
+    const extraPercent = activeBreadStyle.extras.reduce(
+      (sum, item) => sum + item.percent,
+      0,
+    );
     const totalFlour =
-      totalDough / (1 + hydration / 100 + saltPercent / 100 + oilPercent / 100);
+      totalDough /
+      (1 +
+        hydration / 100 +
+        saltPercent / 100 +
+        oilPercent / 100 +
+        extraPercent / 100);
     const levain = (totalFlour * starterPercent) / 100;
     const levainFlour = levain / 2;
     const levainWater = levain / 2;
     const whole = (totalFlour * wholeWheat) / 100;
     const ap = (totalFlour * apFlour) / 100;
     const spelt = (totalFlour * speltFlour) / 100;
-    const rye = (totalFlour * ryeFlour) / 100;
+    const ryeTotal = (totalFlour * ryeFlour) / 100;
     const breadPercent = Math.max(
       0,
       100 - wholeWheat - apFlour - speltFlour - ryeFlour,
     );
     const breadTotal = (totalFlour * breadPercent) / 100;
-    const bread = Math.max(0, breadTotal - levainFlour);
+    const bread = Math.max(
+      0,
+      breadTotal -
+        (activeBreadStyle.levainFlour === "bread" ? levainFlour : 0),
+    );
+    const rye = Math.max(
+      0,
+      ryeTotal - (activeBreadStyle.levainFlour === "rye" ? levainFlour : 0),
+    );
     const water = Math.max(0, (totalFlour * hydration) / 100 - levainWater);
     const salt = (totalFlour * saltPercent) / 100;
     const oil = (totalFlour * oilPercent) / 100;
+    const extras = activeBreadStyle.extras.map((item) => ({
+      ...item,
+      grams: (totalFlour * item.percent) / 100,
+    }));
     return {
       totalDough,
       totalFlour,
@@ -1152,6 +1627,7 @@ export default function Home() {
       water,
       salt,
       oil,
+      extras,
       baked: totalDough * 0.997 * 0.86,
       bakedEach: targetDough * 0.997 * 0.86,
     };
@@ -1166,6 +1642,7 @@ export default function Home() {
     apFlour,
     speltFlour,
     ryeFlour,
+    activeBreadStyle,
   ]);
 
   const waterTemperaturePlan = useMemo(() => {
@@ -1537,7 +2014,54 @@ export default function Home() {
   }, [ovenVolume, trayWidth, trayLength, steamMinutes, ovenSeal]);
 
   const phases = useMemo<Phase[]>(
-    () => [
+    () => {
+      if (activeBreadStyle.id !== "country") {
+        return activeBreadStyle.method.map((method, index) => {
+          const isBulk = /Bulk|บัลก์/i.test(method);
+          const isCold = /Cold|แช่เย็น|ข้ามคืน/i.test(method);
+          const isProof = /Proof|พรูฟ|พักก้อน|พักสั้น/i.test(method);
+          const isBake = /อบ|ต้ม/i.test(method);
+          const isLongCool = /12–24|พักอย่างน้อย 3/i.test(method);
+          const hours = isLongCool
+            ? 12
+            : isCold
+              ? coldHours
+              : isBulk
+                ? Math.max(1.5, adaptive.bulk)
+                : isProof
+                  ? 2 * adaptive.tempFactor
+                  : isBake
+                    ? 0.75
+                    : index <= 2
+                      ? 0.75
+                      : 0.5;
+          const temp = isCold
+            ? `${fridgeTemp}°C`
+            : isBake
+              ? activeBreadStyle.bake
+              : `โดว์ ${doughTemperature}°C · ห้อง ${temperature}°C`;
+          return {
+            icon: String(index + 1).padStart(2, "0"),
+            title: method,
+            subtitle: `${activeBreadStyle.name} · ขั้นตอน ${index + 1} จาก ${activeBreadStyle.method.length}`,
+            hours,
+            temp,
+            cue:
+              index === activeBreadStyle.method.length - 1
+                ? `ทำขั้นตอนสุดท้ายครบ แล้วตรวจผลตามเป้าหมาย ${activeBreadStyle.texture}`
+                : `ยืนยันจากสภาพโดว์จริงก่อนเดินต่อ ไม่ใช้เวลาอย่างเดียว · ${activeBreadStyle.shape}`,
+            guide: [
+              method,
+              index === 0
+                ? `สูตรนี้ใช้ ${activeBreadStyle.hydrationRange} Hydration · หัวเชื้อ ${activeBreadStyle.starterPercent}% · โดว์เป้าหมาย ${activeBreadStyle.doughTemperature}°C`
+                : `อุปกรณ์หลัก: ${activeBreadStyle.equipment.join(" · ")}`,
+              activeBreadStyle.warning ||
+                (isProof ? activeBreadStyle.proof : isBake ? activeBreadStyle.bake : activeBreadStyle.description),
+            ],
+          };
+        });
+      }
+      return [
       prepMethod === "autolyse"
         ? {
             icon: "01",
@@ -1767,8 +2291,10 @@ export default function Home() {
           "การตัดเร็วทำให้เนื้อเหนียวและดูเหมือนอบไม่สุก",
         ],
       },
-    ],
+      ];
+    },
     [
+      activeBreadStyle,
       temperature,
       doughTemperature,
       prepMethod,
@@ -1780,6 +2306,7 @@ export default function Home() {
       bulkRiseTarget,
       bulkReadiness,
       adaptive.bulk,
+      adaptive.tempFactor,
       proofAdaptive,
       adaptiveTempSource,
       fermentationTemperature,
@@ -1898,7 +2425,7 @@ export default function Home() {
   useEffect(() => {
     if (!running || !phaseStart || !phaseEnd) return;
     const milestones: TimerMilestone[] =
-      activePhase === 2
+      activeBreadStyle.id === "country" && activePhase === 2
         ? STRENGTH_MILESTONES
         : [
             {
@@ -1931,7 +2458,7 @@ export default function Home() {
       });
     }, 1000);
     return () => window.clearInterval(id);
-  }, [running, phaseStart, phaseEnd, phases, activePhase, notifyStatus]);
+  }, [running, phaseStart, phaseEnd, phases, activePhase, notifyStatus, activeBreadStyle.id]);
 
   useEffect(() => {
     if (!bulkRun?.startedAt) return;
@@ -2192,7 +2719,7 @@ export default function Home() {
       audioContextRef.current = new AudioContext();
     const start = Date.now();
     const end = start + phases[activePhase].hours * 3600000;
-    if (!bulkRun) {
+    if (activeBreadStyle.id === "country" && !bulkRun) {
       if (
         (activePhase === 0 && prepMethod === "fermentolyse") ||
         (activePhase === 1 && prepMethod === "autolyse")
@@ -2207,7 +2734,7 @@ export default function Home() {
     setPhaseEnd(end);
     setRunning(true);
     setToast(
-      activePhase === 2
+      activeBreadStyle.id === "country" && activePhase === 2
         ? "เริ่มจับเวลา — จะเตือนที่นาที 30, 60 และ 90"
         : `เริ่ม ${phases[activePhase].title} แล้ว`,
     );
@@ -2318,6 +2845,8 @@ export default function Home() {
       | "ryeFlour"
       | "doughTemperature"
       | "flourProfile"
+      | "breadStyleId"
+      | "breadGoal"
     >,
     id = "",
   ) => {
@@ -2333,11 +2862,69 @@ export default function Home() {
     setRyeFlour(values.ryeFlour);
     setFlourProfile(values.flourProfile);
     setDoughTemperature(values.doughTemperature);
+    const savedStyle = BREAD_STYLES.find(
+      (style) => style.id === values.breadStyleId,
+    );
+    if (savedStyle) {
+      setActiveBreadStyleId(savedStyle.id);
+      setBreadGoal(
+        values.breadGoal && savedStyle.goals.includes(values.breadGoal)
+          ? values.breadGoal
+          : "balanced",
+      );
+      setPrepMethod(savedStyle.prepMethod);
+      setProofMode(savedStyle.proofMode);
+      setBakeMode(savedStyle.bakeMode);
+    }
     setActiveRecipeId(id);
     setToast(`เปิดสูตร “${values.name}” แล้ว`);
   };
+  const applyBreadStyle = (
+    style: BreadStyle,
+    goal: BreadGoal = "balanced",
+  ) => {
+    const safeGoal = style.goals.includes(goal) ? goal : "balanced";
+    const hydrationAdjust =
+      safeGoal === "open" ? 2 : safeGoal === "soft" ? -1 : safeGoal === "grain" ? 1 : 0;
+    const starterAdjust = safeGoal === "mild" ? -5 : 0;
+    const oilAdjust = safeGoal === "soft" ? Math.max(style.oilPercent, 3) : style.oilPercent;
+    setActiveBreadStyleId(style.id);
+    setBreadGoal(safeGoal);
+    setRecipeName(`${style.name} · ${BREAD_GOALS.find((item) => item.id === safeGoal)?.label || "สมดุล"}`);
+    setTargetDough(style.targetDough);
+    setHydration(Math.min(92, Math.max(50, style.hydration + hydrationAdjust)));
+    setStarterPercent(Math.max(5, style.starterPercent + starterAdjust));
+    setSaltPercent(style.saltPercent);
+    setOilPercent(oilAdjust);
+    setApFlour(style.flour.ap);
+    setSpeltFlour(style.flour.spelt);
+    setWholeWheat(style.flour.whole);
+    setRyeFlour(style.flour.rye);
+    setDoughTemperature(style.doughTemperature);
+    setPrepMethod(style.prepMethod);
+    setProofMode(style.proofMode);
+    setBakeMode(style.bakeMode);
+    setFlourProfile(
+      `${style.english} · ${style.texture} · ${style.description}`,
+    );
+    setActiveRecipeId("");
+    setActivePhase(0);
+    setRunning(false);
+    setPhaseStart(null);
+    setPhaseEnd(null);
+    try {
+      localStorage.setItem(
+        "doughgarden-bread-builder",
+        JSON.stringify({ styleId: style.id, goal: safeGoal }),
+      );
+    } catch {
+      /* Bread selection remains usable without local storage. */
+    }
+  };
   const applyPreset = (preset: (typeof RECIPE_PRESETS)[number]) => {
     applyRecipe(preset);
+    setActiveBreadStyleId("country");
+    setBreadGoal("balanced");
     setActiveRecipeId("");
   };
   const setFlourPercent = (
@@ -2376,6 +2963,8 @@ export default function Home() {
       ryeFlour,
       doughTemperature,
       flourProfile,
+      breadStyleId: activeBreadStyle.id,
+      breadGoal,
     };
     const next = [record, ...savedRecipes.filter((item) => item.id !== id)];
     localStorage.setItem("doughgarden-recipes", JSON.stringify(next));
@@ -3759,9 +4348,217 @@ export default function Home() {
       </section>
 
       <section className="section shell" id="recipe" hidden={activePage !== "recipe"}>
+        <div className="bread-style-builder">
+          <div className="bread-builder-hero">
+            <div>
+              <p className="section-kicker">V28 · BREAD STYLE BUILDER</p>
+              <h2>วันนี้อยากทำขนมปังแบบไหน</h2>
+              <span>
+                เลือกชนิดแล้วสูตร อุปกรณ์ และ Guided Workflow จะเปลี่ยนพร้อมกัน
+              </span>
+            </div>
+            <div className="bread-builder-live">
+              <span>ซิงค์อุณหภูมิสด</span>
+              <strong>ห้อง {temperature}°C · โดว์ {doughTemperature}°C</strong>
+              <small>{activeBreadStyle.name} · {activeBreadStyle.texture}</small>
+            </div>
+          </div>
+
+          <div className="bread-builder-steps" aria-label="ขั้นตอนเลือกขนมปัง">
+            {[
+              [1, "ชนิด"],
+              [2, "เนื้อสัมผัส"],
+              [3, "สูตรแป้ง"],
+              [4, "อุปกรณ์"],
+              [5, "วิธีทำ"],
+            ].map(([step, label]) => (
+              <button
+                type="button"
+                className={breadBuilderStep === step ? "active" : ""}
+                onClick={() => setBreadBuilderStep(Number(step))}
+                key={step}
+              >
+                <b>{step}</b>
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
+
+          {breadBuilderStep === 1 && (
+            <div className="bread-builder-panel">
+              <div className="bread-family-tabs">
+                {BREAD_FAMILIES.map((family) => (
+                  <button
+                    type="button"
+                    className={breadFamilyFilter === family.id ? "active" : ""}
+                    onClick={() => setBreadFamilyFilter(family.id)}
+                    key={family.id}
+                  >
+                    {family.label}
+                  </button>
+                ))}
+              </div>
+              <div className="bread-style-grid">
+                {visibleBreadStyles.map((style) => (
+                  <button
+                    type="button"
+                    className={activeBreadStyle.id === style.id ? "active" : ""}
+                    onClick={() => {
+                      applyBreadStyle(style);
+                      setBreadBuilderStep(2);
+                    }}
+                    key={style.id}
+                  >
+                    <span className="bread-style-icon">{style.icon}</span>
+                    <div>
+                      <small>{style.english} · {style.difficulty}</small>
+                      <strong>{style.name}</strong>
+                      <p>{style.description}</p>
+                    </div>
+                    <b>{style.hydrationRange}</b>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {breadBuilderStep === 2 && (
+            <div className="bread-builder-panel">
+              <div className="bread-panel-title">
+                <span>ขั้นที่ 2</span>
+                <h3>ต้องการผลลัพธ์แบบไหน</h3>
+                <p>แสดงเฉพาะเป้าหมายที่เหมาะกับ {activeBreadStyle.name}</p>
+              </div>
+              <div className="bread-goal-grid">
+                {BREAD_GOALS.filter((goal) =>
+                  activeBreadStyle.goals.includes(goal.id),
+                ).map((goal) => (
+                  <button
+                    type="button"
+                    className={breadGoal === goal.id ? "active" : ""}
+                    onClick={() => {
+                      applyBreadStyle(activeBreadStyle, goal.id);
+                      setBreadBuilderStep(3);
+                    }}
+                    key={goal.id}
+                  >
+                    <strong>{goal.label}</strong>
+                    <span>{goal.detail}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {breadBuilderStep === 3 && (
+            <div className="bread-builder-panel bread-formula-panel">
+              <div className="bread-panel-title">
+                <span>ขั้นที่ 3</span>
+                <h3>สัดส่วนแป้งของ {activeBreadStyle.name}</h3>
+                <p>แป้งรวม 100% · น้ำและแป้งในหัวเชื้อถูกนำไปคำนวณด้วย</p>
+              </div>
+              <div className="bread-formula-bars">
+                {[
+                  ["Bread Flour", activeBreadStyle.flour.bread],
+                  ["All-Purpose", activeBreadStyle.flour.ap],
+                  ["Spelt", activeBreadStyle.flour.spelt],
+                  ["Whole Wheat", activeBreadStyle.flour.whole],
+                  ["Rye", activeBreadStyle.flour.rye],
+                ].filter(([, percent]) => Number(percent) > 0).map(([label, percent]) => (
+                  <div key={String(label)}>
+                    <span>{label}</span>
+                    <i><b style={{ width: `${percent}%` }} /></i>
+                    <strong>{percent}%</strong>
+                  </div>
+                ))}
+              </div>
+              <div className="bread-formula-facts">
+                <div><span>Hydration</span><strong>{hydration}%</strong><small>ช่วง {activeBreadStyle.hydrationRange}</small></div>
+                <div><span>หัวเชื้อ/Levain</span><strong>{starterPercent}%</strong><small>100% hydration</small></div>
+                <div><span>เกลือ</span><strong>{saltPercent}%</strong><small>Baker&apos;s percentage</small></div>
+                <div><span>โดว์เป้าหมาย</span><strong>{doughTemperature}°C</strong><small>ซิงค์ทุกหน้า</small></div>
+              </div>
+              {activeBreadStyle.extras.length > 0 && (
+                <div className="bread-extra-row">
+                  <b>ส่วนเสริม:</b>
+                  {activeBreadStyle.extras.map((item) => (
+                    <span key={item.label}>{item.label} {item.percent}%</span>
+                  ))}
+                </div>
+              )}
+              {activeBreadStyle.warning && (
+                <div className="bread-style-warning">ข้อควรระวัง · {activeBreadStyle.warning}</div>
+              )}
+            </div>
+          )}
+
+          {breadBuilderStep === 4 && (
+            <div className="bread-builder-panel">
+              <div className="bread-panel-title">
+                <span>ขั้นที่ 4</span>
+                <h3>อุปกรณ์และรูปทรง</h3>
+                <p>ส่วนตะกร้าจะใช้เฉพาะชนิดที่ต้องพรูฟใน Banneton</p>
+              </div>
+              <div className="bread-equipment-grid">
+                {activeBreadStyle.equipment.map((item, index) => (
+                  <div key={item}><b>{String(index + 1).padStart(2, "0")}</b><span>{item}</span></div>
+                ))}
+              </div>
+              <div className="bread-method-facts">
+                <p><span>ขึ้นรูป</span><strong>{activeBreadStyle.shape}</strong></p>
+                <p><span>พรูฟ</span><strong>{activeBreadStyle.proof}</strong></p>
+                <p><span>อบ</span><strong>{activeBreadStyle.bake}</strong></p>
+              </div>
+            </div>
+          )}
+
+          {breadBuilderStep === 5 && (
+            <div className="bread-builder-panel">
+              <div className="bread-panel-title">
+                <span>ขั้นที่ 5</span>
+                <h3>วิธีทำ {activeBreadStyle.name}</h3>
+                <p>เวลาจริงจะ Adaptive จากอุณหภูมิห้องและอุณหภูมิโดว์</p>
+              </div>
+              <div className="bread-method-timeline">
+                {activeBreadStyle.method.map((method, index) => (
+                  <div key={method}>
+                    <b>{String(index + 1).padStart(2, "0")}</b>
+                    <span>{method}</span>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="bread-start-workflow"
+                onClick={() => openPage("workflow")}
+              >
+                เริ่ม Guided Workflow สำหรับ {activeBreadStyle.name} →
+              </button>
+            </div>
+          )}
+
+          <div className="bread-builder-nav">
+            <button
+              type="button"
+              disabled={breadBuilderStep === 1}
+              onClick={() => setBreadBuilderStep((step) => Math.max(1, step - 1))}
+            >
+              ← ย้อนกลับ
+            </button>
+            <span>{activeBreadStyle.name} · {BREAD_GOALS.find((goal) => goal.id === breadGoal)?.label}</span>
+            <button
+              type="button"
+              disabled={breadBuilderStep === 5}
+              onClick={() => setBreadBuilderStep((step) => Math.min(5, step + 1))}
+            >
+              ถัดไป →
+            </button>
+          </div>
+        </div>
+
         <header>
-          <p className="section-kicker">01 — เรซิพีไลบรารี</p>
-          <h2>เลือก ปรับ และบันทึกสูตร</h2>
+          <p className="section-kicker">01B — ปรับสูตรละเอียด</p>
+          <h2>ปรับกรัม สัดส่วน และบันทึกสูตร</h2>
           <span>สัดส่วนแป้งรวม 100% และคำนวณแป้ง/น้ำที่อยู่ในหัวเชื้อแล้ว</span>
         </header>
         <div className="recipe-preset-grid">
@@ -3849,7 +4646,7 @@ export default function Home() {
                   <input
                     type="number"
                     min="0"
-                    max="30"
+                    max={activeBreadStyle.id === "high-rye" ? 90 : 30}
                     value={ryeFlour}
                     onChange={(e) => setFlourPercent("rye", +e.target.value)}
                   />
@@ -3890,7 +4687,7 @@ export default function Home() {
               <input
                 type="range"
                 min="5"
-                max="35"
+                max={activeBreadStyle.id === "high-rye" ? 100 : 35}
                 value={starterPercent}
                 onChange={(e) => {
                   setStarterPercent(+e.target.value);
@@ -4071,10 +4868,16 @@ export default function Home() {
               </p>
               {oilPercent > 0 && (
                 <p>
-                  <span>น้ำมัน {oilPercent}%</span>
+                  <span>{activeBreadStyle.id === "sandwich" ? "เนยหรือน้ำมัน" : "น้ำมัน"} {oilPercent}%</span>
                   <b>{round(recipe.oil)} กรัม</b>
                 </p>
               )}
+              {recipe.extras.map((item) => (
+                <p key={item.label}>
+                  <span>{item.label} {item.percent}%</span>
+                  <b>{round(item.grams)} กรัม</b>
+                </p>
+              ))}
             </div>
             <div className="bulk-target-card">
               <span>
@@ -4093,7 +4896,7 @@ export default function Home() {
                 · ใช้สภาพโดว์ยืนยันเสมอ
               </small>
             </div>
-            <div className={`recipe-learning-badge ${recipeCalibration.count?"learned":"empty"}`}><div><span>V27 · ระบบเรียนรู้สูตรนี้</span><strong>{recipeCalibration.label}</strong></div><p>{recipeCalibration.count?`${recipeCalibration.count} ผลอบ · ความมั่นใจ ${recipeCalibration.confidence}% · เวลาบัลก์ถูกปรับ ${Math.round((recipeCalibration.factor-1)*100)}%`:`บันทึกผลอบใน Bake Journal แล้วรอบถัดไปจะปรับเวลาเฉพาะสูตรนี้`}</p></div>
+            <div className={`recipe-learning-badge ${recipeCalibration.count?"learned":"empty"}`}><div><span>V28 · ระบบเรียนรู้สูตรนี้</span><strong>{recipeCalibration.label}</strong></div><p>{recipeCalibration.count?`${recipeCalibration.count} ผลอบ · ความมั่นใจ ${recipeCalibration.confidence}% · เวลาบัลก์ถูกปรับ ${Math.round((recipeCalibration.factor-1)*100)}%`:`บันทึกผลอบใน Bake Journal แล้วรอบถัดไปจะปรับเวลาเฉพาะสูตรนี้`}</p></div>
             <div className="weight-flow">
               <span>รวม {recipe.totalDough} กรัม</span>
               <i>→</i>
@@ -4344,9 +5147,18 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section shell banneton-section" id="banneton" hidden={activePage !== "recipe"}>
+      <section
+        className="section shell banneton-section"
+        id="banneton"
+        hidden={
+          activePage !== "recipe" ||
+          !["country", "whole-wheat", "spelt-multigrain"].includes(
+            activeBreadStyle.id,
+          )
+        }
+      >
         <header>
-          <p className="section-kicker">01B — BANNETON CALCULATOR · V27</p>
+          <p className="section-kicker">01C — BANNETON CALCULATOR · V28</p>
           <h2>เลือกตะกร้าให้พอดีกับน้ำหนักโดว์</h2>
           <span>
             ใช้รูปทรงและขนาดด้านในของตะกร้าเพื่อประมาณน้ำหนักโดว์ที่พยุงทรงได้ดี
@@ -5327,7 +6139,7 @@ export default function Home() {
 
       <section className="section shell" id="assistant" hidden={activePage !== "workflow"}>
         <header>
-          <p className="section-kicker">04 — ไกด์เด็ดเวิร์กโฟลว์</p>
+          <p className="section-kicker">04 — GUIDED WORKFLOW · V28</p>
           <h2>ผู้ช่วยทำขนมปังทีละขั้น</h2>
           <span>
             {bakePlan
@@ -5335,6 +6147,19 @@ export default function Home() {
               : "เลือกวันและเวลาในแผนเวลาอบ แล้วตารางของทุกขั้นตอนจะแสดงที่นี่"}
           </span>
         </header>
+        <div className="workflow-style-banner">
+          <div>
+            <span>กำลังทำ</span>
+            <strong>{activeBreadStyle.name}</strong>
+            <small>{activeBreadStyle.english} · {activeBreadStyle.texture}</small>
+          </div>
+          <div>
+            <span>อุณหภูมิที่ใช้คำนวณ</span>
+            <strong>{adaptiveTempSource === "dough" ? `โดว์ ${doughTemperature}°C` : `ห้อง ${temperature}°C`}</strong>
+            <small>เป้าหมายโดว์ {activeBreadStyle.doughTemperature}°C</small>
+          </div>
+          <button type="button" onClick={() => openPage("recipe")}>เปลี่ยนชนิดขนมปัง</button>
+        </div>
         <div className="workflow">
           <div className="phase-nav">
             {phases.map((phase, index) => {
@@ -5392,7 +6217,7 @@ export default function Home() {
             <div className="timer">
               <span>
                 {running && phaseEnd
-                  ? activePhase === 2 && phaseStart
+                  ? activeBreadStyle.id === "country" && activePhase === 2 && phaseStart
                     ? countdown(
                         Math.min(
                           phaseEnd,
@@ -5405,21 +6230,21 @@ export default function Home() {
                         ) - now,
                       )
                     : countdown(phaseEnd - now)
-                  : activePhase === 2
+                  : activeBreadStyle.id === "country" && activePhase === 2
                     ? "30 นาที"
                     : duration(phases[activePhase].hours)}
               </span>
               <small>
                 {running
-                  ? activePhase === 2 && phaseStart
+                  ? activeBreadStyle.id === "country" && activePhase === 2 && phaseStart
                     ? `รอบที่ ${Math.min(3, Math.floor(Math.max(0, now - phaseStart) / 1800000) + 1)} จาก 3`
                     : `สิ้นสุดประมาณ ${clock(new Date(phaseEnd!))}`
-                  : activePhase === 2
+                  : activeBreadStyle.id === "country" && activePhase === 2
                     ? "นับถอยหลังแยกรอบละ 30 นาที"
                     : "เวลาที่แนะนำ"}
               </small>
             </div>
-            {activePhase === 2 && (
+            {activeBreadStyle.id === "country" && activePhase === 2 && (
               <div className="milestone-schedule">
                 <p>ตัวนับถอยหลังการพับโดว์ 3 รอบ</p>
                 <div>
@@ -5536,7 +6361,7 @@ export default function Home() {
         hidden={activePage !== "education"}
       >
         <header>
-          <p className="section-kicker">05 — LEARNING STUDIO · V27</p>
+          <p className="section-kicker">05 — LEARNING STUDIO · V28</p>
           <h2>เรียนทำซาวโดว์ทีละขั้น พร้อมวิดีโอ</h2>
           <span>
             เลือกบทแล้วแสดงเพียงวิดีโอเดียว พร้อมจุดสังเกตภาษาไทยและเชื่อมกลับไปยัง Workflow
@@ -5729,7 +6554,7 @@ export default function Home() {
         hidden={activePage !== "analysis"}
       >
         <header>
-          <p className="section-kicker">06 — DOUGH DIAGNOSTICS · V27</p>
+          <p className="section-kicker">06 — DOUGH DIAGNOSTICS · V28</p>
           <h2>เช็กโดว์และวิเคราะห์ผลแบบไม่ฟันธงจากอาการเดียว</h2>
           <span>
             รวมหลายสัญญาณเข้าด้วยกัน แล้วเสนอสิ่งที่ควรทดลองเปลี่ยนครั้งละหนึ่งตัวแปร
@@ -5955,7 +6780,7 @@ export default function Home() {
 
       <section className="section shell bake-journal-section" id="bake-journal" hidden={activePage !== "analysis"}>
         <header>
-          <p className="section-kicker">07 — BAKE JOURNAL · V27</p>
+          <p className="section-kicker">07 — BAKE JOURNAL · V28</p>
           <h2>บันทึกผลจริง แล้วให้เว็บเรียนรู้สูตรนี้</h2>
           <span>
             เปรียบเทียบเวลาบัลก์ที่คำนวณกับเวลาที่โดว์พร้อมจริง
