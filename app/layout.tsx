@@ -20,6 +20,7 @@ import "./v23-calculators.css";
 import "./v24-learning.css";
 import "./mobile-readiness.css";
 import "./v25-readability.css";
+import "./v26-single-page.css";
 
 const anuphan = Anuphan({
   variable: "--font-anuphan",

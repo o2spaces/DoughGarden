@@ -7,6 +7,19 @@ type BakeMode = "dutch" | "open";
 type PrepMethod = "fermentolyse" | "autolyse";
 type AdaptiveTempSource = "room" | "dough";
 type AlertSound = "bell" | "chime" | "soft" | "none";
+type PageId =
+  | "home"
+  | "starter"
+  | "recipe"
+  | "proof"
+  | "bulk"
+  | "workflow"
+  | "analysis"
+  | "data";
+type PokeResult = "fast" | "slow" | "none";
+type ProofTension = "tight" | "soft" | "weak";
+type CrumbPattern = "dense" | "tunnel" | "wild" | "gummy" | "balanced";
+type FlavorTarget = "mild" | "balanced" | "tangy";
 type Phase = {
   icon: string;
   title: string;
@@ -88,6 +101,53 @@ type BakeEntry = {
   sourness: number;
   crust: number;
   notes: string;
+};
+
+const PAGE_ITEMS: { id: PageId; label: string; shortLabel: string; icon: string }[] = [
+  { id: "home", label: "ภาพรวม", shortLabel: "ภาพรวม", icon: "⌂" },
+  { id: "starter", label: "หัวเชื้อ", shortLabel: "หัวเชื้อ", icon: "◌" },
+  { id: "recipe", label: "สูตรและตะกร้า", shortLabel: "สูตร", icon: "▤" },
+  { id: "proof", label: "พรูฟและอบ", shortLabel: "พรูฟ", icon: "◐" },
+  { id: "bulk", label: "ไลฟ์บัลก์", shortLabel: "บัลก์", icon: "◎" },
+  { id: "workflow", label: "ขั้นตอนทำ", shortLabel: "ขั้นตอน", icon: "→" },
+  { id: "analysis", label: "วิเคราะห์ผล", shortLabel: "วิเคราะห์", icon: "◇" },
+  { id: "data", label: "ข้อมูล", shortLabel: "ข้อมูล", icon: "↕" },
+];
+
+const CRUMB_DIAGNOSIS: Record<
+  CrumbPattern,
+  { label: string; status: string; causes: string[]; next: string }
+> = {
+  dense: {
+    label: "โพรงเล็ก แน่นทั้งก้อน",
+    status: "มักสัมพันธ์กับการหมักหรือโครงสร้างที่ยังไม่พอ",
+    causes: ["หัวเชื้อยังไม่พีคหรืออ่อนแรง", "จบบัลก์เร็วเกินไป", "พัฒนากลูเตนไม่พอ"],
+    next: "รอบหน้าเช็กหัวเชื้อที่พีค และเพิ่มบัลก์ทีละ 10–15 นาที โดยคงตัวแปรอื่นไว้",
+  },
+  tunnel: {
+    label: "โพรงใหญ่ด้านบน แต่ด้านล่างแน่น",
+    status: "ไม่ควรฟันธงว่า Overproof — มักต้องเช็ก Underproof และการขึ้นรูปก่อน",
+    causes: ["แก๊สกระจุกจากการขึ้นรูป", "ไฟนอลพรูฟยังไม่พอ", "ไล่อากาศหรือซีลตะเข็บไม่สม่ำเสมอ"],
+    next: "ฝึกขึ้นรูปให้แรงตึงสม่ำเสมอ และเพิ่มไฟนอลพรูฟทีละ 10–15 นาที",
+  },
+  wild: {
+    label: "โพรงใหญ่มาก ไม่สม่ำเสมอ",
+    status: "อาจมาจากหมักเกิน โครงสร้างอ่อน หรือการขึ้นรูป — ต้องดูอาการโดว์ร่วมกัน",
+    causes: ["บัลก์เลยจุดพร้อม", "Hydration สูงเกินกำลังแป้ง", "พับโดว์หรือขึ้นรูปไม่พอ"],
+    next: "ลองลดน้ำ 2% ก่อนหนึ่งรอบ หรือจบบัลก์เร็วขึ้น 10–15 นาทีอย่างใดอย่างหนึ่ง",
+  },
+  gummy: {
+    label: "เนื้อเหนียว ชื้น หรือเป็นยาง",
+    status: "เกี่ยวได้ทั้งการหมัก การอบ และการพักให้เย็น",
+    causes: ["แกนขนมปังยังไม่สุก", "ตัดก่อนเย็นสนิท", "หมักเกินจนโครงสร้างอ่อน"],
+    next: "วัดแกนกลางหลังอบ พักบนตะแกรงอย่างน้อย 2 ชั่วโมง แล้วจึงประเมินอีกครั้ง",
+  },
+  balanced: {
+    label: "โพรงสมดุล กระจายทั่วก้อน",
+    status: "สัญญาณโดยรวมดี เมื่อเนื้อยืดหยุ่น ไม่แฉะ และเปลือกบางตามเป้าหมาย",
+    causes: ["หัวเชื้อพร้อม", "จบบัลก์เหมาะสม", "ขึ้นรูปและไฟนอลพรูฟสมดุล"],
+    next: "บันทึกเวลา อุณหภูมิโดว์ และรูปตัดใน Bake Journal เพื่อใช้เป็นค่าฐานของสูตรนี้",
+  },
 };
 
 const RECIPE_PRESETS = [
@@ -612,7 +672,7 @@ export default function Home() {
   const [bannetonWidth, setBannetonWidth] = useState(22.9);
   const [bannetonLength, setBannetonLength] = useState(22.9);
   const [bannetonDepth, setBannetonDepth] = useState(8.5);
-  const [activeNav, setActiveNav] = useState("day-tracker");
+  const [activePage, setActivePage] = useState<PageId>("home");
   const [activePhase, setActivePhase] = useState(0);
   const [phaseStart, setPhaseStart] = useState<number | null>(null);
   const [phaseEnd, setPhaseEnd] = useState<number | null>(null);
@@ -649,6 +709,17 @@ export default function Home() {
   const [journalSourness, setJournalSourness] = useState(3);
   const [journalCrust, setJournalCrust] = useState(3);
   const [journalNotes, setJournalNotes] = useState("");
+  const [pokeResult, setPokeResult] = useState<PokeResult>("slow");
+  const [proofRise, setProofRise] = useState(30);
+  const [proofTension, setProofTension] =
+    useState<ProofTension>("soft");
+  const [proofJiggle, setProofJiggle] = useState(true);
+  const [crumbPattern, setCrumbPattern] =
+    useState<CrumbPattern>("balanced");
+  const [starterFeedRatio, setStarterFeedRatio] = useState(5);
+  const [starterSeed, setStarterSeed] = useState(10);
+  const [flavorTarget, setFlavorTarget] =
+    useState<FlavorTarget>("balanced");
   const [today, setToday] = useState("");
   const alertedMilestones = useRef<Set<number>>(new Set());
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -691,6 +762,66 @@ export default function Home() {
           : `สูตรนี้มัก${difference < 0 ? "เร็วกว่า" : "ช้ากว่า"}ค่าฐาน ${Math.abs(difference)}%`,
     };
   }, [bakeEntries, recipeName]);
+
+  const proofReadiness = useMemo(() => {
+    const pokeScore = pokeResult === "slow" ? 35 : pokeResult === "fast" ? 12 : 4;
+    const riseScore = proofRise >= 20 && proofRise <= 45 ? 25 : proofRise < 12 ? 5 : 12;
+    const tensionScore = proofTension === "soft" ? 22 : proofTension === "tight" ? 12 : 4;
+    const jiggleScore = proofJiggle ? 18 : 6;
+    const score = Math.min(100, pokeScore + riseScore + tensionScore + jiggleScore);
+    return {
+      score,
+      key: score >= 76 ? "ready" : score >= 52 ? "check" : "wait",
+      label: score >= 76 ? "ใกล้พร้อมอบ" : score >= 52 ? "เริ่มเช็กถี่ขึ้น" : "ยังควรรอ",
+      detail:
+        score >= 76
+          ? "อาการหลายข้อไปทางเดียวกัน เตรียมอุ่นเตาและยืนยันว่าผิวยังมีแรงตึง"
+          : score >= 52
+            ? "ยังไม่ควรดู Finger Poke อย่างเดียว เช็กปริมาตร แรงตึง และการสั่นร่วมกัน"
+            : "โดว์ยังตึงหรือปริมาตรยังน้อย ให้พักต่อแล้วตรวจซ้ำใน 10–15 นาที",
+    };
+  }, [pokeResult, proofRise, proofTension, proofJiggle]);
+
+  const starterFeedPlan = useMemo(() => {
+    const ratioBase: Record<number, number> = { 1: 4, 2: 6, 5: 10, 10: 14 };
+    const baseHours = ratioBase[starterFeedRatio] || 10;
+    const temperatureFactor = Math.pow(1.12, 26 - levainTemperature);
+    const low = Math.max(2.5, baseHours * temperatureFactor * 0.85);
+    const high = Math.max(low + 1, baseHours * temperatureFactor * 1.15);
+    return {
+      flour: starterSeed * starterFeedRatio,
+      water: starterSeed * starterFeedRatio,
+      total: starterSeed * (1 + starterFeedRatio * 2),
+      low,
+      high,
+    };
+  }, [starterFeedRatio, starterSeed, levainTemperature]);
+
+  const flavorPlan = useMemo(() => {
+    if (flavorTarget === "mild")
+      return {
+        label: "นุ่มนวล เปรี้ยวน้อย",
+        starter: 20,
+        dough: 26,
+        cold: 8,
+        note: "ใช้หัวเชื้อช่วงพีคและลดเวลาพักเย็น ไม่ปล่อยให้หัวเชื้อยุบ",
+      };
+    if (flavorTarget === "tangy")
+      return {
+        label: "เปรี้ยวชัดขึ้นอย่างควบคุม",
+        starter: 15,
+        dough: 24,
+        cold: 16,
+        note: "ใช้การหมักที่เย็นและยาวขึ้น แต่ต้องหยุดบัลก์ตามสภาพโดว์ ไม่ไล่ตามเวลาอย่างเดียว",
+      };
+    return {
+      label: "สมดุล กลิ่นข้าวชัด",
+      starter: 20,
+      dough: 25,
+      cold: 12,
+      note: "ใช้หัวเชื้อใกล้พีคและคุมโดว์ช่วง 24–26°C เพื่อบาลานซ์กลิ่นและความเปรี้ยว",
+    };
+  }, [flavorTarget]);
 
   const levainStageForAdaptive =
     bulkRun?.levainStageAtMix && bulkRun.levainStageAtMix !== "unknown"
@@ -1536,6 +1667,20 @@ export default function Home() {
     if (sound !== "none") playAlertSound(sound);
   };
 
+  const openPage = (page: PageId) => {
+    setActivePage(page);
+    setSoundMenuOpen(false);
+    try {
+      localStorage.setItem("doughgarden-active-page", page);
+      window.history.replaceState(null, "", `#${page}`);
+    } catch {
+      /* Navigation remains usable when browser storage is unavailable. */
+    }
+    window.requestAnimationFrame(() =>
+      window.scrollTo({ top: 0, behavior: "smooth" }),
+    );
+  };
+
   useEffect(() => {
     if (!running || !phaseStart || !phaseEnd) return;
     const milestones: TimerMilestone[] =
@@ -1731,41 +1876,20 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const sectionIds = [
-      "day-tracker",
-      "recipe",
-      "proof",
-      "baking",
-      "bulk-tracker",
-      "assistant",
-    ];
-    let frame = 0;
-    const updateActiveNav = () => {
-      window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(() => {
-        const marker = window.scrollY + 130;
-        let current = sectionIds[0];
-        sectionIds.forEach((id) => {
-          const section = document.getElementById(id);
-          if (
-            section &&
-            section.getBoundingClientRect().top + window.scrollY <= marker
-          )
-            current = id;
-        });
-        setActiveNav(current);
-      });
+    const validPages = new Set(PAGE_ITEMS.map((item) => item.id));
+    const selectFromLocation = () => {
+      try {
+        const hashPage = window.location.hash.replace("#", "") as PageId;
+        const savedPage = localStorage.getItem("doughgarden-active-page") as PageId | null;
+        if (validPages.has(hashPage)) setActivePage(hashPage);
+        else if (savedPage && validPages.has(savedPage)) setActivePage(savedPage);
+      } catch {
+        /* Keep the default page if URL or storage access is restricted. */
+      }
     };
-    updateActiveNav();
-    window.addEventListener("scroll", updateActiveNav, { passive: true });
-    window.addEventListener("resize", updateActiveNav);
-    window.addEventListener("hashchange", updateActiveNav);
-    return () => {
-      window.cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", updateActiveNav);
-      window.removeEventListener("resize", updateActiveNav);
-      window.removeEventListener("hashchange", updateActiveNav);
-    };
+    selectFromLocation();
+    window.addEventListener("hashchange", selectFromLocation);
+    return () => window.removeEventListener("hashchange", selectFromLocation);
   }, []);
 
   const requestNotifications = async () => {
@@ -2727,37 +2851,31 @@ export default function Home() {
     levainObservations[levainObservations.length - 1];
 
   return (
-    <main>
+    <main data-active-page={activePage}>
       {toast && (
         <button className="toast" onClick={() => setToast("")}>
           ✓ {toast}
         </button>
       )}
-      <nav className="nav shell">
-        <a className="brand" href="#top">
+      <nav className="nav shell" aria-label="เมนูหลัก">
+        <button className="brand" type="button" onClick={() => openPage("home")}>
           <span>D</span>
           <strong>
             DoughGarden<small>กระดุ๊กกระดิ๊ก กระจุ๊กกระจิ๊กหัวใจ</small>
           </strong>
-        </a>
+        </button>
         <div className="nav-links">
-          {[
-            ["day-tracker", "เดย์แทร็กเกอร์"],
-            ["recipe", "สูตร"],
-            ["proof", "ไฟนอลพรูฟ"],
-            ["baking", "การอบ"],
-            ["bulk-tracker", "ไลฟ์บัลก์"],
-            ["assistant", "ผู้ช่วยทำขนมปัง"],
-          ].map(([id, label]) => (
-            <a
-              href={`#${id}`}
-              className={activeNav === id ? "active" : ""}
-              aria-current={activeNav === id ? "page" : undefined}
-              onClick={() => setActiveNav(id)}
-              key={id}
+          {PAGE_ITEMS.map((item) => (
+            <button
+              type="button"
+              className={activePage === item.id ? "active" : ""}
+              aria-current={activePage === item.id ? "page" : undefined}
+              onClick={() => openPage(item.id)}
+              key={item.id}
             >
-              {label}
-            </a>
+              <span aria-hidden="true">{item.icon}</span>
+              <b>{item.label}</b>
+            </button>
           ))}
         </div>
         <div className="nav-actions">
@@ -2823,7 +2941,7 @@ export default function Home() {
         </div>
       </nav>
 
-      <section className="hero shell" id="top">
+      <section className="hero shell" id="top" hidden={activePage !== "home"}>
         <div className="hero-copy">
           <p className="eyebrow">อะแดปทีฟเบรดแอสซิสแทนต์</p>
           <h1>
@@ -2836,7 +2954,9 @@ export default function Home() {
             และแจ้งเตือนตั้งแต่เลี้ยงหัวเชื้อจนขนมปังเย็นพร้อมตัด
           </p>
           <div className="hero-actions">
-            <a href="#assistant">เริ่มผู้ช่วยทำขนมปัง</a>
+            <button type="button" onClick={() => openPage("workflow")}>
+              เริ่มผู้ช่วยทำขนมปัง
+            </button>
             <span>
               รวมประมาณ <b>{duration(totalHours)}</b>
             </span>
@@ -2972,6 +3092,7 @@ export default function Home() {
       <section
         className="bake-planner shell"
         aria-labelledby="bake-planner-title"
+        hidden={activePage !== "home"}
       >
         <div className="bake-planner-copy">
           <p className="section-kicker">แพลนเวลาอบ</p>
@@ -3051,7 +3172,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="day-tracker shell" id="day-tracker">
+      <section className="day-tracker shell" id="day-tracker" hidden={activePage !== "starter"}>
         <div className="tracker-intro">
           <p className="section-kicker">มายสตาร์ตเตอร์ — เดย์แทร็กเกอร์</p>
           <h2>{yeastName.trim() || "ตั้งชื่อยีสต์ของคุณ"}</h2>
@@ -3165,7 +3286,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="starter-strip shell">
+      <section className="starter-strip shell" hidden={activePage !== "starter"}>
         <div>
           <p className="section-kicker">สตาร์ตเตอร์เรดดี</p>
           <h2>เลี้ยงหัวเชื้อ</h2>
@@ -3221,7 +3342,7 @@ export default function Home() {
         </button>
       </div>
 
-      <section className="levain-tracker shell" id="levain-tracker">
+      <section className="levain-tracker shell" id="levain-tracker" hidden={activePage !== "starter"}>
         <div className="levain-heading">
           <p className="section-kicker">
             เลอแวงบิลด์ — {yeastName.trim() || "หัวเชื้อสำหรับรอบนี้"}
@@ -3367,7 +3488,7 @@ export default function Home() {
         )}
       </section>
 
-      <section className="section shell" id="recipe">
+      <section className="section shell" id="recipe" hidden={activePage !== "recipe"}>
         <header>
           <p className="section-kicker">01 — เรซิพีไลบรารี</p>
           <h2>เลือก ปรับ และบันทึกสูตร</h2>
@@ -3702,7 +3823,7 @@ export default function Home() {
                 · ใช้สภาพโดว์ยืนยันเสมอ
               </small>
             </div>
-            <div className={`recipe-learning-badge ${recipeCalibration.count?"learned":"empty"}`}><div><span>V25 · ระบบเรียนรู้สูตรนี้</span><strong>{recipeCalibration.label}</strong></div><p>{recipeCalibration.count?`${recipeCalibration.count} ผลอบ · ความมั่นใจ ${recipeCalibration.confidence}% · เวลาบัลก์ถูกปรับ ${Math.round((recipeCalibration.factor-1)*100)}%`:`บันทึกผลอบใน Bake Journal แล้วรอบถัดไปจะปรับเวลาเฉพาะสูตรนี้`}</p></div>
+            <div className={`recipe-learning-badge ${recipeCalibration.count?"learned":"empty"}`}><div><span>V26 · ระบบเรียนรู้สูตรนี้</span><strong>{recipeCalibration.label}</strong></div><p>{recipeCalibration.count?`${recipeCalibration.count} ผลอบ · ความมั่นใจ ${recipeCalibration.confidence}% · เวลาบัลก์ถูกปรับ ${Math.round((recipeCalibration.factor-1)*100)}%`:`บันทึกผลอบใน Bake Journal แล้วรอบถัดไปจะปรับเวลาเฉพาะสูตรนี้`}</p></div>
             <div className="weight-flow">
               <span>รวม {recipe.totalDough} กรัม</span>
               <i>→</i>
@@ -3953,9 +4074,9 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section shell banneton-section" id="banneton">
+      <section className="section shell banneton-section" id="banneton" hidden={activePage !== "recipe"}>
         <header>
-          <p className="section-kicker">01B — BANNETON CALCULATOR · V25</p>
+          <p className="section-kicker">01B — BANNETON CALCULATOR · V26</p>
           <h2>เลือกตะกร้าให้พอดีกับน้ำหนักโดว์</h2>
           <span>
             ใช้รูปทรงและขนาดด้านในของตะกร้าเพื่อประมาณน้ำหนักโดว์ที่พยุงทรงได้ดี
@@ -4098,7 +4219,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section shell setup-section" id="proof">
+      <section className="section shell setup-section" id="proof" hidden={activePage !== "proof"}>
         <header>
           <p className="section-kicker">02 — พรีแพร์ยัวร์โพรเซส</p>
           <h2>ตั้งค่าวิธีพักแป้ง ไฟนอลพรูฟ และวิธีอบ</h2>
@@ -4614,7 +4735,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section shell bulk-tracker-section" id="bulk-tracker">
+      <section className="section shell bulk-tracker-section" id="bulk-tracker" hidden={activePage !== "bulk"}>
         <header>
           <div>
             <p className="section-kicker">03 — LIVE BULK TRACKER · V22</p>
@@ -4934,7 +5055,7 @@ export default function Home() {
         )}
       </section>
 
-      <section className="section shell" id="assistant">
+      <section className="section shell" id="assistant" hidden={activePage !== "workflow"}>
         <header>
           <p className="section-kicker">04 — ไกด์เด็ดเวิร์กโฟลว์</p>
           <h2>ผู้ช่วยทำขนมปังทีละขั้น</h2>
@@ -5126,9 +5247,239 @@ export default function Home() {
           </article>
         </div>
       </section>
-      <section className="section shell bake-journal-section" id="bake-journal">
+      <section
+        className="section shell analysis-lab-section"
+        id="analysis-lab"
+        hidden={activePage !== "analysis"}
+      >
         <header>
-          <p className="section-kicker">05 — BAKE JOURNAL · V25</p>
+          <p className="section-kicker">05 — DOUGH DIAGNOSTICS · V26</p>
+          <h2>เช็กโดว์และวิเคราะห์ผลแบบไม่ฟันธงจากอาการเดียว</h2>
+          <span>
+            รวมหลายสัญญาณเข้าด้วยกัน แล้วเสนอสิ่งที่ควรทดลองเปลี่ยนครั้งละหนึ่งตัวแปร
+          </span>
+        </header>
+        <div className="analysis-lab-grid">
+          <article className="analysis-tool proof-readiness-tool">
+            <div className="analysis-tool-head">
+              <span>FINAL PROOF READINESS</span>
+              <strong className={proofReadiness.key}>{proofReadiness.score}%</strong>
+            </div>
+            <h3>{proofReadiness.label}</h3>
+            <p>{proofReadiness.detail}</p>
+            <div className="analysis-fields">
+              <label>
+                โดว์ขึ้นหลังขึ้นรูป <b>{proofRise}%</b>
+                <input
+                  type="range"
+                  min="0"
+                  max="70"
+                  step="5"
+                  value={proofRise}
+                  onChange={(event) => setProofRise(+event.target.value)}
+                />
+              </label>
+              <div className="analysis-choice-group">
+                <span>Finger Poke</span>
+                {([
+                  ["fast", "เด้งเร็ว"],
+                  ["slow", "เด้งช้า เหลือรอยตื้น"],
+                  ["none", "ไม่เด้ง"],
+                ] as [PokeResult, string][]).map(([key, label]) => (
+                  <button
+                    type="button"
+                    key={key}
+                    className={pokeResult === key ? "active" : ""}
+                    onClick={() => setPokeResult(key)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="analysis-choice-group">
+                <span>แรงตึงผิว</span>
+                {([
+                  ["tight", "ตึงมาก"],
+                  ["soft", "นุ่มแต่ยังเก็บทรง"],
+                  ["weak", "อ่อน/แผ่"],
+                ] as [ProofTension, string][]).map(([key, label]) => (
+                  <button
+                    type="button"
+                    key={key}
+                    className={proofTension === key ? "active" : ""}
+                    onClick={() => setProofTension(key)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className={`analysis-toggle ${proofJiggle ? "active" : ""}`}
+                onClick={() => setProofJiggle(!proofJiggle)}
+                aria-pressed={proofJiggle}
+              >
+                {proofJiggle ? "✓" : "○"} เขย่าตะกร้าแล้วโดว์สั่นเบา ๆ
+              </button>
+            </div>
+            <small>
+              คะแนนนี้เป็นตัวช่วยคัดกรอง ไม่ใช่คำยืนยัน 100% โดยเฉพาะโดว์เย็นหรือแป้งโฮลเกรนสูง
+            </small>
+          </article>
+
+          <article className="analysis-tool crumb-tool">
+            <div className="analysis-tool-head">
+              <span>CRUMB ANALYSIS</span>
+              <strong>5 แบบ</strong>
+            </div>
+            <h3>เลือกหน้าตัดที่ใกล้เคียงที่สุด</h3>
+            <div className="crumb-patterns">
+              {(Object.keys(CRUMB_DIAGNOSIS) as CrumbPattern[]).map((key) => (
+                <button
+                  type="button"
+                  key={key}
+                  className={crumbPattern === key ? "active" : ""}
+                  onClick={() => setCrumbPattern(key)}
+                >
+                  <span aria-hidden="true">
+                    {key === "dense"
+                      ? "····"
+                      : key === "tunnel"
+                        ? "○··"
+                        : key === "wild"
+                          ? "○◌○"
+                          : key === "gummy"
+                            ? "≈≈"
+                            : "◌·○"}
+                  </span>
+                  <b>{CRUMB_DIAGNOSIS[key].label}</b>
+                </button>
+              ))}
+            </div>
+            <div className="crumb-result">
+              <strong>{CRUMB_DIAGNOSIS[crumbPattern].status}</strong>
+              <ol>
+                {CRUMB_DIAGNOSIS[crumbPattern].causes.map((cause) => (
+                  <li key={cause}>{cause}</li>
+                ))}
+              </ol>
+              <p>
+                <b>ทดลองรอบถัดไป:</b> {CRUMB_DIAGNOSIS[crumbPattern].next}
+              </p>
+            </div>
+          </article>
+
+          <article className="analysis-tool starter-plan-tool">
+            <div className="analysis-tool-head">
+              <span>STARTER FEEDING PLANNER</span>
+              <strong>Adaptive</strong>
+            </div>
+            <h3>สัดส่วนให้อาหารตามเวลาที่มี</h3>
+            <p>
+              เวลาเป็นช่วงประมาณจากสัดส่วนและอุณหภูมิจริง ต้องยืนยันด้วยการขึ้น 2–3 เท่า ผิวโดม และกลิ่น
+            </p>
+            <label className="starter-seed-input">
+              หัวเชื้อแม่
+              <span>
+                <input
+                  type="number"
+                  min="2"
+                  max="100"
+                  value={starterSeed}
+                  onChange={(event) => setStarterSeed(clamp(+event.target.value, 2))}
+                />
+                กรัม
+              </span>
+            </label>
+            <div className="feed-ratio-tabs">
+              {[1, 2, 5, 10].map((ratio) => (
+                <button
+                  type="button"
+                  key={ratio}
+                  className={starterFeedRatio === ratio ? "active" : ""}
+                  onClick={() => setStarterFeedRatio(ratio)}
+                >
+                  1:{ratio}:{ratio}
+                </button>
+              ))}
+            </div>
+            <div className="feed-plan-result">
+              <div>
+                <span>หัวเชื้อแม่</span>
+                <strong>{starterSeed} กรัม</strong>
+              </div>
+              <div>
+                <span>น้ำ</span>
+                <strong>{starterFeedPlan.water} กรัม</strong>
+              </div>
+              <div>
+                <span>แป้ง</span>
+                <strong>{starterFeedPlan.flour} กรัม</strong>
+              </div>
+              <div className="peak-window">
+                <span>คาดว่าพีคที่ {levainTemperature}°C</span>
+                <strong>
+                  {duration(starterFeedPlan.low)}–{duration(starterFeedPlan.high)}
+                </strong>
+                <small>ได้รวม {starterFeedPlan.total} กรัม</small>
+              </div>
+            </div>
+          </article>
+
+          <article className="analysis-tool flavor-tool">
+            <div className="analysis-tool-head">
+              <span>FLAVOR TARGET</span>
+              <strong>ไม่ไล่ความเปรี้ยวสูงสุด</strong>
+            </div>
+            <h3>เลือกรสเป้าหมายของก้อนนี้</h3>
+            <div className="flavor-tabs">
+              {([
+                ["mild", "เปรี้ยวน้อย"],
+                ["balanced", "สมดุล"],
+                ["tangy", "เปรี้ยวชัด"],
+              ] as [FlavorTarget, string][]).map(([key, label]) => (
+                <button
+                  type="button"
+                  key={key}
+                  className={flavorTarget === key ? "active" : ""}
+                  onClick={() => setFlavorTarget(key)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="flavor-result">
+              <strong>{flavorPlan.label}</strong>
+              <div>
+                <span>Starter {flavorPlan.starter}%</span>
+                <span>โดว์ {flavorPlan.dough}°C</span>
+                <span>Cold {flavorPlan.cold} ชม.</span>
+              </div>
+              <p>{flavorPlan.note}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setStarterPercent(flavorPlan.starter);
+                  setDoughTemperature(flavorPlan.dough);
+                  setColdHours(flavorPlan.cold);
+                  setProofMode("cold");
+                  setAdaptiveTempSource("dough");
+                  setToast("ใช้ค่ารสเป้าหมายกับสูตรปัจจุบันแล้ว");
+                }}
+              >
+                ใช้ค่ากับสูตรปัจจุบัน
+              </button>
+            </div>
+            <small>
+              อุณหภูมิ เวลา แป้ง และสุขภาพหัวเชื้อทำงานร่วมกัน ผลจริงอาจต่างจากค่าประมาณ
+            </small>
+          </article>
+        </div>
+      </section>
+
+      <section className="section shell bake-journal-section" id="bake-journal" hidden={activePage !== "analysis"}>
+        <header>
+          <p className="section-kicker">06 — BAKE JOURNAL · V26</p>
           <h2>บันทึกผลจริง แล้วให้เว็บเรียนรู้สูตรนี้</h2>
           <span>
             เปรียบเทียบเวลาบัลก์ที่คำนวณกับเวลาที่โดว์พร้อมจริง
@@ -5291,7 +5642,7 @@ export default function Home() {
           </div>
         </div>
       </section>
-      <section className="data-transfer shell" id="data-transfer">
+      <section className="data-transfer shell" id="data-transfer" hidden={activePage !== "data"}>
         <div>
           <p className="section-kicker">แบ็กอัปค่าตั้ง</p>
           <h2>ส่งออกและนำเข้าค่า</h2>
