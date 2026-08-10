@@ -3335,7 +3335,10 @@ export default function Home() {
           </small>
         </div>
       </section>
-      <div className="shell setting-actions starter-actions">
+      <div
+        className="shell setting-actions starter-actions"
+        hidden={activePage !== "starter"}
+      >
         <button onClick={saveSettings}>บันทึกค่าการเลี้ยงหัวเชื้อ</button>
         <button className="secondary" onClick={resetStarter}>
           รีเซ็ต
