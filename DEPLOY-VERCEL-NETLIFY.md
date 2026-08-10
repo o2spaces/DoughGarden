@@ -1,6 +1,6 @@
 # Deploy DoughGarden
 
-เวอร์ชัน 26 เปลี่ยนเป็นเว็บหน้าเดียวแบบเลือกดูทีละเมนู พร้อมจำเมนูล่าสุด เพิ่ม Final Proof Readiness, Crumb Analysis, Starter Feeding Planner และ Flavor Target โดยคง DDT, Final Proof Adaptive, เครื่องคำนวณขนาดตะกร้า, Live Bulk และ Bake Journal ที่เรียนรู้เวลาบัลก์จริงแยกตามสูตรไว้ครบ
+เวอร์ชัน 27 เป็นเว็บหน้าเดียวแบบเลือกดูทีละเมนู พร้อมจำเมนูล่าสุด และเพิ่ม Learning Studio ซึ่งมีวิดีโอสอน 12 บทตามลำดับการทำซาวโดว์ แสดงครั้งละหนึ่งบท มีตัวกรองภาษา บันทึกความคืบหน้าในเครื่อง และเปิดบทที่ตรงกับ Guided Workflow ได้ทันที โดยคง Final Proof Readiness, Crumb Analysis, Starter Feeding Planner, Flavor Target, DDT, เครื่องคำนวณขนาดตะกร้า, Live Bulk และ Bake Journal ที่เรียนรู้เวลาบัลก์จริงแยกตามสูตรไว้ครบ
 
 แพ็กเกจนี้ปรับเป็น Standard Next.js แล้ว โดยใช้ `next build --webpack` แทนคำสั่ง Build เฉพาะของ OpenAI Sites
 

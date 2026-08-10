@@ -14,12 +14,29 @@ type PageId =
   | "proof"
   | "bulk"
   | "workflow"
+  | "education"
   | "analysis"
   | "data";
 type PokeResult = "fast" | "slow" | "none";
 type ProofTension = "tight" | "soft" | "weak";
 type CrumbPattern = "dense" | "tunnel" | "wild" | "gummy" | "balanced";
 type FlavorTarget = "mild" | "balanced" | "tangy";
+type LessonLanguage = "all" | "th" | "en";
+type LearningLesson = {
+  id: string;
+  step: number;
+  title: string;
+  subtitle: string;
+  language: Exclude<LessonLanguage, "all">;
+  source: string;
+  sourceUrl: string;
+  videoId: string;
+  startSeconds?: number;
+  workflowPhase: number | null;
+  summary: string;
+  watch: string[];
+  checklist: string[];
+};
 type Phase = {
   icon: string;
   title: string;
@@ -110,8 +127,183 @@ const PAGE_ITEMS: { id: PageId; label: string; shortLabel: string; icon: string 
   { id: "proof", label: "พรูฟและอบ", shortLabel: "พรูฟ", icon: "◐" },
   { id: "bulk", label: "ไลฟ์บัลก์", shortLabel: "บัลก์", icon: "◎" },
   { id: "workflow", label: "ขั้นตอนทำ", shortLabel: "ขั้นตอน", icon: "→" },
+  { id: "education", label: "เรียนรู้", shortLabel: "เรียน", icon: "▶" },
   { id: "analysis", label: "วิเคราะห์ผล", shortLabel: "วิเคราะห์", icon: "◇" },
   { id: "data", label: "ข้อมูล", shortLabel: "ข้อมูล", icon: "↕" },
+];
+
+const LEARNING_LESSONS: LearningLesson[] = [
+  {
+    id: "starter-peak",
+    step: 0,
+    title: "เลี้ยงหัวเชื้อและดูจุดพีค",
+    subtitle: "ก่อนเริ่มทำโดว์",
+    language: "en",
+    source: "King Arthur Baking / Beginner Tutorial",
+    sourceUrl: "https://www.kingarthurbaking.com/videos/baking-skills/how-to-feed-sourdough-starter",
+    videoId: "CTuGXdyrWUo",
+    startSeconds: 78,
+    workflowPhase: null,
+    summary: "ดูการให้อาหาร การขึ้นตัว และสภาพหัวเชื้อที่มีกำลัง ไม่ใช้เวลาอย่างเดียวตัดสินว่าพร้อม",
+    watch: ["ระดับเพิ่ม 2–3 เท่า", "ผิวโค้งและมีฟองละเอียด", "กลิ่นโยเกิร์ตหรือผลไม้ ไม่ฉุนจัด"],
+    checklist: ["ชั่งหัวเชื้อ น้ำ และแป้ง", "ทำเครื่องหมายระดับเริ่มต้น", "ใช้ช่วงพีคหรือใกล้พีค"],
+  },
+  {
+    id: "prep-rest",
+    step: 1,
+    title: "ออโตไลซ์และเฟอร์เมนโตไลซ์",
+    subtitle: "พักแป้งให้ดูดน้ำ",
+    language: "en",
+    source: "The Perfect Loaf",
+    sourceUrl: "https://www.theperfectloaf.com/beginners-sourdough-bread/",
+    videoId: "CTuGXdyrWUo",
+    startSeconds: 159,
+    workflowPhase: 0,
+    summary: "เปรียบเทียบการพักแป้งกับน้ำก่อน และการพักพร้อมหัวเชื้อ โดยยึดวิธีที่เลือกไว้ในสูตร DoughGarden",
+    watch: ["ไม่มีผงแป้งแห้ง", "โดว์คลายตัวหลังพัก", "ยังไม่ต้องนวดจนเนียน"],
+    checklist: ["ดูว่าเลือก Autolyse หรือ Fermentolyse", "เก็บน้ำไว้ใส่เกลือ", "คลุมไม่ให้ผิวแห้ง"],
+  },
+  {
+    id: "mix-develop",
+    step: 2,
+    title: "ผสมและพัฒนากลูเตน",
+    subtitle: "Mix & Develop",
+    language: "th",
+    source: "บทเรียนซาวโดว์ภาษาไทย",
+    sourceUrl: "https://www.youtube.com/watch?v=gdGvWbXo_n4",
+    videoId: "gdGvWbXo_n4",
+    workflowPhase: 1,
+    summary: "ดูวิธีรวมส่วนผสมให้สม่ำเสมอและสร้างแรงเริ่มต้น โดยใช้กรัมและ Hydration จากสูตรของคุณแทนสูตรในคลิป",
+    watch: ["เกลือกระจายทั่ว", "โดว์เริ่มจับตัวเป็นก้อน", "ดึงแล้วไม่ขาดทันที"],
+    checklist: ["เติมน้ำทีละน้อย", "หยุดพักเมื่อโดว์ร้อน", "วัดอุณหภูมิกลางโดว์หลังผสม"],
+  },
+  {
+    id: "strength-folds",
+    step: 3,
+    title: "Stretch & Fold และ Coil Fold",
+    subtitle: "พับโดว์เพื่อสร้างแรง",
+    language: "en",
+    source: "The Perfect Loaf",
+    sourceUrl: "https://www.theperfectloaf.com/how-to-stretch-and-fold-sourdough-bread-dough/",
+    videoId: "CTuGXdyrWUo",
+    startSeconds: 240,
+    workflowPhase: 2,
+    summary: "ดูทิศทางมือและแรงที่เหมาะสม พับให้โดว์แข็งแรงขึ้นโดยไม่ฉีกและไม่ไล่ฟองทั้งหมด",
+    watch: ["ยกแล้วโดว์ยืดเป็นแผ่น", "ก้อนตั้งสูงขึ้นหลังพับ", "รอบหลังต้องเบากว่ารอบแรก"],
+    checklist: ["พับครบทุกด้าน", "พักตาม Timer", "หยุดเมื่อโดว์ตึงและเริ่มต้านมือ"],
+  },
+  {
+    id: "bulk-finish",
+    step: 4,
+    title: "ดูจุดจบ Bulk Fermentation",
+    subtitle: "ตัดสินจากโดว์จริง",
+    language: "th",
+    source: "Sourdough Diary ภาษาไทย / The Perfect Loaf",
+    sourceUrl: "https://www.theperfectloaf.com/guides/the-ultimate-guide-to-bread-dough-bulk-fermentation/",
+    videoId: "QHMXp9IVYE8",
+    workflowPhase: 3,
+    summary: "ดูปริมาตร ผิว ฟอง การสั่น และแรงเก็บทรงร่วมกัน แล้วเทียบกับ Live Bulk ของ DoughGarden",
+    watch: ["ผิวโค้งนูน ไม่แบน", "มีฟองด้านข้างกล่อง", "สั่นคล้ายเจลแต่ยังเก็บทรง"],
+    checklist: ["บันทึกอุณหภูมิโดว์", "บันทึกเปอร์เซ็นต์การขึ้น", "ไม่รอให้ขึ้นสองเท่าโดยอัตโนมัติ"],
+  },
+  {
+    id: "preshape",
+    step: 5,
+    title: "Preshape และ Bench Rest",
+    subtitle: "จัดก้อนก่อนขึ้นรูปจริง",
+    language: "en",
+    source: "The Perfect Loaf",
+    sourceUrl: "https://www.youtube.com/watch?v=Op-LKk-i4zQ",
+    videoId: "Op-LKk-i4zQ",
+    workflowPhase: 4,
+    summary: "ดูการใช้ที่ตัดโดว์รวบผิวให้ตึงแบบไม่บีบแก๊ส แล้วพักให้ก้อนคลายตัวก่อน Final Shape",
+    watch: ["มือและที่ตัดอยู่ต่ำชิดโต๊ะ", "ผิวด้านบนตึงขึ้น", "ก้อนไม่ฉีกหรือแผ่ทันที"],
+    checklist: ["โรยแป้งให้น้อย", "พัก 15–25 นาที", "ขึ้นรูปต่อเมื่อก้อนคลายตัว"],
+  },
+  {
+    id: "final-shape",
+    step: 6,
+    title: "Final Shape แบบ Batard",
+    subtitle: "สร้าง Surface Tension",
+    language: "en",
+    source: "The Perfect Loaf",
+    sourceUrl: "https://www.youtube.com/watch?v=GkwQR5CnM6Y",
+    videoId: "GkwQR5CnM6Y",
+    workflowPhase: 5,
+    summary: "ดูการพับและม้วนให้แรงตึงสม่ำเสมอ ทั้งกรณีโดว์แข็งแรงและโดว์ค่อนข้างนิ่ม",
+    watch: ["พับซ้าย–ขวาเท่ากัน", "ม้วนแน่นแต่ไม่ฉีก", "รอยต่อปิดอยู่ด้านบนในตะกร้า"],
+    checklist: ["เตรียมตะกร้าและแป้งข้าวเจ้า", "รักษาฟองภายใน", "เช็กว่าผิวไม่ขาด"],
+  },
+  {
+    id: "final-proof",
+    step: 7,
+    title: "Final Proof และ Finger Poke",
+    subtitle: "เช็กก่อนอบ",
+    language: "en",
+    source: "The Perfect Loaf",
+    sourceUrl: "https://www.theperfectloaf.com/how-to-use-the-dough-poke-test/",
+    videoId: "_ih3ox4NiYs",
+    workflowPhase: 6,
+    summary: "ดูความแตกต่างระหว่าง Underproof, พร้อมอบ และ Overproof พร้อมข้อจำกัดของ Poke Test เมื่อโดว์เย็น",
+    watch: ["เด้งเร็ว = ยังตึง", "เด้งช้าและเหลือรอยตื้น = ใกล้พร้อม", "โดว์เย็นอาจเด้งเร็วกว่าความจริง"],
+    checklist: ["ดูปริมาตรร่วมกับรอยกด", "เช็กแรงตึงผิว", "ใช้ Final Proof Readiness ประกอบ"],
+  },
+  {
+    id: "score",
+    step: 8,
+    title: "คว่ำตะกร้าและกรีด",
+    subtitle: "Score ให้รอยเปิดควบคุมได้",
+    language: "en",
+    source: "Bread Scoring Tutorial",
+    sourceUrl: "https://www.youtube.com/watch?v=ytnBkVcR7CI",
+    videoId: "ytnBkVcR7CI",
+    workflowPhase: 7,
+    summary: "ดูมุมใบมีด ความลึก และจังหวะกรีดสำหรับรอยขยายหลัก โดยกรีดทันทีหลังนำโดว์เย็นออกจากตู้",
+    watch: ["จับใบมีดเอียง 30–45°", "กรีดต่อเนื่อง ไม่ย้ำหลายครั้ง", "ความลึกประมาณ 0.5–1 ซม."],
+    checklist: ["เตาและหม้อร้อนพร้อม", "ปัดแป้งส่วนเกิน", "ระวังใบมีดและภาชนะร้อน"],
+  },
+  {
+    id: "steam-bake",
+    step: 9,
+    title: "อบปิดฝาและสร้างไอน้ำ",
+    subtitle: "ช่วง Oven Spring",
+    language: "en",
+    source: "King Arthur Baking",
+    sourceUrl: "https://www.youtube.com/watch?v=VuIT0RJDdZ8",
+    videoId: "VuIT0RJDdZ8",
+    workflowPhase: 8,
+    summary: "ดูการย้ายโดว์ลงภาชนะร้อนและการกักไอน้ำช่วงแรก เพื่อให้รอยกรีดเปิดก่อนเปลือกเซ็ตตัว",
+    watch: ["ย้ายโดว์อย่างมั่นคง", "ปิดฝาทันที", "ไม่เติมน้ำใน Dutch Oven"],
+    checklist: ["ใส่ถุงมือกันร้อน", "ใช้เวลาและอุณหภูมิจากเว็บ", "ไม่เปิดเตาบ่อยช่วงแรก"],
+  },
+  {
+    id: "dry-bake",
+    step: 10,
+    title: "Open Bake และ Dry Bake",
+    subtitle: "ไล่ไอน้ำและทำสีเปลือก",
+    language: "en",
+    source: "Home Oven Steam Guide",
+    sourceUrl: "https://www.youtube.com/watch?v=mE2f-WVE1bg",
+    videoId: "mE2f-WVE1bg",
+    workflowPhase: 9,
+    summary: "ดูการสร้างไอน้ำอย่างปลอดภัยและจังหวะระบายไอน้ำ จากนั้นลดไฟเพื่อทำสีและทำให้เปลือกแห้ง",
+    watch: ["ใช้ถาดโลหะ ไม่ใช้แก้ว", "ระบายไอน้ำหลัง Oven Spring", "สีเปลือกต้องทั่วทั้งก้อน"],
+    checklist: ["หลบหน้าและมือจากไอน้ำ", "นำถาดน้ำออก", "วัดแกนกลางก่อนนำออก"],
+  },
+  {
+    id: "cooldown",
+    step: 11,
+    title: "พักให้เย็นก่อนตัด",
+    subtitle: "ให้เนื้อขนมปังเซ็ตตัว",
+    language: "en",
+    source: "Sourdough Cooling Guide",
+    sourceUrl: "https://www.youtube.com/watch?v=jzzGvq3dZ88",
+    videoId: "jzzGvq3dZ88",
+    workflowPhase: 10,
+    summary: "ดูผลของการตัดเร็วต่อความเหนียว ความชื้น และโครงสร้างโพรง แล้วพักก้อนบนตะแกรงให้ลมผ่านรอบด้าน",
+    watch: ["ไอน้ำยังออกจากก้อนหลังอบ", "เนื้อยังเซ็ตตัวระหว่างเย็น", "ก้อนใหญ่ต้องพักนานกว่า"],
+    checklist: ["ย้ายขึ้นตะแกรงทันที", "พักอย่างน้อย 2 ชั่วโมง", "ถ่ายรูปหน้าตัดหลังเย็นสนิท"],
+  },
 ];
 
 const CRUMB_DIAGNOSIS: Record<
@@ -673,6 +865,11 @@ export default function Home() {
   const [bannetonLength, setBannetonLength] = useState(22.9);
   const [bannetonDepth, setBannetonDepth] = useState(8.5);
   const [activePage, setActivePage] = useState<PageId>("home");
+  const [activeLessonId, setActiveLessonId] = useState(LEARNING_LESSONS[0].id);
+  const [lessonLanguage, setLessonLanguage] =
+    useState<LessonLanguage>("all");
+  const [completedLessons, setCompletedLessons] = useState<string[]>([]);
+  const [learningLoaded, setLearningLoaded] = useState(false);
   const [activePhase, setActivePhase] = useState(0);
   const [phaseStart, setPhaseStart] = useState<number | null>(null);
   const [phaseEnd, setPhaseEnd] = useState<number | null>(null);
@@ -822,6 +1019,23 @@ export default function Home() {
       note: "ใช้หัวเชื้อใกล้พีคและคุมโดว์ช่วง 24–26°C เพื่อบาลานซ์กลิ่นและความเปรี้ยว",
     };
   }, [flavorTarget]);
+
+  const visibleLessons = useMemo(
+    () =>
+      lessonLanguage === "all"
+        ? LEARNING_LESSONS
+        : LEARNING_LESSONS.filter(
+            (lesson) => lesson.language === lessonLanguage,
+          ),
+    [lessonLanguage],
+  );
+  const activeLesson =
+    LEARNING_LESSONS.find((lesson) => lesson.id === activeLessonId) ||
+    visibleLessons[0] ||
+    LEARNING_LESSONS[0];
+  const learningProgress = Math.round(
+    (completedLessons.length / LEARNING_LESSONS.length) * 100,
+  );
 
   const levainStageForAdaptive =
     bulkRun?.levainStageAtMix && bulkRun.levainStageAtMix !== "unknown"
@@ -1891,6 +2105,59 @@ export default function Home() {
     window.addEventListener("hashchange", selectFromLocation);
     return () => window.removeEventListener("hashchange", selectFromLocation);
   }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        const saved = JSON.parse(
+          localStorage.getItem("doughgarden-learning") || "null",
+        );
+        if (Array.isArray(saved?.completed)) {
+          const validIds = new Set(LEARNING_LESSONS.map((lesson) => lesson.id));
+          setCompletedLessons(
+            saved.completed.filter(
+              (id: unknown): id is string =>
+                typeof id === "string" && validIds.has(id),
+            ),
+          );
+        }
+        if (
+          typeof saved?.activeLessonId === "string" &&
+          LEARNING_LESSONS.some(
+            (lesson) => lesson.id === saved.activeLessonId,
+          )
+        )
+          setActiveLessonId(saved.activeLessonId);
+        if (["all", "th", "en"].includes(saved?.language))
+          setLessonLanguage(saved.language as LessonLanguage);
+      } catch {
+        /* Learning progress remains usable without storage. */
+      }
+      setLearningLoaded(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!learningLoaded) return;
+    try {
+      localStorage.setItem(
+        "doughgarden-learning",
+        JSON.stringify({
+          completed: completedLessons,
+          activeLessonId,
+          language: lessonLanguage,
+        }),
+      );
+    } catch {
+      /* Learning progress remains usable without storage. */
+    }
+  }, [
+    learningLoaded,
+    completedLessons,
+    activeLessonId,
+    lessonLanguage,
+  ]);
 
   const requestNotifications = async () => {
     if (!("Notification" in window)) {
@@ -3826,7 +4093,7 @@ export default function Home() {
                 · ใช้สภาพโดว์ยืนยันเสมอ
               </small>
             </div>
-            <div className={`recipe-learning-badge ${recipeCalibration.count?"learned":"empty"}`}><div><span>V26 · ระบบเรียนรู้สูตรนี้</span><strong>{recipeCalibration.label}</strong></div><p>{recipeCalibration.count?`${recipeCalibration.count} ผลอบ · ความมั่นใจ ${recipeCalibration.confidence}% · เวลาบัลก์ถูกปรับ ${Math.round((recipeCalibration.factor-1)*100)}%`:`บันทึกผลอบใน Bake Journal แล้วรอบถัดไปจะปรับเวลาเฉพาะสูตรนี้`}</p></div>
+            <div className={`recipe-learning-badge ${recipeCalibration.count?"learned":"empty"}`}><div><span>V27 · ระบบเรียนรู้สูตรนี้</span><strong>{recipeCalibration.label}</strong></div><p>{recipeCalibration.count?`${recipeCalibration.count} ผลอบ · ความมั่นใจ ${recipeCalibration.confidence}% · เวลาบัลก์ถูกปรับ ${Math.round((recipeCalibration.factor-1)*100)}%`:`บันทึกผลอบใน Bake Journal แล้วรอบถัดไปจะปรับเวลาเฉพาะสูตรนี้`}</p></div>
             <div className="weight-flow">
               <span>รวม {recipe.totalDough} กรัม</span>
               <i>→</i>
@@ -4079,7 +4346,7 @@ export default function Home() {
 
       <section className="section shell banneton-section" id="banneton" hidden={activePage !== "recipe"}>
         <header>
-          <p className="section-kicker">01B — BANNETON CALCULATOR · V26</p>
+          <p className="section-kicker">01B — BANNETON CALCULATOR · V27</p>
           <h2>เลือกตะกร้าให้พอดีกับน้ำหนักโดว์</h2>
           <span>
             ใช้รูปทรงและขนาดด้านในของตะกร้าเพื่อประมาณน้ำหนักโดว์ที่พยุงทรงได้ดี
@@ -5246,7 +5513,213 @@ export default function Home() {
               >
                 ทำเสร็จแล้ว · ขั้นต่อไป →
               </button>
+              <button
+                type="button"
+                className="learn"
+                onClick={() => {
+                  const lesson = LEARNING_LESSONS.find(
+                    (item) => item.workflowPhase === activePhase,
+                  );
+                  if (lesson) setActiveLessonId(lesson.id);
+                  openPage("education");
+                }}
+              >
+                ▶ ดูวิดีโอขั้นตอนนี้
+              </button>
             </div>
+          </article>
+        </div>
+      </section>
+      <section
+        className="section shell learning-section"
+        id="learning"
+        hidden={activePage !== "education"}
+      >
+        <header>
+          <p className="section-kicker">05 — LEARNING STUDIO · V27</p>
+          <h2>เรียนทำซาวโดว์ทีละขั้น พร้อมวิดีโอ</h2>
+          <span>
+            เลือกบทแล้วแสดงเพียงวิดีโอเดียว พร้อมจุดสังเกตภาษาไทยและเชื่อมกลับไปยัง Workflow
+          </span>
+        </header>
+        <div className="learning-progress-card">
+          <div>
+            <span>ความคืบหน้าการเรียน</span>
+            <strong>
+              {completedLessons.length} จาก {LEARNING_LESSONS.length} บท
+            </strong>
+          </div>
+          <div
+            className="learning-progress-track"
+            role="progressbar"
+            aria-label="ความคืบหน้าบทเรียน"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={learningProgress}
+          >
+            <i style={{ width: `${learningProgress}%` }} />
+          </div>
+          <b>{learningProgress}%</b>
+        </div>
+        <div className="learning-layout">
+          <aside className="lesson-catalog" aria-label="รายการบทเรียน">
+            <div className="lesson-catalog-head">
+              <div>
+                <span>บทเรียนทั้งหมด</span>
+                <strong>{visibleLessons.length} บท</strong>
+              </div>
+              <div className="lesson-language-tabs" aria-label="กรองภาษาวิดีโอ">
+                {([
+                  ["all", "ทั้งหมด"],
+                  ["th", "ไทย"],
+                  ["en", "อังกฤษ"],
+                ] as [LessonLanguage, string][]).map(([key, label]) => (
+                  <button
+                    type="button"
+                    key={key}
+                    className={lessonLanguage === key ? "active" : ""}
+                    onClick={() => {
+                      setLessonLanguage(key);
+                      if (
+                        key !== "all" &&
+                        activeLesson.language !== key
+                      ) {
+                        const first = LEARNING_LESSONS.find(
+                          (lesson) => lesson.language === key,
+                        );
+                        if (first) setActiveLessonId(first.id);
+                      }
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="lesson-list">
+              {visibleLessons.map((lesson) => {
+                const done = completedLessons.includes(lesson.id);
+                return (
+                  <button
+                    type="button"
+                    key={lesson.id}
+                    className={`${activeLesson.id === lesson.id ? "active" : ""} ${done ? "done" : ""}`}
+                    onClick={() => setActiveLessonId(lesson.id)}
+                  >
+                    <span>{done ? "✓" : String(lesson.step).padStart(2, "0")}</span>
+                    <div>
+                      <strong>{lesson.title}</strong>
+                      <small>{lesson.subtitle}</small>
+                    </div>
+                    <b>{lesson.language === "th" ? "TH" : "EN"}</b>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+
+          <article className="lesson-player">
+            <div className="lesson-player-head">
+              <div>
+                <span>
+                  บทที่ {String(activeLesson.step).padStart(2, "0")} · {activeLesson.language === "th" ? "ภาษาไทย" : "ภาษาอังกฤษ"}
+                </span>
+                <h3>{activeLesson.title}</h3>
+                <p>{activeLesson.subtitle}</p>
+              </div>
+              <b className={completedLessons.includes(activeLesson.id) ? "done" : ""}>
+                {completedLessons.includes(activeLesson.id)
+                  ? "✓ ดูจบแล้ว"
+                  : "ยังไม่ได้ดูจบ"}
+              </b>
+            </div>
+            <div className="lesson-recipe-note">
+              <span>สูตรปัจจุบันของคุณ</span>
+              <strong>
+                น้ำ {hydration}% · Starter {starterPercent}% · โดว์ {doughTemperature}°C
+              </strong>
+              <p>
+                ใช้วิดีโอเพื่อดูเทคนิคและสภาพโดว์เท่านั้น ให้ใช้กรัม อุณหภูมิ และเวลาจาก DoughGarden
+              </p>
+            </div>
+            <div className="lesson-video-frame">
+              <iframe
+                key={activeLesson.id}
+                src={`https://www.youtube-nocookie.com/embed/${activeLesson.videoId}?rel=0&modestbranding=1&cc_load_policy=1&cc_lang_pref=th${activeLesson.startSeconds ? `&start=${activeLesson.startSeconds}` : ""}`}
+                title={`วิดีโอบทเรียน ${activeLesson.title}`}
+                loading="lazy"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+            <div className="lesson-source-row">
+              <span>
+                แหล่งวิดีโอ/อ่านเพิ่ม <b>{activeLesson.source}</b>
+              </span>
+              <a
+                href={activeLesson.sourceUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                เปิดต้นฉบับ ↗
+              </a>
+            </div>
+            <p className="lesson-summary">{activeLesson.summary}</p>
+            <div className="lesson-notes-grid">
+              <div>
+                <h4>สิ่งที่ต้องสังเกตในวิดีโอ</h4>
+                <ul>
+                  {activeLesson.watch.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h4>เช็กลิสต์ก่อนทำจริง</h4>
+                <ul>
+                  {activeLesson.checklist.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="lesson-actions">
+              <button
+                type="button"
+                className={completedLessons.includes(activeLesson.id) ? "completed" : ""}
+                onClick={() =>
+                  setCompletedLessons((current) =>
+                    current.includes(activeLesson.id)
+                      ? current.filter((id) => id !== activeLesson.id)
+                      : [...current, activeLesson.id],
+                  )
+                }
+              >
+                {completedLessons.includes(activeLesson.id)
+                  ? "✓ ดูบทนี้จบแล้ว"
+                  : "ทำเครื่องหมายว่าดูจบ"}
+              </button>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => {
+                  if (activeLesson.workflowPhase === null) {
+                    openPage("starter");
+                    return;
+                  }
+                  setActivePhase(activeLesson.workflowPhase);
+                  openPage("workflow");
+                }}
+              >
+                {activeLesson.workflowPhase === null
+                  ? "ไปเมนูหัวเชื้อ →"
+                  : "ไปทำขั้นตอนนี้ →"}
+              </button>
+            </div>
+            <small className="lesson-embed-note">
+              หากผู้สร้างปิดการเล่นแบบฝัง ให้กด “เปิดต้นฉบับ” เพื่อดูบนเว็บไซต์ของผู้สร้างโดยตรง
+            </small>
           </article>
         </div>
       </section>
@@ -5256,7 +5729,7 @@ export default function Home() {
         hidden={activePage !== "analysis"}
       >
         <header>
-          <p className="section-kicker">05 — DOUGH DIAGNOSTICS · V26</p>
+          <p className="section-kicker">06 — DOUGH DIAGNOSTICS · V27</p>
           <h2>เช็กโดว์และวิเคราะห์ผลแบบไม่ฟันธงจากอาการเดียว</h2>
           <span>
             รวมหลายสัญญาณเข้าด้วยกัน แล้วเสนอสิ่งที่ควรทดลองเปลี่ยนครั้งละหนึ่งตัวแปร
@@ -5482,7 +5955,7 @@ export default function Home() {
 
       <section className="section shell bake-journal-section" id="bake-journal" hidden={activePage !== "analysis"}>
         <header>
-          <p className="section-kicker">06 — BAKE JOURNAL · V26</p>
+          <p className="section-kicker">07 — BAKE JOURNAL · V27</p>
           <h2>บันทึกผลจริง แล้วให้เว็บเรียนรู้สูตรนี้</h2>
           <span>
             เปรียบเทียบเวลาบัลก์ที่คำนวณกับเวลาที่โดว์พร้อมจริง
