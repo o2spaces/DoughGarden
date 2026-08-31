@@ -4780,21 +4780,26 @@ export default function Home() {
                 </div>
               )}
             </div>
-            <label className="weight-input">
-              <span>
-                น้ำหนักโดว์ต่อโลฟ{" "}
-                <small style={{ opacity: 0.7 }}>(ปรับเองได้)</small>
-              </span>
-              <span className="weight-input-control">
-                <button
-                  type="button"
-                  aria-label="ลดน้ำหนักโดว์ต่อโลฟ 10 กรัม"
-                  onClick={() =>
-                    setTargetDough((value) => Math.max(300, value - 10))
-                  }
+            <div className="dough-weight-editor">
+              <div className="dough-weight-title">
+                <span>น้ำหนักโดว์ต่อโลฟ</span>
+                <strong>{targetDough.toLocaleString("th-TH")} กรัม</strong>
+              </div>
+              <div className="dough-weight-row">
+                <select
+                  aria-label="เลือกน้ำหนักโดว์ต่อโลฟ"
+                  value={[600, 800, 950, 1000, 1200].includes(targetDough) ? String(targetDough) : "custom"}
+                  onChange={(e) => {
+                    if (e.target.value !== "custom") setTargetDough(Number(e.target.value));
+                  }}
                 >
-                  −
-                </button>
+                  <option value="600">600 กรัม</option>
+                  <option value="800">800 กรัม</option>
+                  <option value="950">950 กรัม</option>
+                  <option value="1000">1,000 กรัม</option>
+                  <option value="1200">1,200 กรัม</option>
+                  <option value="custom">กำหนดเอง…</option>
+                </select>
                 <input
                   type="number"
                   min="300"
@@ -4802,38 +4807,27 @@ export default function Home() {
                   step="10"
                   inputMode="numeric"
                   value={targetDough}
+                  aria-label="กำหนดน้ำหนักโดว์ต่อโลฟเองเป็นกรัม"
                   onChange={(e) => {
-                    const value = e.currentTarget.valueAsNumber;
-                    if (Number.isFinite(value)) {
-                      setTargetDough(clamp(value, 300, 1800));
-                      setActiveRecipeId("");
-                    }
+                    if (e.target.value === "") return;
+                    const value = Number(e.target.value);
+                    if (Number.isFinite(value)) setTargetDough(Math.min(1800, Math.max(300, value)));
                   }}
-                  onBlur={() =>
-                    setTargetDough((value) => clamp(value, 300, 1800))
-                  }
-                  aria-label="น้ำหนักโดว์ต่อโลฟเป็นกรัม"
+                  onBlur={() => setTargetDough(Math.round(Math.min(1800, Math.max(300, targetDough)) / 10) * 10)}
                 />
-                <button
-                  type="button"
-                  aria-label="เพิ่มน้ำหนักโดว์ต่อโลฟ 10 กรัม"
-                  onClick={() =>
-                    setTargetDough((value) => Math.min(1800, value + 10))
-                  }
-                >
-                  +
-                </button>{" "}
-                กรัม
-              </span>
-            </label>
+                <span>กรัม</span>
+              </div>
+              <div className="dough-weight-hint">เลือกค่าที่มีให้ หรือพิมพ์น้ำหนักเองได้ 300–1,800 กรัม</div>
+            </div>
             <div className="presets">
               {[600, 800, 950, 1000, 1200].map((n) => (
                 <button
+                  type="button"
                   className={targetDough === n ? "selected" : ""}
                   onClick={() => setTargetDough(n)}
                   key={n}
                 >
-                  {n} กรัม
+                  {n.toLocaleString("th-TH")} กรัม
                 </button>
               ))}
             </div>
