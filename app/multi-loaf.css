@@ -2,3 +2,24 @@
 .loaf-settings>div>span{display:block;margin-bottom:8px;color:#9b8c79;font-size: 13px}.loaf-buttons{display:flex;gap:5px}.loaf-buttons button{flex:1;min-width:30px;height:34px;border:1px solid rgba(255,255,255,.08);border-radius:9px;background:#1a1612;color:#897a68;cursor:pointer}.loaf-buttons button.selected{border-color:rgba(231,161,62,.6);background:rgba(231,161,62,.12);color:var(--gold)}
 .multi-loaf-time{display:flex;align-items:center;gap:9px;margin-top:14px;padding:11px 12px;border-radius:11px;background:rgba(231,161,62,.065);color:#827360;font-size: 12px}.multi-loaf-time strong{margin-left:auto;color:#d7c3aa;font-size: 12px}.formula-head>div>small{display:block;color:#8c7d6a;font-size: 12px}
 @media(max-width:600px){.loaf-settings{grid-template-columns:1fr}.multi-loaf-time{align-items:flex-start;flex-direction:column}.multi-loaf-time strong{margin-left:0}}
+
+/* Editable dough weight per loaf */
+.weight-input-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.weight-input-control > button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(0,0,0,.14);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+.weight-input-control > input {
+  width: 92px;
+  text-align: center;
+}
