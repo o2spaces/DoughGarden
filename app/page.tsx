@@ -961,9 +961,23 @@ const INCLUSION_LIBRARY = [
   { id: "rosemary", label: "โรสแมรี่", category: "Savory" },
   { id: "garlic", label: "กระเทียม", category: "Savory" },
   { id: "tomato", label: "มะเขือเทศตากแห้ง", category: "Savory" },
-  { id: "cheese", label: "ชีส", category: "Savory" },
+  { id: "cheddar", label: "เชดดาร์ (Cheddar)", category: "Cheese" },
+  { id: "mozzarella", label: "มอซซาเรลลา (Mozzarella)", category: "Cheese" },
+  { id: "parmesan", label: "พาร์เมซาน (Parmesan)", category: "Cheese" },
+  { id: "gruyere", label: "กรูแยร์ (Gruyère)", category: "Cheese" },
+  { id: "gouda", label: "เกาดา (Gouda)", category: "Cheese" },
+  { id: "emmental", label: "เอ็มเมนทัล (Emmental)", category: "Cheese" },
+  { id: "blue-cheese", label: "บลูชีส (Blue Cheese)", category: "Cheese" },
+  { id: "feta", label: "เฟตา (Feta)", category: "Cheese" },
+  { id: "cream-cheese", label: "ครีมชีส (Cream Cheese)", category: "Cheese" },
   { id: "jalapeno", label: "ฮาลาปิโน", category: "Savory" },
-  { id: "chocolate", label: "ช็อกโกแลต", category: "Sweet" },
+  { id: "dark-choc-chips", label: "ช็อกโกแลตชิพดาร์ก", category: "Chocolate" },
+  { id: "milk-choc-chips", label: "ช็อกโกแลตชิพนม", category: "Chocolate" },
+  { id: "white-choc-chips", label: "ไวท์ช็อกโกแลตชิพ", category: "Chocolate" },
+  { id: "semi-sweet-choc-chips", label: "ช็อกโกแลตชิพ Semi-sweet", category: "Chocolate" },
+  { id: "ruby-choc-chips", label: "รูบี้ช็อกโกแลตชิพ", category: "Chocolate" },
+  { id: "chocolate-chunks", label: "ช็อกโกแลตชังก์", category: "Chocolate" },
+  { id: "chocolate", label: "ช็อกโกแลต", category: "Chocolate" },
   { id: "cocoa", label: "โกโก้", category: "Sweet" },
   { id: "cinnamon", label: "อบเชย", category: "Sweet" },
   { id: "orange-zest", label: "ผิวส้ม", category: "Sweet" },
@@ -4849,7 +4863,7 @@ export default function Home() {
               <div className="dynamic-add-row">
                 <span>+ เพิ่มส่วนผสม</span>
                 <div className="chip-list">
-                  {INCLUSION_LIBRARY.filter((item) => !customInclusions.some((chosen) => chosen.id === item.id)).slice(0, 20).map((item) => (
+                  {INCLUSION_LIBRARY.filter((item) => !customInclusions.some((chosen) => chosen.id === item.id)).map((item) => (
                     <button type="button" key={item.id} onClick={() => addCustomInclusion(item)}>{item.label}</button>
                   ))}
                 </div>
