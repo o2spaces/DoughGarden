@@ -925,6 +925,10 @@ const STRENGTH_MILESTONES: TimerMilestone[] = [
 ];
 
 const FLOUR_LIBRARY = [
+  { id: "ap", label: "แป้งอเนกประสงค์ (AP)" },
+  { id: "spelt", label: "สเปลต์ (Spelt)" },
+  { id: "whole", label: "โฮลวีท (Whole Wheat)" },
+  { id: "rye", label: "ไรย์ (Rye)" },
   { id: "einkorn", label: "Einkorn" },
   { id: "emmer", label: "Emmer / Farro" },
   { id: "khorasan", label: "Khorasan / Kamut" },
@@ -3030,6 +3034,28 @@ export default function Home() {
     setFlourProfile("");
     setActiveRecipeId("");
   };
+  const activeStandardFlours = [
+    ...(apFlour > 0 ? [{ id: "ap", label: "แป้งอเนกประสงค์ (AP)", percent: apFlour }] : []),
+    ...(speltFlour > 0 ? [{ id: "spelt", label: "สเปลต์ (Spelt)", percent: speltFlour }] : []),
+    ...(wholeWheat > 0 ? [{ id: "whole", label: "โฮลวีท (Whole Wheat)", percent: wholeWheat }] : []),
+    ...(ryeFlour > 0 ? [{ id: "rye", label: "ไรย์ (Rye)", percent: ryeFlour }] : []),
+  ];
+
+  const addFlourFromLibrary = (libraryItem: (typeof FLOUR_LIBRARY)[number]) => {
+    if (libraryItem.id === "ap") setFlourPercent("ap", 5);
+    else if (libraryItem.id === "spelt") setFlourPercent("spelt", 5);
+    else if (libraryItem.id === "whole") setFlourPercent("whole", 5);
+    else if (libraryItem.id === "rye") setFlourPercent("rye", 5);
+    else addCustomFlour(libraryItem);
+  };
+
+  const removeStandardFlour = (id: "ap" | "spelt" | "whole" | "rye") => {
+    if (id === "ap") setFlourPercent("ap", 0);
+    if (id === "spelt") setFlourPercent("spelt", 0);
+    if (id === "whole") setFlourPercent("whole", 0);
+    if (id === "rye") setFlourPercent("rye", 0);
+  };
+
   const addCustomFlour = (libraryItem: (typeof FLOUR_LIBRARY)[number]) => {
     if (customFlours.some((item) => item.id === libraryItem.id)) return;
     setCustomFlours((items) => [...items, { id: libraryItem.id, label: libraryItem.label, percent: 5 }]);
@@ -4731,44 +4757,54 @@ export default function Home() {
                 </div>
                 <strong>{Math.round(recipe.breadPercent + apFlour + speltFlour + wholeWheat + ryeFlour + recipe.customFlourPercent)}%</strong>
               </div>
-              <div className="flour-mix">
+              <div className="flour-mix flour-mix-horizontal">
                 <div className="bread-share">
                   <span>แป้งขนมปัง (Bread Flour)</span>
                   <strong>{recipe.breadPercent}%</strong>
                   <small>ส่วนที่เหลืออัตโนมัติ</small>
                 </div>
-                <label>
-                  แป้งอเนกประสงค์ (AP)
-                  <span><input type="number" min="0" max="100" value={apFlour} onChange={(e) => setFlourPercent("ap", +e.target.value)} />%</span>
-                </label>
-                <label>
-                  สเปลต์ (Spelt)
-                  <span><input type="number" min="0" max="100" value={speltFlour} onChange={(e) => setFlourPercent("spelt", +e.target.value)} />%</span>
-                </label>
-                <label>
-                  โฮลวีท
-                  <span><input type="number" min="0" max="100" value={wholeWheat} onChange={(e) => setFlourPercent("whole", +e.target.value)} />%</span>
-                </label>
-                <label>
-                  ไรย์
-                  <span><input type="number" min="0" max="100" value={ryeFlour} onChange={(e) => setFlourPercent("rye", +e.target.value)} />%</span>
-                </label>
+                {activeStandardFlours.map((item) => (
+                  <div className="flour-pill-row" key={item.id}>
+                    <div>
+                      <b>{item.label}</b>
+                      <small>กำหนดเอง</small>
+                    </div>
+                    <span className="flour-pill-controls">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={item.percent}
+                        onChange={(e) => setFlourPercent(item.id as "ap" | "spelt" | "whole" | "rye", +e.target.value)}
+                      />%
+                      <button type="button" className="icon-delete" onClick={() => removeStandardFlour(item.id as "ap" | "spelt" | "whole" | "rye")} aria-label={`ลบ ${item.label}`}>×</button>
+                    </span>
+                  </div>
+                ))}
                 {customFlours.map((item) => (
-                  <label className="builder-dynamic-row" key={item.id}>
-                    <span className="dynamic-name">{item.label}</span>
-                    <span>
+                  <div className="flour-pill-row" key={item.id}>
+                    <div>
+                      <b>{item.label}</b>
+                      <small>{CUSTOM_FLOUR_SUGGESTIONS[item.id]}</small>
+                    </div>
+                    <span className="flour-pill-controls">
                       <input type="number" min="0" max="100" value={item.percent} onChange={(e) => updateCustomFlour(item.id, +e.target.value)} />%
                       <button type="button" className="icon-delete" onClick={() => removeCustomFlour(item.id)} aria-label={`ลบ ${item.label}`}>×</button>
                     </span>
-                    <small>{CUSTOM_FLOUR_SUGGESTIONS[item.id]}</small>
-                  </label>
+                  </div>
                 ))}
               </div>
               <div className="dynamic-add-row">
                 <span>+ เพิ่มชนิดแป้ง</span>
                 <div className="chip-list">
-                  {FLOUR_LIBRARY.filter((item) => !customFlours.some((chosen) => chosen.id === item.id)).map((item) => (
-                    <button type="button" key={item.id} onClick={() => addCustomFlour(item)}>{item.label}</button>
+                  {FLOUR_LIBRARY.filter((item) => {
+                    if (item.id === "ap") return apFlour === 0;
+                    if (item.id === "spelt") return speltFlour === 0;
+                    if (item.id === "whole") return wholeWheat === 0;
+                    if (item.id === "rye") return ryeFlour === 0;
+                    return !customFlours.some((chosen) => chosen.id === item.id);
+                  }).map((item) => (
+                    <button type="button" key={item.id} onClick={() => addFlourFromLibrary(item)}>+ {item.label}</button>
                   ))}
                 </div>
               </div>
