@@ -25,6 +25,8 @@ type LessonLanguage = "all" | "th" | "en";
 type BreadFamily = "artisan" | "soft" | "high-hydration" | "specialty";
 type BreadFamilyFilter = "all" | BreadFamily;
 type BreadGoal = "balanced" | "open" | "soft" | "mild" | "grain";
+type CustomFlour = { id: string; label: string; percent: number };
+type CustomInclusion = { id: string; label: string; percent: number; category?: string; note?: string };
 type BreadWorkflowKind =
   | "artisan"
   | "pan"
@@ -118,6 +120,8 @@ type SavedRecipe = {
   flourProfile: string;
   breadStyleId?: string;
   breadGoal?: BreadGoal;
+  customFlours?: CustomFlour[];
+  customInclusions?: CustomInclusion[];
 };
 type LevainObservation = {
   id: string;
@@ -920,6 +924,60 @@ const STRENGTH_MILESTONES: TimerMilestone[] = [
   },
 ];
 
+const FLOUR_LIBRARY = [
+  { id: "einkorn", label: "Einkorn" },
+  { id: "emmer", label: "Emmer / Farro" },
+  { id: "khorasan", label: "Khorasan / Kamut" },
+  { id: "durum", label: "Durum / Semolina" },
+  { id: "buckwheat", label: "Buckwheat" },
+  { id: "oat", label: "Oat Flour" },
+  { id: "barley", label: "Barley Flour" },
+  { id: "corn", label: "Corn Flour / Cornmeal" },
+] as const;
+
+const INCLUSION_LIBRARY = [
+  { id: "almond", label: "อัลมอนด์", category: "Nuts" },
+  { id: "walnut", label: "วอลนัต", category: "Nuts" },
+  { id: "pecan", label: "พีแคน", category: "Nuts" },
+  { id: "hazelnut", label: "เฮเซลนัต", category: "Nuts" },
+  { id: "pistachio", label: "พิสตาชิโอ", category: "Nuts" },
+  { id: "cashew", label: "เม็ดมะม่วงหิมพานต์", category: "Nuts" },
+  { id: "cranberry", label: "แครนเบอรี่แห้ง", category: "Dried Fruit" },
+  { id: "raisin", label: "ลูกเกด", category: "Dried Fruit" },
+  { id: "fig", label: "ฟิกแห้ง", category: "Dried Fruit" },
+  { id: "apricot", label: "แอปริคอตแห้ง", category: "Dried Fruit" },
+  { id: "date", label: "อินทผลัม", category: "Dried Fruit" },
+  { id: "cherry", label: "เชอร์รี่แห้ง", category: "Dried Fruit" },
+  { id: "sunflower", label: "เมล็ดทานตะวัน", category: "Seeds" },
+  { id: "pumpkin", label: "เมล็ดฟักทอง", category: "Seeds" },
+  { id: "sesame", label: "งา", category: "Seeds" },
+  { id: "flax", label: "แฟลกซ์", category: "Seeds" },
+  { id: "chia", label: "เจีย", category: "Seeds" },
+  { id: "olive", label: "มะกอก", category: "Savory" },
+  { id: "rosemary", label: "โรสแมรี่", category: "Savory" },
+  { id: "garlic", label: "กระเทียม", category: "Savory" },
+  { id: "tomato", label: "มะเขือเทศตากแห้ง", category: "Savory" },
+  { id: "cheese", label: "ชีส", category: "Savory" },
+  { id: "jalapeno", label: "ฮาลาปิโน", category: "Savory" },
+  { id: "chocolate", label: "ช็อกโกแลต", category: "Sweet" },
+  { id: "cocoa", label: "โกโก้", category: "Sweet" },
+  { id: "cinnamon", label: "อบเชย", category: "Sweet" },
+  { id: "orange-zest", label: "ผิวส้ม", category: "Sweet" },
+  { id: "oat-flakes", label: "Rolled Oats", category: "Grains" },
+  { id: "rye-flakes", label: "Rye Flakes", category: "Grains" },
+] as const;
+
+const CUSTOM_FLOUR_SUGGESTIONS: Record<string, string> = {
+  einkorn: "เริ่ม 5–25% · กลูเตนอ่อน",
+  emmer: "เริ่ม 10–30% · ancient grain",
+  khorasan: "เริ่ม 10–30% · หอมและหวาน",
+  durum: "เริ่ม 10–30% · สีทองและหนึบ",
+  buckwheat: "เริ่ม 5–15% · ไม่มีกลูเตน",
+  oat: "เริ่ม 5–15% · เนื้อนุ่มและดูดน้ำ",
+  barley: "เริ่ม 5–15% · กลิ่นธัญพืช",
+  corn: "เริ่ม 5–15% · กลิ่นข้าวโพด",
+};
+
 const DEFAULT_SETTINGS = {
   temperature: 28,
   humidity: 70,
@@ -930,6 +988,8 @@ const DEFAULT_SETTINGS = {
   apFlour: 10,
   speltFlour: 0,
   ryeFlour: 0,
+  customFlours: [] as CustomFlour[],
+  customInclusions: [] as CustomInclusion[],
   flourProfile: "",
   targetDough: 800,
   hydration: 71,
@@ -982,6 +1042,12 @@ const normalizeSettings = (
   ),
   speltFlour: validNumber(data?.speltFlour, DEFAULT_SETTINGS.speltFlour),
   ryeFlour: validNumber(data?.ryeFlour, DEFAULT_SETTINGS.ryeFlour),
+  customFlours: Array.isArray(data?.customFlours)
+    ? data.customFlours.filter((item): item is CustomFlour => !!item?.id && typeof item?.label === "string" && typeof item?.percent === "number")
+    : [],
+  customInclusions: Array.isArray(data?.customInclusions)
+    ? data.customInclusions.filter((item): item is CustomInclusion => !!item?.id && typeof item?.label === "string" && typeof item?.percent === "number")
+    : [],
   flourProfile:
     typeof data?.flourProfile === "string"
       ? data.flourProfile
@@ -1118,6 +1184,8 @@ const normalizeRecipe = (
     speltFlour: validNumber(data.speltFlour, 0),
     wholeWheat: validNumber(data.wholeWheat, 0),
     ryeFlour: validNumber(data.ryeFlour, 0),
+    customFlours: Array.isArray(data.customFlours) ? data.customFlours.filter((item): item is CustomFlour => !!item?.id && typeof item?.label === "string" && typeof item?.percent === "number") : [],
+    customInclusions: Array.isArray(data.customInclusions) ? data.customInclusions.filter((item): item is CustomInclusion => !!item?.id && typeof item?.label === "string" && typeof item?.percent === "number") : [],
     doughTemperature: validNumber(
       data.doughTemperature,
       DEFAULT_SETTINGS.doughTemperature,
@@ -1263,6 +1331,8 @@ export default function Home() {
   const [apFlour, setApFlour] = useState(10);
   const [speltFlour, setSpeltFlour] = useState(0);
   const [ryeFlour, setRyeFlour] = useState(5);
+  const [customFlours, setCustomFlours] = useState<CustomFlour[]>([]);
+  const [customInclusions, setCustomInclusions] = useState<CustomInclusion[]>([]);
   const [flourProfile, setFlourProfile] = useState("");
   const [targetDough, setTargetDough] = useState(950);
   const [hydration, setHydration] = useState(73);
@@ -1542,8 +1612,9 @@ export default function Home() {
     const tempFactor = Math.pow(2, (26 - fermentationTemperature) / 10);
     const roomTempFactor = Math.pow(2, (26 - temperature) / 10);
     const humidityFactor = humidity < 55 ? 1.06 : humidity > 82 ? 0.96 : 1;
+    const customFlourLoad = customFlours.reduce((sum, item) => sum + item.percent, 0);
     const wholeFactor =
-      1 - (wholeWheat + speltFlour * 0.5 + ryeFlour * 1.4) * 0.0015;
+      1 - (wholeWheat + speltFlour * 0.5 + ryeFlour * 1.4 + customFlourLoad * 0.8) * 0.0015;
     const starterFactor = Math.pow(20 / Math.max(starterPercent, 5), 0.42);
     const baseBulk =
       4.5 *
@@ -1566,6 +1637,7 @@ export default function Home() {
     wholeWheat,
     speltFlour,
     ryeFlour,
+    customFlours,
     starterPercent,
     feedFlour,
     starterOld,
@@ -1575,10 +1647,12 @@ export default function Home() {
 
   const recipe = useMemo(() => {
     const totalDough = targetDough * loafCount;
-    const extraPercent = activeBreadStyle.extras.reduce(
+    const builtInExtraPercent = activeBreadStyle.extras.reduce(
       (sum, item) => sum + item.percent,
       0,
     );
+    const customInclusionPercent = customInclusions.reduce((sum, item) => sum + item.percent, 0);
+    const extraPercent = builtInExtraPercent + customInclusionPercent;
     const totalFlour =
       totalDough /
       (1 +
@@ -1593,9 +1667,11 @@ export default function Home() {
     const ap = (totalFlour * apFlour) / 100;
     const spelt = (totalFlour * speltFlour) / 100;
     const ryeTotal = (totalFlour * ryeFlour) / 100;
+    const customFlourPercent = customFlours.reduce((sum, item) => sum + item.percent, 0);
+    const customFlourTotals = customFlours.map((item) => ({ ...item, grams: (totalFlour * item.percent) / 100 }));
     const breadPercent = Math.max(
       0,
-      100 - wholeWheat - apFlour - speltFlour - ryeFlour,
+      100 - wholeWheat - apFlour - speltFlour - ryeFlour - customFlourPercent,
     );
     const breadTotal = (totalFlour * breadPercent) / 100;
     const bread = Math.max(
@@ -1610,10 +1686,8 @@ export default function Home() {
     const water = Math.max(0, (totalFlour * hydration) / 100 - levainWater);
     const salt = (totalFlour * saltPercent) / 100;
     const oil = (totalFlour * oilPercent) / 100;
-    const extras = activeBreadStyle.extras.map((item) => ({
-      ...item,
-      grams: (totalFlour * item.percent) / 100,
-    }));
+    const extras = activeBreadStyle.extras.map((item) => ({ ...item, grams: (totalFlour * item.percent) / 100 }));
+    const customExtras = customInclusions.map((item) => ({ ...item, grams: (totalFlour * item.percent) / 100 }));
     return {
       totalDough,
       totalFlour,
@@ -1628,6 +1702,9 @@ export default function Home() {
       salt,
       oil,
       extras,
+      customFlourTotals,
+      customExtras,
+      customFlourPercent,
       baked: totalDough * 0.997 * 0.86,
       bakedEach: targetDough * 0.997 * 0.86,
     };
@@ -1642,6 +1719,8 @@ export default function Home() {
     apFlour,
     speltFlour,
     ryeFlour,
+    customFlours,
+    customInclusions,
     activeBreadStyle,
   ]);
 
@@ -2572,6 +2651,8 @@ export default function Home() {
         setApFlour(settings.apFlour);
         setSpeltFlour(settings.speltFlour);
         setRyeFlour(settings.ryeFlour);
+        setCustomFlours(settings.customFlours || []);
+        setCustomInclusions(settings.customInclusions || []);
         setFlourProfile(settings.flourProfile);
         setTargetDough(settings.targetDough);
         setHydration(settings.hydration);
@@ -2847,6 +2928,8 @@ export default function Home() {
       | "flourProfile"
       | "breadStyleId"
       | "breadGoal"
+      | "customFlours"
+      | "customInclusions"
     >,
     id = "",
   ) => {
@@ -2860,6 +2943,8 @@ export default function Home() {
     setSpeltFlour(values.speltFlour);
     setWholeWheat(values.wholeWheat);
     setRyeFlour(values.ryeFlour);
+    setCustomFlours(values.customFlours || []);
+    setCustomInclusions(values.customInclusions || []);
     setFlourProfile(values.flourProfile);
     setDoughTemperature(values.doughTemperature);
     const savedStyle = BREAD_STYLES.find(
@@ -2900,6 +2985,8 @@ export default function Home() {
     setSpeltFlour(style.flour.spelt);
     setWholeWheat(style.flour.whole);
     setRyeFlour(style.flour.rye);
+    setCustomFlours([]);
+    setCustomInclusions([]);
     setDoughTemperature(style.doughTemperature);
     setPrepMethod(style.prepMethod);
     setProofMode(style.proofMode);
@@ -2933,16 +3020,51 @@ export default function Home() {
   ) => {
     const value = Math.max(0, Math.round(raw));
     if (kind === "ap")
-      setApFlour(Math.min(value, 90 - speltFlour - wholeWheat - ryeFlour));
+      setApFlour(Math.min(value, Math.max(0, 100 - speltFlour - wholeWheat - ryeFlour - customFlours.reduce((sum, item) => sum + item.percent, 0))));
     if (kind === "spelt")
-      setSpeltFlour(Math.min(value, 90 - apFlour - wholeWheat - ryeFlour));
+      setSpeltFlour(Math.min(value, Math.max(0, 100 - apFlour - wholeWheat - ryeFlour - customFlours.reduce((sum, item) => sum + item.percent, 0))));
     if (kind === "whole")
-      setWholeWheat(Math.min(value, 90 - apFlour - speltFlour - ryeFlour));
+      setWholeWheat(Math.min(value, Math.max(0, 100 - apFlour - speltFlour - ryeFlour - customFlours.reduce((sum, item) => sum + item.percent, 0))));
     if (kind === "rye")
-      setRyeFlour(Math.min(value, 90 - apFlour - speltFlour - wholeWheat));
+      setRyeFlour(Math.min(value, Math.max(0, 100 - apFlour - speltFlour - wholeWheat - customFlours.reduce((sum, item) => sum + item.percent, 0))));
     setFlourProfile("");
     setActiveRecipeId("");
   };
+  const addCustomFlour = (libraryItem: (typeof FLOUR_LIBRARY)[number]) => {
+    if (customFlours.some((item) => item.id === libraryItem.id)) return;
+    setCustomFlours((items) => [...items, { id: libraryItem.id, label: libraryItem.label, percent: 5 }]);
+    setFlourProfile("");
+    setActiveRecipeId("");
+  };
+  const updateCustomFlour = (id: string, raw: number) => {
+    const others = customFlours.filter((item) => item.id !== id).reduce((sum, item) => sum + item.percent, 0);
+    const max = Math.max(0, 100 - apFlour - speltFlour - wholeWheat - ryeFlour - others);
+    const percent = Math.min(max, Math.max(0, Math.round(raw)));
+    setCustomFlours((items) => items.map((item) => item.id === id ? { ...item, percent } : item));
+    setFlourProfile("");
+    setActiveRecipeId("");
+  };
+  const removeCustomFlour = (id: string) => {
+    setCustomFlours((items) => items.filter((item) => item.id !== id));
+    setFlourProfile("");
+    setActiveRecipeId("");
+  };
+  const addCustomInclusion = (item: (typeof INCLUSION_LIBRARY)[number]) => {
+    if (customInclusions.some((entry) => entry.id === item.id)) return;
+    const defaultPercent = item.category === "Savory" ? 10 : item.category === "Sweet" ? 5 : 15;
+    setCustomInclusions((entries) => [...entries, { ...item, percent: defaultPercent }]);
+    setActiveRecipeId("");
+  };
+  const updateCustomInclusion = (id: string, raw: number) => {
+    const percent = Math.min(40, Math.max(0, Number.isFinite(raw) ? raw : 0));
+    setCustomInclusions((items) => items.map((item) => item.id === id ? { ...item, percent } : item));
+    setActiveRecipeId("");
+  };
+  const removeCustomInclusion = (id: string) => {
+    setCustomInclusions((items) => items.filter((item) => item.id !== id));
+    setActiveRecipeId("");
+  };
+
   const saveRecipe = () => {
     const name = recipeName.trim() || `สูตร ${savedRecipes.length + 1}`;
     const id =
@@ -2961,6 +3083,8 @@ export default function Home() {
       speltFlour,
       wholeWheat,
       ryeFlour,
+      customFlours,
+      customInclusions,
       doughTemperature,
       flourProfile,
       breadStyleId: activeBreadStyle.id,
@@ -3333,6 +3457,8 @@ export default function Home() {
     apFlour,
     speltFlour,
     ryeFlour,
+    customFlours,
+    customInclusions,
     flourProfile,
     targetDough,
     hydration,
@@ -3410,6 +3536,8 @@ export default function Home() {
     setApFlour(DEFAULT_SETTINGS.apFlour);
     setSpeltFlour(DEFAULT_SETTINGS.speltFlour);
     setRyeFlour(DEFAULT_SETTINGS.ryeFlour);
+    setCustomFlours([]);
+    setCustomInclusions([]);
     setFlourProfile(DEFAULT_SETTINGS.flourProfile);
     setTargetDough(DEFAULT_SETTINGS.targetDough);
     setHydration(DEFAULT_SETTINGS.hydration);
@@ -4595,64 +4723,55 @@ export default function Home() {
                   : "บันทึกเป็นสูตรใหม่"}
               </span>
             </div>
-            <div className="flour-mix">
-              <div className="bread-share">
-                <span>แป้งขนมปัง (Bread Flour)</span>
-                <strong>{recipe.breadPercent}%</strong>
-                <small>ส่วนที่เหลืออัตโนมัติ · อย่างน้อย 10%</small>
+            <div className="ingredient-builder-section">
+              <div className="builder-section-head">
+                <div>
+                  <b>แป้งรวม 100%</b>
+                  <span>เพิ่ม/ลบแป้งได้เอง · Bread Flour จะเป็นส่วนที่เหลืออัตโนมัติ</span>
+                </div>
+                <strong>{Math.round(recipe.breadPercent + apFlour + speltFlour + wholeWheat + ryeFlour + recipe.customFlourPercent)}%</strong>
               </div>
-              <label>
-                แป้งอเนกประสงค์ (AP)
-                <span>
-                  <input
-                    type="number"
-                    min="0"
-                    max="90"
-                    value={apFlour}
-                    onChange={(e) => setFlourPercent("ap", +e.target.value)}
-                  />
-                  %
-                </span>
-              </label>
-              <label>
-                สเปลต์ (Spelt)
-                <span>
-                  <input
-                    type="number"
-                    min="0"
-                    max="40"
-                    value={speltFlour}
-                    onChange={(e) => setFlourPercent("spelt", +e.target.value)}
-                  />
-                  %
-                </span>
-              </label>
-              <label>
-                โฮลวีท
-                <span>
-                  <input
-                    type="number"
-                    min="0"
-                    max="90"
-                    value={wholeWheat}
-                    onChange={(e) => setFlourPercent("whole", +e.target.value)}
-                  />
-                  %
-                </span>
-              </label>
-              <label>
-                ไรย์
-                <span>
-                  <input
-                    type="number"
-                    min="0"
-                    max={activeBreadStyle.id === "high-rye" ? 90 : 30}
-                    value={ryeFlour}
-                    onChange={(e) => setFlourPercent("rye", +e.target.value)}
-                  />
-                  %
-                </span>
-              </label>
+              <div className="flour-mix">
+                <div className="bread-share">
+                  <span>แป้งขนมปัง (Bread Flour)</span>
+                  <strong>{recipe.breadPercent}%</strong>
+                  <small>ส่วนที่เหลืออัตโนมัติ</small>
+                </div>
+                <label>
+                  แป้งอเนกประสงค์ (AP)
+                  <span><input type="number" min="0" max="100" value={apFlour} onChange={(e) => setFlourPercent("ap", +e.target.value)} />%</span>
+                </label>
+                <label>
+                  สเปลต์ (Spelt)
+                  <span><input type="number" min="0" max="100" value={speltFlour} onChange={(e) => setFlourPercent("spelt", +e.target.value)} />%</span>
+                </label>
+                <label>
+                  โฮลวีท
+                  <span><input type="number" min="0" max="100" value={wholeWheat} onChange={(e) => setFlourPercent("whole", +e.target.value)} />%</span>
+                </label>
+                <label>
+                  ไรย์
+                  <span><input type="number" min="0" max="100" value={ryeFlour} onChange={(e) => setFlourPercent("rye", +e.target.value)} />%</span>
+                </label>
+                {customFlours.map((item) => (
+                  <label className="builder-dynamic-row" key={item.id}>
+                    <span className="dynamic-name">{item.label}</span>
+                    <span>
+                      <input type="number" min="0" max="100" value={item.percent} onChange={(e) => updateCustomFlour(item.id, +e.target.value)} />%
+                      <button type="button" className="icon-delete" onClick={() => removeCustomFlour(item.id)} aria-label={`ลบ ${item.label}`}>×</button>
+                    </span>
+                    <small>{CUSTOM_FLOUR_SUGGESTIONS[item.id]}</small>
+                  </label>
+                ))}
+              </div>
+              <div className="dynamic-add-row">
+                <span>+ เพิ่มชนิดแป้ง</span>
+                <div className="chip-list">
+                  {FLOUR_LIBRARY.filter((item) => !customFlours.some((chosen) => chosen.id === item.id)).map((item) => (
+                    <button type="button" key={item.id} onClick={() => addCustomFlour(item)}>{item.label}</button>
+                  ))}
+                </div>
+              </div>
             </div>
             {flourProfile && (
               <div className="flour-profile">
@@ -4665,6 +4784,51 @@ export default function Home() {
                 </small>
               </div>
             )}
+            <div className="inclusion-builder-section">
+              <div className="builder-section-head">
+                <div>
+                  <b>ส่วนผสมเพิ่มเติม</b>
+                  <span>คำนวณเป็น Baker’s % จากแป้งรวม และรวมในน้ำหนักโดว์อัตโนมัติ</span>
+                </div>
+                <strong>{customInclusions.reduce((sum, item) => sum + item.percent, 0)}%</strong>
+              </div>
+              {customInclusions.length > 0 ? (
+                <div className="dynamic-item-list">
+                  {customInclusions.map((item) => (
+                    <div className="dynamic-item" key={item.id}>
+                      <div>
+                        <b>{item.label}</b>
+                        <small>{item.category}</small>
+                      </div>
+                      <span>
+                        <input type="number" min="0" max="40" step="1" value={item.percent} onChange={(e) => updateCustomInclusion(item.id, +e.target.value)} />%
+                        <button type="button" className="icon-delete" onClick={() => removeCustomInclusion(item.id)} aria-label={`ลบ ${item.label}`}>×</button>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="empty-builder">ยังไม่มีส่วนผสมเพิ่ม — ลองเพิ่ม Almond + Cranberry เพื่อทดสอบระบบคำนวณ</p>
+              )}
+              <div className="dynamic-add-row">
+                <span>+ เพิ่มส่วนผสม</span>
+                <div className="chip-list">
+                  {INCLUSION_LIBRARY.filter((item) => !customInclusions.some((chosen) => chosen.id === item.id)).slice(0, 20).map((item) => (
+                    <button type="button" key={item.id} onClick={() => addCustomInclusion(item)}>{item.label}</button>
+                  ))}
+                </div>
+              </div>
+              {customInclusions.length > 0 && (
+                <div className="inclusion-analysis">
+                  <b>วิเคราะห์สูตร</b>
+                  <span>
+                    {customInclusions.reduce((sum, item) => sum + item.percent, 0) >= 30
+                      ? "⚠ Total inclusions สูง — โครงสร้างและโพรงเปิดอาจลดลง"
+                      : "✓ ปริมาณส่วนผสมอยู่ในช่วงใช้งานทั่วไป"}
+                  </span>
+                </div>
+              )}
+            </div>
             <div className="control-row">
               <label>
                 ไฮเดรชันจริง <strong>{hydration}%</strong>
@@ -4881,6 +5045,14 @@ export default function Home() {
                   <b>{round(recipe.rye)} กรัม</b>
                 </p>
               )}
+              {recipe.customFlourTotals.map((item) => (
+                item.percent > 0 ? (
+                  <p key={item.id}>
+                    <span>{item.label} {item.percent}%</span>
+                    <b>{round(item.grams)} กรัม</b>
+                  </p>
+                ) : null
+              ))}
               <p>
                 <span>น้ำเย็น</span>
                 <b>{round(recipe.water)} กรัม</b>
@@ -4901,6 +5073,12 @@ export default function Home() {
               )}
               {recipe.extras.map((item) => (
                 <p key={item.label}>
+                  <span>{item.label} {item.percent}%</span>
+                  <b>{round(item.grams)} กรัม</b>
+                </p>
+              ))}
+              {recipe.customExtras.map((item) => (
+                <p key={`custom-${item.id}`}>
                   <span>{item.label} {item.percent}%</span>
                   <b>{round(item.grams)} กรัม</b>
                 </p>

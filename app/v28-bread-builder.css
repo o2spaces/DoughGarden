@@ -546,3 +546,14 @@
   .workflow-style-banner { grid-template-columns: 1fr; }
   .workflow-style-banner button { grid-column: auto; }
 }
+
+/* V29 Dynamic formula builder */
+.ingredient-builder-section,.inclusion-builder-section{margin:0 0 20px;padding:16px;border:1px solid rgba(231,161,62,.16);border-radius:15px;background:rgba(255,255,255,.018)}
+.builder-section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:10px}
+.builder-section-head b{display:block;color:#d9c7ae;font-size:13px}.builder-section-head span{display:block;color:#776a5a;font-size:11px;margin-top:3px}.builder-section-head>strong{color:var(--gold);font-size:22px}
+.flour-mix{display:grid;grid-template-columns:1.25fr repeat(4,1fr);gap:8px}.builder-dynamic-row{position:relative}.builder-dynamic-row>span:last-of-type{display:flex;align-items:center;gap:4px}.dynamic-name{color:#a89a86!important;font-size:13px!important}.builder-dynamic-row small{display:block;margin-top:4px;color:#756958;font-size:10px;line-height:1.3}
+.icon-delete{border:0!important;background:transparent!important;color:#8c6f62!important;padding:0!important;min-width:20px;cursor:pointer;font-size:18px;line-height:1}.icon-delete:hover{color:var(--danger)!important}
+.dynamic-add-row{margin-top:12px;padding-top:12px;border-top:1px dashed rgba(255,255,255,.08)}.dynamic-add-row>span{display:block;margin-bottom:8px;color:#887a68;font-size:12px;font-weight:700}.chip-list{display:flex;flex-wrap:wrap;gap:6px}.chip-list button{border:1px solid rgba(255,255,255,.08);border-radius:99px;background:#191510;color:#9b8b78;padding:6px 9px;font-size:11px;cursor:pointer}.chip-list button:hover{border-color:rgba(231,161,62,.4);color:var(--gold)}
+.dynamic-item-list{display:grid;gap:7px}.dynamic-item{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;padding:10px 11px;border:1px solid rgba(255,255,255,.06);border-radius:11px;background:#191510}.dynamic-item b{display:block;color:#d2c1aa;font-size:12px}.dynamic-item small{color:#716455;font-size:10px}.dynamic-item>span{display:flex;align-items:center;gap:4px}.dynamic-item input{width:56px;border:0;border-bottom:1px solid #574638;background:transparent;color:var(--gold);font-size:18px;font-weight:700;text-align:right;outline:0}.empty-builder{margin:7px 0 0;color:#756858;font-size:11px;line-height:1.55}.inclusion-analysis{display:flex;justify-content:space-between;gap:12px;margin-top:11px;padding:10px 12px;border-radius:10px;background:rgba(145,170,136,.07);border:1px solid rgba(145,170,136,.16);color:#8fa384;font-size:11px}.inclusion-analysis b{color:#b9c7b1}
+@media(max-width:920px){.flour-mix{grid-template-columns:1fr 1fr}.ingredient-builder-section .flour-mix .bread-share{grid-column:1/-1}}
+@media(max-width:600px){.flour-mix{grid-template-columns:1fr}.builder-section-head{align-items:flex-start}.inclusion-analysis{display:grid}}
