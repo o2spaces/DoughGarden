@@ -1518,6 +1518,7 @@ export default function Home() {
   const [customInclusions, setCustomInclusions] = useState<CustomInclusion[]>([]);
   const [flourProfile, setFlourProfile] = useState("");
   const [targetDough, setTargetDough] = useState(950);
+  const [targetDoughInput, setTargetDoughInput] = useState("950");
   const [hydration, setHydration] = useState(73);
   const [starterPercent, setStarterPercent] = useState(20);
   const [saltPercent, setSaltPercent] = useState(2);
@@ -1527,6 +1528,9 @@ export default function Home() {
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
   const [activeRecipeId, setActiveRecipeId] = useState("");
   const [loafCount, setLoafCount] = useState(1);
+  useEffect(() => {
+    setTargetDoughInput(String(targetDough));
+  }, [targetDough]);
   const [loavesPerBake, setLoavesPerBake] = useState(1);
   const [proofMode, setProofMode] = useState<ProofMode>("cold");
   const [coldHours, setColdHours] = useState(12);
@@ -5225,14 +5229,27 @@ export default function Home() {
                   max="1800"
                   step="10"
                   inputMode="numeric"
-                  value={targetDough}
+                  value={targetDoughInput}
                   aria-label="กำหนดน้ำหนักโดว์ต่อโลฟเองเป็นกรัม"
-                  onChange={(e) => {
-                    if (e.target.value === "") return;
-                    const value = Number(e.target.value);
-                    if (Number.isFinite(value)) setTargetDough(Math.min(1800, Math.max(300, value)));
+                  onChange={(e) => setTargetDoughInput(e.target.value)}
+                  onBlur={() => {
+                    const raw = targetDoughInput.trim();
+                    if (raw === "") {
+                      setTargetDoughInput(String(targetDough));
+                      return;
+                    }
+                    const value = Number(raw);
+                    if (!Number.isFinite(value)) {
+                      setTargetDoughInput(String(targetDough));
+                      return;
+                    }
+                    const normalized = Math.round(Math.min(1800, Math.max(300, value)) / 10) * 10;
+                    setTargetDough(normalized);
+                    setTargetDoughInput(String(normalized));
                   }}
-                  onBlur={() => setTargetDough(Math.round(Math.min(1800, Math.max(300, targetDough)) / 10) * 10)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") e.currentTarget.blur();
+                  }}
                 />
                 <span>กรัม</span>
               </div>
