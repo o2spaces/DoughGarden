@@ -2257,6 +2257,33 @@ export default function Home() {
       : proofMode === "cold"
         ? coldHours
         : proofAdaptive.comboRoom + coldHours;
+
+  const starterFermentation = useMemo(() => {
+    const bulkLow = Math.max(1.5, adaptive.bulk * 0.86);
+    const bulkHigh = Math.max(bulkLow + 0.5, adaptive.bulk * 1.14);
+    const finalRoomLow = Math.max(0.5, proofAdaptive.roomFinish * 0.85);
+    const finalRoomHigh = Math.max(finalRoomLow + 0.25, proofAdaptive.roomFinish * 1.15);
+    const totalRoomLow = bulkLow + finalRoomLow;
+    const totalRoomHigh = bulkHigh + finalRoomHigh;
+    const starterBand =
+      starterPercent < 15
+        ? { label: "หมักช้า", tone: "slow", detail: "Starter น้อย · รอการขึ้นฟูนานขึ้น" }
+        : starterPercent < 25
+          ? { label: "สมดุล", tone: "balanced", detail: "Starter ระดับกลาง · เหมาะกับการควบคุมเวลา" }
+          : starterPercent < 40
+            ? { label: "หมักเร็วขึ้น", tone: "fast", detail: "Starter สูงขึ้น · ควรเริ่มเช็กโดว์เร็วขึ้น" }
+            : { label: "หมักเร็วมาก", tone: "very-fast", detail: "Starter สูง · ใช้สัญญาณโดว์เป็นหลักและอย่ารอเวลาตายตัว" };
+    return {
+      bulkLow,
+      bulkHigh,
+      finalRoomLow,
+      finalRoomHigh,
+      totalRoomLow,
+      totalRoomHigh,
+      starterBand,
+    };
+  }, [adaptive.bulk, proofAdaptive.roomFinish, starterPercent]);
+
   const bakeBatches = Math.ceil(loafCount / Math.min(loafCount, loavesPerBake));
   const extraShapingHours = (Math.max(0, loafCount - 1) * 13) / 60;
   const bakeCycleHours =
@@ -5117,6 +5144,21 @@ export default function Home() {
                 <span>Fermented flour <b>{(starterPercent / 2).toFixed(1)}%</b></span>
               </div>
               <small className="starter-help">ปรับ Starter แล้วระบบจะคำนวณปริมาณ Levain, น้ำ และแป้งในสูตรใหม่ให้อัตโนมัติ โดยยังคงน้ำหนักโดว์เป้าหมายเดิม</small>
+              <div className={`starter-fermentation-card ${starterFermentation.starterBand.tone}`}>
+                <div className="starter-fermentation-head">
+                  <div>
+                    <b>ผลต่อกระบวนการหมัก</b>
+                    <small>{starterFermentation.starterBand.detail}</small>
+                  </div>
+                  <strong>{starterFermentation.starterBand.label}</strong>
+                </div>
+                <div className="starter-fermentation-stats">
+                  <span><small>Bulk fermentation</small><b>{duration(starterFermentation.bulkLow)}–{duration(starterFermentation.bulkHigh)}</b></span>
+                  <span><small>Final proof ที่อุณหภูมิห้อง</small><b>{duration(starterFermentation.finalRoomLow)}–{duration(starterFermentation.finalRoomHigh)}</b></span>
+                  <span><small>รวมกรณี Room Proof</small><b>{duration(starterFermentation.totalRoomLow)}–{duration(starterFermentation.totalRoomHigh)}</b></span>
+                </div>
+                <p>อิงอุณหภูมิหมัก {fermentationTemperature}°C · Starter {starterPercent}% · เวลาเป็นค่าประมาณ ให้ยืนยันด้วยปริมาตร ฟอง ความยืดหยุ่น และแรงของโดว์จริง</p>
+              </div>
             </div>
             <div className="recipe-minor-settings">
               <label>
