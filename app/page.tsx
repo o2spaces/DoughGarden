@@ -775,7 +775,171 @@ const CRUMB_DIAGNOSIS: Record<
   },
 };
 
-const RECIPE_PRESETS = [
+const RECIPE_PRESETS: Array<
+  Pick<
+    SavedRecipe,
+    | "name"
+    | "targetDough"
+    | "hydration"
+    | "starterPercent"
+    | "saltPercent"
+    | "oilPercent"
+    | "apFlour"
+    | "speltFlour"
+    | "wholeWheat"
+    | "ryeFlour"
+    | "doughTemperature"
+    | "flourProfile"
+    | "breadStyleId"
+    | "breadGoal"
+    | "customFlours"
+    | "customInclusions"
+  > & { id: string; description: string }
+> = [
+  {
+    id: "walnut-cranberry",
+    name: "Walnut + Cranberry Sourdough",
+    description: "สูตรอ้างอิง sourdough: Walnut 20% + Cranberry 14% · เปรี้ยวหวานและถั่วชัด",
+    targetDough: 900,
+    apFlour: 0,
+    speltFlour: 0,
+    wholeWheat: 15,
+    ryeFlour: 5,
+    hydration: 85,
+    starterPercent: 23.33,
+    saltPercent: 1.9,
+    oilPercent: 3,
+    doughTemperature: 24,
+    flourProfile: "อิงสูตร Walnut Cranberry Sourdough ของ The Perfect Loaf · Walnut 20% · Cranberry 14% · Walnut oil 3%",
+    customInclusions: [
+      { id: "walnut", label: "วอลนัต", percent: 20, category: "Nuts" },
+      { id: "cranberry", label: "แครนเบอรี่แห้ง", percent: 14, category: "Dried Fruit" },
+    ],
+  },
+  {
+    id: "dark-chocolate-cranberry",
+    name: "Dark Chocolate + Cranberry Sourdough",
+    description: "สูตรช็อกโกแลตเข้ม: Chocolate 20% + Cranberry 20% + Cocoa 3%",
+    targetDough: 900,
+    apFlour: 0,
+    speltFlour: 0,
+    wholeWheat: 15,
+    ryeFlour: 0,
+    hydration: 75,
+    starterPercent: 24.6,
+    saltPercent: 1.8,
+    oilPercent: 3,
+    doughTemperature: 25,
+    flourProfile: "ดัดแปลงจาก Dark Chocolate–Cherry Sourdough ของ The Perfect Loaf โดยแทน dried cherries ด้วย cranberries ได้",
+    customInclusions: [
+      { id: "dark-choc-chips", label: "ช็อกโกแลตชิพดาร์ก", percent: 20, category: "Chocolate" },
+      { id: "cranberry", label: "แครนเบอรี่แห้ง", percent: 20, category: "Dried Fruit" },
+      { id: "cocoa", label: "โกโก้", percent: 3, category: "Sweet" },
+      { id: "sugar", label: "น้ำตาล", percent: 2, category: "Sweet" },
+    ],
+  },
+  {
+    id: "chocolate-chip",
+    name: "Chocolate Chip Sourdough",
+    description: "สูตรเริ่มต้นสำหรับขนมปังช็อกชิพ · แนะนำ 30% เพื่อให้ช็อกโกแลตชัดแต่ไม่หนักเกิน",
+    targetDough: 800,
+    apFlour: 0,
+    speltFlour: 0,
+    wholeWheat: 0,
+    ryeFlour: 0,
+    hydration: 71,
+    starterPercent: 20,
+    saltPercent: 2,
+    oilPercent: 0,
+    doughTemperature: 26,
+    flourProfile: "จุดเริ่มต้น 30% chocolate chips; สูตร King Arthur มีตัวอย่าง 85g chips ต่อ flour 200g ใน sourdough sandwich loaf",
+    customInclusions: [
+      { id: "semi-sweet-choc-chips", label: "ช็อกโกแลตชิพ Semi-sweet", percent: 30, category: "Chocolate" },
+    ],
+  },
+  {
+    id: "walnut-raisin",
+    name: "Walnut + Raisin Sourdough",
+    description: "คู่คลาสสิกสำหรับ breakfast bread · ใช้ Walnut + Raisin อย่างละประมาณ 15–20%",
+    targetDough: 900,
+    apFlour: 10,
+    speltFlour: 0,
+    wholeWheat: 15,
+    ryeFlour: 0,
+    hydration: 75,
+    starterPercent: 20,
+    saltPercent: 2,
+    oilPercent: 0,
+    doughTemperature: 25,
+    flourProfile: "ช่วงแนะนำเชิงปฏิบัติ 20% ต่อชนิดตาม baker's math; ปรับรวม inclusions ตามความแน่นของขนมปัง",
+    customInclusions: [
+      { id: "walnut", label: "วอลนัต", percent: 15, category: "Nuts" },
+      { id: "raisin", label: "ลูกเกด", percent: 15, category: "Dried Fruit" },
+    ],
+  },
+  {
+    id: "seeded-sourdough",
+    name: "Five-Seed Sourdough",
+    description: "เมล็ดรวมแบบธัญพืช · sunflower / pumpkin / sesame / flax / chia รวมราว 30–35%",
+    targetDough: 900,
+    apFlour: 0,
+    speltFlour: 0,
+    wholeWheat: 15,
+    ryeFlour: 5,
+    hydration: 78,
+    starterPercent: 20,
+    saltPercent: 2,
+    oilPercent: 0,
+    doughTemperature: 25,
+    flourProfile: "เมล็ดแห้งควรพิจารณา soaker; ใช้น้ำจากสูตรสำหรับการแช่แทนการเพิ่มน้ำโดยไม่ควบคุม",
+    customInclusions: [
+      { id: "sunflower", label: "เมล็ดทานตะวัน", percent: 7, category: "Seeds" },
+      { id: "pumpkin", label: "เมล็ดฟักทอง", percent: 7, category: "Seeds" },
+      { id: "sesame", label: "งา", percent: 6, category: "Seeds" },
+      { id: "flax", label: "แฟลกซ์", percent: 7, category: "Seeds" },
+      { id: "chia", label: "เจีย", percent: 3, category: "Seeds" },
+    ],
+  },
+  {
+    id: "cheddar-jalapeno",
+    name: "Cheddar + Jalapeño Sourdough",
+    description: "ชีสเค็มมัน + เผ็ด · Cheddar ประมาณ 25–30% + Jalapeño 5–7%",
+    targetDough: 900,
+    apFlour: 0,
+    speltFlour: 0,
+    wholeWheat: 0,
+    ryeFlour: 0,
+    hydration: 72,
+    starterPercent: 20,
+    saltPercent: 2,
+    oilPercent: 0,
+    doughTemperature: 25,
+    flourProfile: "มีสูตร Breadtopia ใช้ cheddar 115g กับ bread flour 300g พร้อม jalapeño 20g; เทียบได้ราว cheddar 38% และ jalapeño 7%",
+    customInclusions: [
+      { id: "cheddar", label: "เชดดาร์ (Cheddar)", percent: 25, category: "Cheese" },
+      { id: "jalapeno", label: "ฮาลาปิโน", percent: 5, category: "Savory" },
+    ],
+  },
+  {
+    id: "olive-herb",
+    name: "Olive + Rosemary Sourdough",
+    description: "Savory classic · Olive ประมาณ 20–25% + Rosemary 1–2%",
+    targetDough: 900,
+    apFlour: 0,
+    speltFlour: 0,
+    wholeWheat: 10,
+    ryeFlour: 0,
+    hydration: 74,
+    starterPercent: 20,
+    saltPercent: 2,
+    oilPercent: 2,
+    doughTemperature: 25,
+    flourProfile: "Olive เป็น inclusion คลาสสิก; ใช้ 20–30% เป็นจุดเริ่มต้นและคุมสมดุลเกลือ/ความชื้น",
+    customInclusions: [
+      { id: "olive", label: "มะกอก", percent: 20, category: "Savory" },
+      { id: "rosemary", label: "โรสแมรี่", percent: 1, category: "Savory" },
+    ],
+  },
   {
     id: "venus-spelt-large",
     name: "ก้อนใหญ่ (ฟูสูง) · Venus–Spelt",
@@ -979,6 +1143,7 @@ const INCLUSION_LIBRARY = [
   { id: "chocolate-chunks", label: "ช็อกโกแลตชังก์", category: "Chocolate" },
   { id: "chocolate", label: "ช็อกโกแลต", category: "Chocolate" },
   { id: "cocoa", label: "โกโก้", category: "Sweet" },
+  { id: "sugar", label: "น้ำตาล", category: "Sweet" },
   { id: "cinnamon", label: "อบเชย", category: "Sweet" },
   { id: "orange-zest", label: "ผิวส้ม", category: "Sweet" },
   { id: "oat-flakes", label: "Rolled Oats", category: "Grains" },
@@ -4739,7 +4904,7 @@ export default function Home() {
               <span>{preset.name}</span>
               <small>{preset.description}</small>
               <b>
-                น้ำ {preset.hydration}% · Starter {preset.starterPercent}%
+                น้ำ {preset.hydration}% · Starter {preset.starterPercent}% · Add-on {preset.customInclusions?.reduce((sum, item) => sum + item.percent, 0) || 0}%
               </b>
             </button>
           ))}
@@ -4894,20 +5059,60 @@ export default function Home() {
                 }}
               />
             </div>
-            <div className="control-row">
+            <div className="control-row starter-control">
               <label>
                 หัวเชื้อ 100% Hydration <strong>{starterPercent}%</strong>
               </label>
-              <input
-                type="range"
-                min="5"
-                max={activeBreadStyle.id === "high-rye" ? 100 : 35}
-                value={starterPercent}
-                onChange={(e) => {
-                  setStarterPercent(+e.target.value);
-                  setActiveRecipeId("");
-                }}
-              />
+              <div className="starter-adjust-grid">
+                <input
+                  className="starter-range"
+                  type="range"
+                  min="5"
+                  max={activeBreadStyle.id === "high-rye" ? 100 : 50}
+                  value={starterPercent}
+                  onChange={(e) => {
+                    setStarterPercent(Math.min(activeBreadStyle.id === "high-rye" ? 100 : 50, Math.max(5, +e.target.value)));
+                    setActiveRecipeId("");
+                  }}
+                  aria-label="ปรับเปอร์เซ็นต์หัวเชื้อ"
+                />
+                <div className="starter-value-input">
+                  <input
+                    type="number"
+                    min="5"
+                    max={activeBreadStyle.id === "high-rye" ? 100 : 50}
+                    step="1"
+                    value={starterPercent}
+                    onChange={(e) => {
+                      setStarterPercent(Math.min(activeBreadStyle.id === "high-rye" ? 100 : 50, Math.max(5, +e.target.value || 5)));
+                      setActiveRecipeId("");
+                    }}
+                    aria-label="เปอร์เซ็นต์หัวเชื้อ"
+                  />
+                  <span>%</span>
+                </div>
+              </div>
+              <div className="starter-quick-presets" aria-label="ค่าหัวเชื้อที่ใช้บ่อย">
+                {[10, 15, 20, 25, 30].map((value) => (
+                  <button
+                    type="button"
+                    key={value}
+                    className={starterPercent === value ? "selected" : ""}
+                    onClick={() => {
+                      setStarterPercent(value);
+                      setActiveRecipeId("");
+                    }}
+                  >
+                    {value}%
+                  </button>
+                ))}
+              </div>
+              <div className="starter-impact">
+                <span>แป้งจาก Starter <b>{Math.round(recipe.levain / 2)} g</b></span>
+                <span>น้ำจาก Starter <b>{Math.round(recipe.levain / 2)} g</b></span>
+                <span>Fermented flour <b>{(starterPercent / 2).toFixed(1)}%</b></span>
+              </div>
+              <small className="starter-help">ปรับ Starter แล้วระบบจะคำนวณปริมาณ Levain, น้ำ และแป้งในสูตรใหม่ให้อัตโนมัติ โดยยังคงน้ำหนักโดว์เป้าหมายเดิม</small>
             </div>
             <div className="recipe-minor-settings">
               <label>
