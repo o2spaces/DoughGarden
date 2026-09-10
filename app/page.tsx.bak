@@ -2425,13 +2425,13 @@ export default function Home() {
       {
         icon: "04",
         title: "บัลก์เฟอร์เมนเทชัน",
-        subtitle: `Starter ${starterPercent}% · คาดว่าพร้อม ${duration(bulkReadiness.windowStart)}–${duration(bulkReadiness.windowEnd)} หลังเริ่มหมัก`,
+        subtitle: `คาดว่าพร้อม ${duration(bulkReadiness.windowStart)}–${duration(bulkReadiness.windowEnd)} หลังเริ่มหมัก`,
         hours: Math.max(0.25, adaptive.bulk - bulkElapsedBeforePhaseFour),
         temp: `${adaptiveTempSource === "dough" ? "โดว์" : "ห้อง"} ${fermentationTemperature}°C`,
         cue: `พร้อมจริงเมื่อขึ้นประมาณ ${bulkRiseTarget}% ผิวโค้งนูน มีฟองริมกล่อง สั่นคล้ายเจล และยังมีแรงเก็บทรง`,
         guide: [
           `เริ่มตรวจตั้งแต่บัลก์รวม ${duration(bulkReadiness.startCheck)}; ช่วงคาดว่าพร้อม ${duration(bulkReadiness.windowStart)}–${duration(bulkReadiness.windowEnd)} หลังหัวเชื้อเริ่มทำงาน`,
-          `ระบบคำนวณจาก Starter ${starterPercent}% + อุณหภูมิ${adaptiveTempSource === "dough" ? "กลางโดว์ที่วัดจริง" : "ห้อง"} ${fermentationTemperature}°C · ก่อนถึงขั้นตอนนี้หมักไปแล้วประมาณ ${duration(bulkElapsedBeforePhaseFour)}`,
+          `ระบบคำนวณจากอุณหภูมิ${adaptiveTempSource === "dough" ? "กลางโดว์ที่วัดจริง" : "ห้อง"} ${fermentationTemperature}°C · ก่อนถึงขั้นตอนนี้หมักไปแล้วประมาณ ${duration(bulkElapsedBeforePhaseFour)}`,
           `ทำเครื่องหมายระดับเริ่มต้นในกล่องผนังตรง และเริ่มพรีเชปเมื่อเพิ่มประมาณ ${bulkRiseTarget}%`,
           proofMode === "room"
             ? "รูมพรูฟยังหมักต่อ จึงหยุดบัลก์ก่อนโดว์พองเต็มและยืนยันด้วยสภาพโดว์"
@@ -6662,7 +6662,7 @@ export default function Home() {
           <h2>ผู้ช่วยทำขนมปังทีละขั้น</h2>
           <span>
             {bakePlan
-              ? "แสดงวันและเวลาเริ่ม–เสร็จจากแผนเวลาอบที่เลือกไว้ด้านบน และคำนวณใหม่อัตโนมัติเมื่อ Starter หรืออุณหภูมิเปลี่ยน"
+              ? "แสดงวันและเวลาเริ่ม–เสร็จจากแผนเวลาอบที่เลือกไว้ด้านบน"
               : "เลือกวันและเวลาในแผนเวลาอบ แล้วตารางของทุกขั้นตอนจะแสดงที่นี่"}
           </span>
         </header>
@@ -6677,16 +6677,7 @@ export default function Home() {
             <strong>{adaptiveTempSource === "dough" ? `โดว์ ${doughTemperature}°C` : `ห้อง ${temperature}°C`}</strong>
             <small>เป้าหมายโดว์ {activeBreadStyle.doughTemperature}°C</small>
           </div>
-          <div>
-            <span>Starter ที่ใช้คำนวณ</span>
-            <strong>{starterPercent}%</strong>
-            <small>เปลี่ยนค่าแล้ว Workflow จะคำนวณเวลาใหม่</small>
-          </div>
           <button type="button" onClick={() => openPage("recipe")}>เปลี่ยนชนิดขนมปัง</button>
-        </div>
-        <div className="workflow-recalc-note">
-          <strong>↻ เวลา Workflow คำนวณจากสูตรปัจจุบัน</strong>
-          <span>Starter {starterPercent}% · Bulk เป้าหมาย {duration(adaptive.bulk)} · มีแผนอบแล้ววัน/เวลาเริ่มงานจะเลื่อนตามอัตโนมัติ</span>
         </div>
         <div className="workflow">
           <div className="phase-nav">
