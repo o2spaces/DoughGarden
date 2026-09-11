@@ -5431,7 +5431,7 @@ export default function Home() {
             </div>
             <div className="ingredients">
               <p>
-                <span>แป้งขนมปัง</span>
+                <span>แป้งขนมปัง{breadFlourBrand.trim() ? ` · ${breadFlourBrand.trim()}` : ""}</span>
                 <b>{round(recipe.bread)} กรัม</b>
               </p>
               {apFlour > 0 && (
