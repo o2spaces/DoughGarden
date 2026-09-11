@@ -27,6 +27,7 @@ type BreadFamilyFilter = "all" | BreadFamily;
 type BreadGoal = "balanced" | "open" | "soft" | "mild" | "grain";
 type CustomFlour = { id: string; label: string; percent: number };
 type CustomInclusion = { id: string; label: string; percent: number; category?: string; note?: string };
+type UserLibraryItem = { id: string; label: string; category?: string };
 type BreadWorkflowKind =
   | "artisan"
   | "pan"
@@ -122,6 +123,7 @@ type SavedRecipe = {
   breadGoal?: BreadGoal;
   customFlours?: CustomFlour[];
   customInclusions?: CustomInclusion[];
+  breadFlourBrand?: string;
 };
 type LevainObservation = {
   id: string;
@@ -1173,6 +1175,9 @@ const DEFAULT_SETTINGS = {
   ryeFlour: 0,
   customFlours: [] as CustomFlour[],
   customInclusions: [] as CustomInclusion[],
+  userFlours: [] as UserLibraryItem[],
+  userInclusions: [] as UserLibraryItem[],
+  breadFlourBrand: "",
   flourProfile: "",
   targetDough: 800,
   hydration: 71,
@@ -1231,6 +1236,13 @@ const normalizeSettings = (
   customInclusions: Array.isArray(data?.customInclusions)
     ? data.customInclusions.filter((item): item is CustomInclusion => !!item?.id && typeof item?.label === "string" && typeof item?.percent === "number")
     : [],
+  userFlours: Array.isArray(data?.userFlours)
+    ? data.userFlours.filter((item): item is UserLibraryItem => !!item?.id && typeof item?.label === "string")
+    : [],
+  userInclusions: Array.isArray(data?.userInclusions)
+    ? data.userInclusions.filter((item): item is UserLibraryItem => !!item?.id && typeof item?.label === "string")
+    : [],
+  breadFlourBrand: typeof data?.breadFlourBrand === "string" ? data.breadFlourBrand : "",
   flourProfile:
     typeof data?.flourProfile === "string"
       ? data.flourProfile
@@ -1516,6 +1528,12 @@ export default function Home() {
   const [ryeFlour, setRyeFlour] = useState(5);
   const [customFlours, setCustomFlours] = useState<CustomFlour[]>([]);
   const [customInclusions, setCustomInclusions] = useState<CustomInclusion[]>([]);
+  const [userFlours, setUserFlours] = useState<UserLibraryItem[]>([]);
+  const [userInclusions, setUserInclusions] = useState<UserLibraryItem[]>([]);
+  const [breadFlourBrand, setBreadFlourBrand] = useState("");
+  const [newFlourName, setNewFlourName] = useState("");
+  const [newInclusionName, setNewInclusionName] = useState("");
+  const [newInclusionCategory, setNewInclusionCategory] = useState("Custom");
   const [flourProfile, setFlourProfile] = useState("");
   const [targetDough, setTargetDough] = useState(950);
   const [targetDoughInput, setTargetDoughInput] = useState("950");
@@ -2867,6 +2885,9 @@ export default function Home() {
         setRyeFlour(settings.ryeFlour);
         setCustomFlours(settings.customFlours || []);
         setCustomInclusions(settings.customInclusions || []);
+        setUserFlours(settings.userFlours || []);
+        setUserInclusions(settings.userInclusions || []);
+        setBreadFlourBrand(settings.breadFlourBrand || "");
         setFlourProfile(settings.flourProfile);
         setTargetDough(settings.targetDough);
         setHydration(settings.hydration);
@@ -3144,6 +3165,7 @@ export default function Home() {
       | "breadGoal"
       | "customFlours"
       | "customInclusions"
+      | "breadFlourBrand"
     >,
     id = "",
   ) => {
@@ -3159,6 +3181,7 @@ export default function Home() {
     setRyeFlour(values.ryeFlour);
     setCustomFlours(values.customFlours || []);
     setCustomInclusions(values.customInclusions || []);
+    setBreadFlourBrand(values.breadFlourBrand || "");
     setFlourProfile(values.flourProfile);
     setDoughTemperature(values.doughTemperature);
     const savedStyle = BREAD_STYLES.find(
@@ -3251,6 +3274,35 @@ export default function Home() {
     ...(ryeFlour > 0 ? [{ id: "rye", label: "ไรย์ (Rye)", percent: ryeFlour }] : []),
   ];
 
+  const addUserFlourToLibrary = () => {
+    const label = newFlourName.trim();
+    if (!label) return;
+    const id = `user-flour-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    setUserFlours((items) => [...items, { id, label, category: "My Flour" }]);
+    setNewFlourName("");
+    setToast(`เพิ่ม “${label}” ในรายการแป้งแล้ว`);
+  };
+  const removeUserFlourFromLibrary = (id: string) => {
+    const item = userFlours.find((entry) => entry.id === id);
+    setUserFlours((items) => items.filter((entry) => entry.id !== id));
+    setCustomFlours((items) => items.filter((entry) => entry.id !== id));
+    if (item) setToast(`ลบ “${item.label}” จากรายการแป้งแล้ว`);
+  };
+  const addUserInclusionToLibrary = () => {
+    const label = newInclusionName.trim();
+    if (!label) return;
+    const id = `user-inclusion-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    setUserInclusions((items) => [...items, { id, label, category: newInclusionCategory || "Custom" }]);
+    setNewInclusionName("");
+    setToast(`เพิ่ม “${label}” ในรายการส่วนผสมแล้ว`);
+  };
+  const removeUserInclusionFromLibrary = (id: string) => {
+    const item = userInclusions.find((entry) => entry.id === id);
+    setUserInclusions((items) => items.filter((entry) => entry.id !== id));
+    setCustomInclusions((items) => items.filter((entry) => entry.id !== id));
+    if (item) setToast(`ลบ “${item.label}” จากรายการส่วนผสมแล้ว`);
+  };
+
   const addFlourFromLibrary = (libraryItem: (typeof FLOUR_LIBRARY)[number]) => {
     if (libraryItem.id === "ap") setFlourPercent("ap", 5);
     else if (libraryItem.id === "spelt") setFlourPercent("spelt", 5);
@@ -3266,7 +3318,7 @@ export default function Home() {
     if (id === "rye") setFlourPercent("rye", 0);
   };
 
-  const addCustomFlour = (libraryItem: (typeof FLOUR_LIBRARY)[number]) => {
+  const addCustomFlour = (libraryItem: UserLibraryItem | (typeof FLOUR_LIBRARY)[number]) => {
     if (customFlours.some((item) => item.id === libraryItem.id)) return;
     setCustomFlours((items) => [...items, { id: libraryItem.id, label: libraryItem.label, percent: 5 }]);
     setFlourProfile("");
@@ -3285,7 +3337,7 @@ export default function Home() {
     setFlourProfile("");
     setActiveRecipeId("");
   };
-  const addCustomInclusion = (item: (typeof INCLUSION_LIBRARY)[number]) => {
+  const addCustomInclusion = (item: UserLibraryItem | (typeof INCLUSION_LIBRARY)[number]) => {
     if (customInclusions.some((entry) => entry.id === item.id)) return;
     const defaultPercent = item.category === "Savory" ? 10 : item.category === "Sweet" ? 5 : 15;
     setCustomInclusions((entries) => [...entries, { ...item, percent: defaultPercent }]);
@@ -3321,6 +3373,7 @@ export default function Home() {
       ryeFlour,
       customFlours,
       customInclusions,
+      breadFlourBrand,
       doughTemperature,
       flourProfile,
       breadStyleId: activeBreadStyle.id,
@@ -3695,6 +3748,9 @@ export default function Home() {
     ryeFlour,
     customFlours,
     customInclusions,
+    userFlours,
+    userInclusions,
+    breadFlourBrand,
     flourProfile,
     targetDough,
     hydration,
@@ -3735,6 +3791,23 @@ export default function Home() {
     );
     setToast("บันทึกค่าที่ปรับไว้ในเครื่องนี้แล้ว");
   };
+  useEffect(() => {
+    try {
+      const current = JSON.parse(localStorage.getItem("doughgarden-settings") || "{}");
+      localStorage.setItem(
+        "doughgarden-settings",
+        JSON.stringify({
+          ...current,
+          userFlours,
+          userInclusions,
+          breadFlourBrand,
+        }),
+      );
+    } catch {
+      /* Custom libraries remain in the current session if storage is unavailable. */
+    }
+  }, [userFlours, userInclusions, breadFlourBrand]);
+
   const resetClimate = () => {
     setTemperature(DEFAULT_SETTINGS.temperature);
     setHumidity(DEFAULT_SETTINGS.humidity);
@@ -4963,15 +5036,18 @@ export default function Home() {
               <div className="builder-section-head">
                 <div>
                   <b>แป้งรวม 100%</b>
-                  <span>เพิ่ม/ลบแป้งได้เอง · Bread Flour จะเป็นส่วนที่เหลืออัตโนมัติ</span>
+                  <span>เพิ่ม/ลบแป้งได้เอง · แป้งชนิดหลักเป็นส่วนที่เหลือ · ยี่ห้อจำไว้ในเครื่อง</span>
                 </div>
                 <strong>{Math.round(recipe.breadPercent + apFlour + speltFlour + wholeWheat + ryeFlour + recipe.customFlourPercent)}%</strong>
               </div>
               <div className="flour-mix flour-mix-horizontal">
-                <div className="bread-share">
-                  <span>แป้งขนมปัง (Bread Flour)</span>
-                  <strong>{recipe.breadPercent}%</strong>
-                  <small>ส่วนที่เหลืออัตโนมัติ</small>
+                <div className="bread-share bread-primary-card">
+                  <div className="bread-primary-title">
+                    <span>แป้งชนิดหลัก (Bread Flour)</span>
+                    <strong>{recipe.breadPercent}%</strong>
+                  </div>
+                  <input className="bread-brand-input" type="text" value={breadFlourBrand} onChange={(e) => { setBreadFlourBrand(e.target.value); setActiveRecipeId(""); }} placeholder="ยี่ห้อ เช่น King Arthur / หงส์ขาว" maxLength={60} />
+                  <small>ส่วนที่เหลืออัตโนมัติ · ยี่ห้อจะจำไว้ในเครื่อง</small>
                 </div>
                 {activeStandardFlours.map((item) => (
                   <div className="flour-pill-row" key={item.id}>
@@ -5016,6 +5092,16 @@ export default function Home() {
                   }).map((item) => (
                     <button type="button" key={item.id} onClick={() => addFlourFromLibrary(item)}>+ {item.label}</button>
                   ))}
+                  {userFlours.filter((item) => !customFlours.some((chosen) => chosen.id === item.id)).map((item) => (
+                    <button type="button" key={item.id} onClick={() => addCustomFlour(item)}>+ {item.label}</button>
+                  ))}
+                </div>
+                <div className="library-manager">
+                  <div className="library-create">
+                    <input type="text" value={newFlourName} onChange={(e) => setNewFlourName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") addUserFlourToLibrary(); }} placeholder="เพิ่มแป้งของฉัน เช่น T65" />
+                    <button type="button" onClick={addUserFlourToLibrary}>+ สร้างแป้ง</button>
+                  </div>
+                  {userFlours.length > 0 && <div className="library-user-list">{userFlours.map((item) => <button type="button" key={item.id} onClick={() => removeUserFlourFromLibrary(item.id)} title="ลบจากคลัง">{item.label} ×</button>)}</div>}
                 </div>
               </div>
             </div>
@@ -5062,6 +5148,19 @@ export default function Home() {
                   {INCLUSION_LIBRARY.filter((item) => !customInclusions.some((chosen) => chosen.id === item.id)).map((item) => (
                     <button type="button" key={item.id} onClick={() => addCustomInclusion(item)}>{item.label}</button>
                   ))}
+                  {userInclusions.filter((item) => !customInclusions.some((chosen) => chosen.id === item.id)).map((item) => (
+                    <button type="button" key={item.id} onClick={() => addCustomInclusion(item)}>{item.label}</button>
+                  ))}
+                </div>
+                <div className="library-manager">
+                  <div className="library-create">
+                    <input type="text" value={newInclusionName} onChange={(e) => setNewInclusionName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") addUserInclusionToLibrary(); }} placeholder="เพิ่มส่วนผสม เช่น ลูกเกดทอง" />
+                    <select value={newInclusionCategory} onChange={(e) => setNewInclusionCategory(e.target.value)}>
+                      <option value="Custom">Custom</option><option value="Nuts">Nuts</option><option value="Dried Fruit">Dried Fruit</option><option value="Seeds">Seeds</option><option value="Cheese">Cheese</option><option value="Chocolate">Chocolate</option><option value="Savory">Savory</option><option value="Sweet">Sweet</option>
+                    </select>
+                    <button type="button" onClick={addUserInclusionToLibrary}>+ สร้างส่วนผสม</button>
+                  </div>
+                  {userInclusions.length > 0 && <div className="library-user-list">{userInclusions.map((item) => <button type="button" key={item.id} onClick={() => removeUserInclusionFromLibrary(item.id)} title="ลบจากคลัง">{item.label} ×</button>)}</div>}
                 </div>
               </div>
               {customInclusions.length > 0 && (
