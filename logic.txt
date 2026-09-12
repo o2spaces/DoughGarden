@@ -1,0 +1,431 @@
+    levainObservations.length > 0 ||
+    Boolean(
+      bulkRun?.levainStageAtMix && bulkRun.levainStageAtMix !== "unknown",
+    );
+  const levainActivity = useMemo(() => {
+    if (!hasLevainActivityData)
+      return { factor: 1, label: "ยังไม่ใช้ข้อมูล Levain", tone: "neutral" };
+    if (
+      levainStageForAdaptive === "peak" ||
+      (levainStageForAdaptive === "doubled" && levainRiseForAdaptive >= 100)
+    )
+      return { factor: 0.92, label: "Levain พีค · หมักไวขึ้น", tone: "strong" };
+    if (
+      levainStageForAdaptive === "rising" ||
+      levainStageForAdaptive === "doubled" ||
+      levainRiseForAdaptive >= 70
+    )
+      return {
+        factor: 1.04,
+        label: "Levain ใกล้พีค · ช้าลงเล็กน้อย",
+        tone: "near",
+      };
+    if (levainStageForAdaptive === "falling")
+      return {
+        factor: 1.12,
+        label: "Levain เลยพีค · เผื่อเวลามากขึ้น",
+        tone: "past",
+      };
+    return {
+      factor: 1.15,
+      label: "Levain ยังอ่อน · เผื่อเวลามากขึ้น",
+      tone: "weak",
+    };
+  }, [hasLevainActivityData, levainStageForAdaptive, levainRiseForAdaptive]);
+
+  const fermentationTemperature =
+    adaptiveTempSource === "dough" ? doughTemperature : temperature;
+  const adaptive = useMemo(() => {
+    const tempFactor = Math.pow(2, (26 - fermentationTemperature) / 10);
+    const roomTempFactor = Math.pow(2, (26 - temperature) / 10);
+    const humidityFactor = humidity < 55 ? 1.06 : humidity > 82 ? 0.96 : 1;
+    const customFlourLoad = customFlours.reduce((sum, item) => sum + item.percent, 0);
+    const wholeFactor =
+      1 - (wholeWheat + speltFlour * 0.5 + ryeFlour * 1.4 + customFlourLoad * 0.8) * 0.0015;
+    const starterFactor = Math.pow(20 / Math.max(starterPercent, 5), 0.42);
+    const baseBulk =
+      4.5 *
+      tempFactor *
+      humidityFactor *
+      wholeFactor *
+      starterFactor *
+      levainActivity.factor;
+    const bulk = baseBulk * recipeCalibration.factor;
+    const roomProof = 2.1 * roomTempFactor * humidityFactor;
+    const starterPeak =
+      6 *
+      roomTempFactor *
+      Math.pow(Math.max(feedFlour / Math.max(starterOld, 1), 0.25) / 2, 0.22);
+    return { tempFactor, baseBulk, bulk, roomProof, starterPeak };
+  }, [
+    temperature,
+    fermentationTemperature,
+    humidity,
+    wholeWheat,
+    speltFlour,
+    ryeFlour,
+    customFlours,
+    starterPercent,
+    feedFlour,
+    starterOld,
+    levainActivity.factor,
+    recipeCalibration.factor,
+  ]);
+
+  const recipe = useMemo(() => {
+    const totalDough = targetDough * loafCount;
+    const builtInExtraPercent = activeBreadStyle.extras.reduce(
+      (sum, item) => sum + item.percent,
+      0,
+    );
+    const customInclusionPercent = customInclusions.reduce((sum, item) => sum + item.percent, 0);
+    const extraPercent = builtInExtraPercent + customInclusionPercent;
+    const totalFlour =
+      totalDough /
+      (1 +
+        hydration / 100 +
+        saltPercent / 100 +
+        oilPercent / 100 +
+        extraPercent / 100);
+    const levain = (totalFlour * starterPercent) / 100;
+    const levainFlour = levain / 2;
+    const levainWater = levain / 2;
+    const whole = (totalFlour * wholeWheat) / 100;
+    const ap = (totalFlour * apFlour) / 100;
+    const spelt = (totalFlour * speltFlour) / 100;
+    const ryeTotal = (totalFlour * ryeFlour) / 100;
+    const customFlourPercent = customFlours.reduce((sum, item) => sum + item.percent, 0);
+    const customFlourTotals = customFlours.map((item) => ({ ...item, grams: (totalFlour * item.percent) / 100 }));
+    const breadPercent = Math.max(
+      0,
+      100 - wholeWheat - apFlour - speltFlour - ryeFlour - customFlourPercent,
+    );
+    const breadTotal = (totalFlour * breadPercent) / 100;
+    const bread = Math.max(
+      0,
+      breadTotal -
+        (activeBreadStyle.levainFlour === "bread" ? levainFlour : 0),
+    );
+    const rye = Math.max(
+      0,
+      ryeTotal - (activeBreadStyle.levainFlour === "rye" ? levainFlour : 0),
+    );
+    const water = Math.max(0, (totalFlour * hydration) / 100 - levainWater);
+    const salt = (totalFlour * saltPercent) / 100;
+    const oil = (totalFlour * oilPercent) / 100;
+    const extras = activeBreadStyle.extras.map((item) => ({ ...item, grams: (totalFlour * item.percent) / 100 }));
+    const customExtras = customInclusions.map((item) => ({ ...item, grams: (totalFlour * item.percent) / 100 }));
+    return {
+      totalDough,
+      totalFlour,
+      levain,
+      whole,
+      ap,
+      spelt,
+      rye,
+      bread,
+      breadPercent,
+      water,
+      salt,
+      oil,
+      extras,
+      customFlourTotals,
+      customExtras,
+      customFlourPercent,
+      baked: totalDough * 0.997 * 0.86,
+      bakedEach: targetDough * 0.997 * 0.86,
+    };
+  }, [
+    targetDough,
+    loafCount,
+    hydration,
+    starterPercent,
+    saltPercent,
+    oilPercent,
+    wholeWheat,
+    apFlour,
+    speltFlour,
+    ryeFlour,
+    customFlours,
+    customInclusions,
+    activeBreadStyle,
+  ]);
+
+  const waterTemperaturePlan = useMemo(() => {
+    const rawTarget =
+      doughTemperature * 4 -
+      temperature -
+      flourTemperature -
+      levainMixTemperature -
+      frictionFactor;
+    const target = Math.min(50, Math.max(1, rawTarget));
+    const totalWater = Math.max(0, recipe.water);
+    const spread = warmWaterTemperature - coldWaterTemperature;
+    const warmRatio =
+      spread > 0
+        ? Math.min(1, Math.max(0, (target - coldWaterTemperature) / spread))
+        : 0;
+    const warmWater = totalWater * warmRatio;
+    const coldWater = totalWater - warmWater;
+    const outsideRange =
+      rawTarget < coldWaterTemperature
+        ? "colder"
+        : rawTarget > warmWaterTemperature
+          ? "warmer"
+          : "mix";
+    return {
+      rawTarget,
+      target,
+      totalWater,
+      warmWater,
+      coldWater,
+      outsideRange,
+    };
+  }, [
+    doughTemperature,
+    temperature,
+    flourTemperature,
+    levainMixTemperature,
+    frictionFactor,
+    coldWaterTemperature,
+    warmWaterTemperature,
+    recipe.water,
+  ]);
+
+  const bannetonPlan = useMemo(() => {
+    const topArea =
+      bannetonShape === "round"
+        ? Math.PI * Math.pow(bannetonWidth / 2, 2)
+        : (Math.PI * bannetonWidth * bannetonLength) / 4;
+    const bottomArea = topArea * 0.52;
+    const volume =
+      (bannetonDepth / 3) *
+      (topArea + Math.sqrt(topArea * bottomArea) + bottomArea);
+    const doughFactor = bannetonShape === "round" ? 0.38 : 0.43;
+    const recommended = Math.round((volume * doughFactor) / 10) * 10;
+    const low = Math.round((recommended * 0.88) / 10) * 10;
+    const high = Math.round((recommended * 1.12) / 10) * 10;
+    const fitRatio = targetDough / Math.max(1, recommended);
+    const fit =
+      fitRatio < 0.84
+        ? { key: "small", label: "โดว์น้อยไป", detail: "ก้อนอาจแผ่และไม่พยุงเต็มผิวตะกร้า" }
+        : fitRatio > 1.16
+          ? { key: "large", label: "โดว์มากไป", detail: "เสี่ยงล้นและติดผ้าระหว่าง Final Proof" }
+          : { key: "good", label: "ขนาดเหมาะสม", detail: "น้ำหนักโดว์อยู่ในช่วงที่ตะกร้าพยุงทรงได้ดี" };
+    return { topArea, volume, recommended, low, high, fitRatio, fit };
+  }, [
+    bannetonShape,
+    bannetonWidth,
+    bannetonLength,
+    bannetonDepth,
+    targetDough,
+  ]);
+
+  const bulkRiseTarget = useMemo(() => {
+    const coldTarget =
+      fermentationTemperature >= 29
+        ? 25
+        : fermentationTemperature >= 27
+          ? 30
+          : fermentationTemperature >= 24
+            ? 50
+            : 75;
+    return proofMode === "room" ? Math.min(80, coldTarget + 15) : coldTarget;
+  }, [fermentationTemperature, proofMode]);
+
+  const levainPeakHours = useMemo(() => {
+    const tempFactor = Math.pow(2, (26 - levainTemperature) / 10);
+    return (
+      6 *
+      tempFactor *
+      Math.pow(Math.max(feedFlour / Math.max(starterOld, 1), 0.25) / 2, 0.22)
+    );
+  }, [levainTemperature, feedFlour, starterOld]);
+
+  const levainReadiness = useMemo(() => {
+    if (levainStage === "falling")
+      return {
+        key: "past",
+        label: "เลยพีคแล้ว",
+        detail: "เริ่มยุบ ควรให้อาหารใหม่หรือใช้ทันทีถ้ายังมีกำลัง",
+      };
+    if (
+      levainStage === "peak" ||
+      (levainStage === "doubled" && levainRise >= 100)
+    )
+      return {
+        key: "ready",
+        label: "พร้อมใช้",
+        detail: "ขึ้นอย่างน้อยสองเท่า มีฟองทั่ว และยอดยังนูน",
+      };
+    if (
+      levainStage === "rising" ||
+      levainStage === "doubled" ||
+      levainRise >= 70
+    )
+      return {
+        key: "near",
+        label: "ใกล้พร้อม",
+        detail: "รอให้ขึ้นเต็มกำลังและยอดโดมก่อนนำไปผสม",
+      };
+    return {
+      key: "waiting",
+      label: "กำลังพัฒนา",
+      detail: "ติดตามเปอร์เซ็นต์การขึ้น ฟอง และรูปทรงของยอดต่อ",
+    };
+  }, [levainStage, levainRise]);
+
+  const yeastAge = useMemo(() => {
+    if (!yeastBirth || !today)
+      return { days: 0, years: 0, months: 0, ready: false };
+    const born = new Date(`${yeastBirth}T00:00:00`);
+    const current = new Date(`${today}T00:00:00`);
+    const days = Math.max(
+      0,
+      Math.floor((current.getTime() - born.getTime()) / 86400000),
+    );
+    const years = Math.floor(days / 365.2425);
+    const months = Math.floor((days - years * 365.2425) / 30.44);
+    return { days, years, months, ready: current >= born };
+  }, [yeastBirth, today]);
+
+  const fermentolyseHours =
+    doughTemperature >= 30 ? 0.33 : doughTemperature >= 27 ? 0.5 : 0.67;
+  const autolyseHours =
+    doughTemperature >= 30 ? 0.33 : doughTemperature >= 27 ? 0.5 : 0.75;
+  const prepRestHours =
+    prepMethod === "autolyse" ? autolyseHours : fermentolyseHours;
+  const mixDevelopHours = prepMethod === "autolyse" ? 0.33 : 0.25;
+  const bulkElapsedBeforePhaseFour =
+    (prepMethod === "fermentolyse" ? prepRestHours : 0) + mixDevelopHours + 1.5;
+  const bulkReadiness = useMemo(() => {
+    const precision = adaptiveTempSource === "dough" ? 0.11 : 0.17;
+    return {
+      startCheck: adaptive.bulk * (1 - precision - 0.08),
+      windowStart: adaptive.bulk * (1 - precision),
+      windowEnd: adaptive.bulk * (1 + precision),
+      remainingStart: Math.max(
+        0.25,
+        adaptive.bulk * (1 - precision) - bulkElapsedBeforePhaseFour,
+      ),
+      remainingEnd: Math.max(
+        0.5,
+        adaptive.bulk * (1 + precision) - bulkElapsedBeforePhaseFour,
+      ),
+    };
+  }, [adaptive.bulk, adaptiveTempSource, bulkElapsedBeforePhaseFour]);
+  const latestBulkObservation = bulkRun?.observations.at(-1) || null;
+  const liveBulk = useMemo(() => {
+    const observations = bulkRun?.observations || [];
+    const latest = observations.at(-1) || null;
+    if (!bulkRun || !latest) {
+      return {
+        key: "waiting",
+        label: "ยังไม่ได้เริ่มบันทึก",
+        detail:
+          "เริ่มรอบ Bulk แล้วบันทึกการเปลี่ยนแปลงเพื่อคำนวณเวลาจากโดว์จริง",
+        cueScore: 0,
+        elapsedMinutes: 0,
+        remainingMinutes: Math.round(adaptive.bulk * 60),
+        readyLow: null as Date | null,
+        readyHigh: null as Date | null,
+        confidence: 0,
+        rate: 0,
+      };
+    }
+    const started = new Date(bulkRun.startedAt).getTime();
+    const currentTime = now || Date.now();
+    const elapsedMinutes = Math.max(
+      latest.elapsedMinutes,
+      Number.isFinite(started) ? (currentTime - started) / 60000 : 0,
+    );
+    const baselineRemaining = Math.max(0, adaptive.bulk * 60 - elapsedMinutes);
+    const currentTempFactor = Math.pow(
+      2,
+      (fermentationTemperature - latest.temperature) / 10,
+    );
+    const tempAdjustedBaseline = baselineRemaining * currentTempFactor;
+    const previous = observations.length > 1 ? observations.at(-2)! : null;
+    const deltaMinutes = previous
+      ? latest.elapsedMinutes - previous.elapsedMinutes
+      : latest.elapsedMinutes;
+    const deltaRise = previous ? latest.rise - previous.rise : latest.rise;
+    const rate =
+      deltaMinutes >= 10 && deltaRise > 0 ? (deltaRise / deltaMinutes) * 60 : 0;
+    const remainingRise = Math.max(0, bulkRiseTarget - latest.rise);
+    const observedRemaining =
+      rate > 0 ? (remainingRise / rate) * 60 * 0.88 : tempAdjustedBaseline;
+    const hasUsefulRate = rate >= 2;
+    let remainingMinutes = hasUsefulRate
+      ? observedRemaining * 0.62 + tempAdjustedBaseline * 0.38
+      : tempAdjustedBaseline;
+    const cueScore =
+      (latest.surface === "domed" ? 1 : 0) +
+      (latest.bubbles ? 1 : 0) +
+      (latest.jiggle ? 1 : 0) +
+      (latest.strength === "holding" ? 1 : 0);
+    const overRisk =
+      latest.rise >= bulkRiseTarget + 18 ||
+      (latest.rise >= bulkRiseTarget + 8 && latest.strength === "weak");
+    const ready = latest.rise >= bulkRiseTarget * 0.9 && cueScore >= 3;
+    const near = latest.rise >= bulkRiseTarget * 0.65 || remainingMinutes <= 50;
+    const developing = latest.rise >= Math.min(20, bulkRiseTarget * 0.4);
+    let key = "early";
+    let label = "ยังเร็วเกินไป";
+    let detail = "ให้โดว์พัฒนาต่อและบันทึกอีกครั้งใน 30–45 นาที";
+    if (developing) {
+      key = "developing";
+      label = "กำลังพัฒนา";
+      detail = "การหมักเดินแล้ว ติดตามอุณหภูมิและเปอร์เซ็นต์การขึ้นต่อ";
+    }
+    if (near) {
+      key = "near";
+      label = "เริ่มตรวจถี่ขึ้น";
+      detail =
+        "บันทึกทุก 15–20 นาที และดูผิว ฟอง การสั่น กับแรงเก็บทรงพร้อมกัน";
+    }
+    if (ready) {
+      key = "ready";
+      label = "พร้อมพรีเชป";
+      detail = "ปริมาตรและอาการโดว์สอดคล้องกัน สามารถจบบัลก์ได้";
+      remainingMinutes = 0;
+    }
+    if (overRisk) {
+      key = "risk";
+      label = "เสี่ยงหมักเกิน";
+      detail =
+        "จบบัลก์และพรีเชปทันทีอย่างนุ่มนวล ตรวจว่าโดว์ยังเก็บทรงได้หรือไม่";
+      remainingMinutes = 0;
+    }
+    const confidence = Math.min(
+      95,
+      28 + observations.length * 14 + (hasUsefulRate ? 18 : 0) + cueScore * 5,
+    );
+    const readyLow = new Date(currentTime + remainingMinutes * 0.78 * 60000);
+    const readyHigh = new Date(currentTime + remainingMinutes * 1.22 * 60000);
+    return {
+      key,
+      label,
+      detail,
+      cueScore,
+      elapsedMinutes,
+      remainingMinutes,
+      readyLow,
+      readyHigh,
+      confidence,
+      rate,
+    };
+  }, [bulkRun, now, adaptive.bulk, fermentationTemperature, bulkRiseTarget]);
+  const proofAdaptive = useMemo(() => {
+    const startTemperature =
+      latestBulkObservation?.temperature ?? doughTemperature;
+    const massFactor = Math.pow(Math.max(350, targetDough) / 800, 0.42);
+    const coolingTau = Math.min(4.2, Math.max(1.6, 2.25 * massFactor));
+    const coolToEightHours =
+      fridgeTemp < 8 && startTemperature > 8
+        ? coolingTau *
+          Math.log(
+            Math.max(
+              1,
+              (startTemperature - fridgeTemp) / Math.max(0.5, 8 - fridgeTemp),
+            ),

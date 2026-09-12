@@ -4160,6 +4160,35 @@ export default function Home() {
       return { start, end };
     });
   }, [bakePlan, phases]);
+  // Keep the live Guided Workflow countdown synchronized with adaptive
+  // fermentation time when temperature changes on the Overview page.
+  const activePhaseHours = phases[activePhase]?.hours ?? 0;
+  useEffect(() => {
+    if (!running || !phaseStart) return;
+
+    const fermentationSensitive =
+      activeBreadStyle.id === "country"
+        ? [2, 3, 6].includes(activePhase)
+        : /Bulk|บัลก์|Proof|พรูฟ/i.test(phases[activePhase]?.title || "");
+    if (!fermentationSensitive) return;
+
+    const nextEnd = phaseStart + activePhaseHours * 3600000;
+    if (phaseEnd !== nextEnd) {
+      setPhaseEnd(nextEnd);
+      if (nextEnd <= Date.now()) {
+        setNow(Date.now());
+        setRunning(false);
+      }
+    }
+  }, [
+    running,
+    phaseStart,
+    phaseEnd,
+    activePhase,
+    activeBreadStyle.id,
+    activePhaseHours,
+  ]);
+
   const targetBakeDate = targetBakeAt.split("T")[0] || "";
   const targetBakeTime = targetBakeAt.split("T")[1] || "";
   const setBakeDate = (date: string) =>
