@@ -1530,6 +1530,7 @@ export default function Home() {
   const [customInclusions, setCustomInclusions] = useState<CustomInclusion[]>([]);
   const [userFlours, setUserFlours] = useState<UserLibraryItem[]>([]);
   const [userInclusions, setUserInclusions] = useState<UserLibraryItem[]>([]);
+  const [settingsHydrated, setSettingsHydrated] = useState(false);
   const [breadFlourBrand, setBreadFlourBrand] = useState("");
   const [newFlourName, setNewFlourName] = useState("");
   const [newInclusionName, setNewInclusionName] = useState("");
@@ -2874,6 +2875,35 @@ export default function Home() {
         const settings = normalizeSettings(
           JSON.parse(localStorage.getItem("doughgarden-settings") || "null"),
         );
+        // Load user-created ingredient libraries from dedicated storage keys first.
+        // Fall back to the embedded settings fields for migration from older builds.
+        const savedFlourLibraryRaw = JSON.parse(
+          localStorage.getItem("doughgarden-flour-library") || "null",
+        );
+        const savedInclusionLibraryRaw = JSON.parse(
+          localStorage.getItem("doughgarden-inclusion-library") || "null",
+        );
+        const savedFlourLibrary = Array.isArray(savedFlourLibraryRaw)
+          ? savedFlourLibraryRaw.filter(
+              (item): item is UserLibraryItem => Boolean(item?.id && item?.label),
+            )
+          : settings.userFlours;
+        const savedInclusionLibrary = Array.isArray(savedInclusionLibraryRaw)
+          ? savedInclusionLibraryRaw.filter(
+              (item): item is UserLibraryItem => Boolean(item?.id && item?.label),
+            )
+          : settings.userInclusions;
+        setUserFlours(savedFlourLibrary);
+        setUserInclusions(savedInclusionLibrary);
+        // Persist migrated libraries immediately so older saved settings are upgraded.
+        localStorage.setItem(
+          "doughgarden-flour-library",
+          JSON.stringify(savedFlourLibrary),
+        );
+        localStorage.setItem(
+          "doughgarden-inclusion-library",
+          JSON.stringify(savedInclusionLibrary),
+        );
         setTemperature(settings.temperature);
         setHumidity(settings.humidity);
         setStarterOld(settings.starterOld);
@@ -2885,8 +2915,8 @@ export default function Home() {
         setRyeFlour(settings.ryeFlour);
         setCustomFlours(settings.customFlours || []);
         setCustomInclusions(settings.customInclusions || []);
-        setUserFlours(settings.userFlours || []);
-        setUserInclusions(settings.userInclusions || []);
+        setUserFlours(savedFlourLibrary);
+        setUserInclusions(savedInclusionLibrary);
         setBreadFlourBrand(settings.breadFlourBrand || "");
         setFlourProfile(settings.flourProfile);
         setTargetDough(settings.targetDough);
@@ -2920,6 +2950,7 @@ export default function Home() {
         setBannetonWidth(settings.bannetonWidth);
         setBannetonLength(settings.bannetonLength);
         setBannetonDepth(settings.bannetonDepth);
+        setSettingsHydrated(true);
         const latestSavedBulk = savedBulkRun?.observations.at(-1);
         if (latestSavedBulk) {
           setDoughTemperature(latestSavedBulk.temperature);
@@ -3792,7 +3823,17 @@ export default function Home() {
     setToast("บันทึกค่าที่ปรับไว้ในเครื่องนี้แล้ว");
   };
   useEffect(() => {
+    // Do not persist the initial empty React state before saved settings have loaded.
+    if (!settingsHydrated) return;
     try {
+      localStorage.setItem(
+        "doughgarden-flour-library",
+        JSON.stringify(userFlours),
+      );
+      localStorage.setItem(
+        "doughgarden-inclusion-library",
+        JSON.stringify(userInclusions),
+      );
       const current = JSON.parse(localStorage.getItem("doughgarden-settings") || "{}");
       localStorage.setItem(
         "doughgarden-settings",
@@ -3806,7 +3847,7 @@ export default function Home() {
     } catch {
       /* Custom libraries remain in the current session if storage is unavailable. */
     }
-  }, [userFlours, userInclusions, breadFlourBrand]);
+  }, [userFlours, userInclusions, breadFlourBrand, settingsHydrated]);
 
   const resetClimate = () => {
     setTemperature(DEFAULT_SETTINGS.temperature);
