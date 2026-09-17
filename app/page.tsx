@@ -110,6 +110,7 @@ type SavedRecipe = {
   savedAt: string;
   targetDough: number;
   hydration: number;
+  starterHydration?: number;
   starterPercent: number;
   saltPercent: number;
   oilPercent: number;
@@ -1181,6 +1182,8 @@ const DEFAULT_SETTINGS = {
   flourProfile: "",
   targetDough: 800,
   hydration: 71,
+  starterHydration: 100,
+  feedHydration: 100,
   starterPercent: 20,
   saltPercent: 2,
   oilPercent: 0,
@@ -1249,6 +1252,8 @@ const normalizeSettings = (
       : DEFAULT_SETTINGS.flourProfile,
   targetDough: validNumber(data?.targetDough, DEFAULT_SETTINGS.targetDough),
   hydration: validNumber(data?.hydration, DEFAULT_SETTINGS.hydration),
+  starterHydration: Math.min(100, Math.max(40, validNumber(data?.starterHydration, DEFAULT_SETTINGS.starterHydration))),
+  feedHydration: Math.min(100, Math.max(40, validNumber(data?.feedHydration, DEFAULT_SETTINGS.feedHydration))),
   starterPercent: validNumber(
     data?.starterPercent,
     DEFAULT_SETTINGS.starterPercent,
@@ -1369,6 +1374,7 @@ const normalizeRecipe = (
         : new Date().toISOString(),
     targetDough: validNumber(data.targetDough, DEFAULT_SETTINGS.targetDough),
     hydration: validNumber(data.hydration, DEFAULT_SETTINGS.hydration),
+    starterHydration: Math.min(100, Math.max(40, validNumber(data.starterHydration, DEFAULT_SETTINGS.starterHydration))),
     starterPercent: validNumber(
       data.starterPercent,
       DEFAULT_SETTINGS.starterPercent,
@@ -1539,6 +1545,8 @@ export default function Home() {
   const [targetDough, setTargetDough] = useState(950);
   const [targetDoughInput, setTargetDoughInput] = useState("950");
   const [hydration, setHydration] = useState(73);
+  const [starterHydration, setStarterHydration] = useState(100);
+  const [feedHydration, setFeedHydration] = useState(100);
   const [starterPercent, setStarterPercent] = useState(20);
   const [saltPercent, setSaltPercent] = useState(2);
   const [oilPercent, setOilPercent] = useState(0);
@@ -1867,8 +1875,9 @@ export default function Home() {
         oilPercent / 100 +
         extraPercent / 100);
     const levain = (totalFlour * starterPercent) / 100;
-    const levainFlour = levain / 2;
-    const levainWater = levain / 2;
+    const starterRatio = starterHydration / 100;
+    const levainFlour = levain / (1 + starterRatio);
+    const levainWater = levain - levainFlour;
     const whole = (totalFlour * wholeWheat) / 100;
     const ap = (totalFlour * apFlour) / 100;
     const spelt = (totalFlour * speltFlour) / 100;
@@ -1918,6 +1927,8 @@ export default function Home() {
     targetDough,
     loafCount,
     hydration,
+    starterHydration,
+    feedHydration,
     starterPercent,
     saltPercent,
     oilPercent,
@@ -2921,6 +2932,8 @@ export default function Home() {
         setFlourProfile(settings.flourProfile);
         setTargetDough(settings.targetDough);
         setHydration(settings.hydration);
+        setStarterHydration(settings.starterHydration);
+        setFeedHydration(settings.feedHydration);
         setStarterPercent(settings.starterPercent);
         setSaltPercent(settings.saltPercent);
         setOilPercent(settings.oilPercent);
@@ -3183,6 +3196,7 @@ export default function Home() {
       | "name"
       | "targetDough"
       | "hydration"
+      | "starterHydration"
       | "starterPercent"
       | "saltPercent"
       | "oilPercent"
@@ -3203,6 +3217,7 @@ export default function Home() {
     setRecipeName(values.name);
     setTargetDough(values.targetDough);
     setHydration(values.hydration);
+    setStarterHydration(values.starterHydration ?? 100);
     setStarterPercent(values.starterPercent);
     setSaltPercent(values.saltPercent);
     setOilPercent(values.oilPercent);
@@ -3395,6 +3410,7 @@ export default function Home() {
       savedAt: new Date().toISOString(),
       targetDough,
       hydration,
+      starterHydration,
       starterPercent,
       saltPercent,
       oilPercent,
@@ -3772,7 +3788,7 @@ export default function Home() {
     humidity,
     starterOld,
     feedFlour,
-    feedWater,
+    feedWater: feedStarterMath.waterToAdd,
     wholeWheat,
     apFlour,
     speltFlour,
@@ -3785,6 +3801,8 @@ export default function Home() {
     flourProfile,
     targetDough,
     hydration,
+    starterHydration,
+    feedHydration,
     starterPercent,
     saltPercent,
     oilPercent,
@@ -3868,6 +3886,7 @@ export default function Home() {
     setStarterOld(DEFAULT_SETTINGS.starterOld);
     setFeedFlour(DEFAULT_SETTINGS.feedFlour);
     setFeedWater(DEFAULT_SETTINGS.feedWater);
+    setFeedHydration(DEFAULT_SETTINGS.feedHydration);
     localStorage.setItem(
       "doughgarden-settings",
       JSON.stringify({
@@ -3875,6 +3894,7 @@ export default function Home() {
         starterOld: DEFAULT_SETTINGS.starterOld,
         feedFlour: DEFAULT_SETTINGS.feedFlour,
         feedWater: DEFAULT_SETTINGS.feedWater,
+        feedHydration: DEFAULT_SETTINGS.feedHydration,
       }),
     );
     setToast("รีเซ็ตค่าหัวเชื้อแล้ว");
@@ -3891,6 +3911,7 @@ export default function Home() {
     setFlourProfile(DEFAULT_SETTINGS.flourProfile);
     setTargetDough(DEFAULT_SETTINGS.targetDough);
     setHydration(DEFAULT_SETTINGS.hydration);
+    setStarterHydration(DEFAULT_SETTINGS.starterHydration);
     setStarterPercent(DEFAULT_SETTINGS.starterPercent);
     setSaltPercent(DEFAULT_SETTINGS.saltPercent);
     setOilPercent(DEFAULT_SETTINGS.oilPercent);
@@ -3908,6 +3929,7 @@ export default function Home() {
         flourProfile: DEFAULT_SETTINGS.flourProfile,
         targetDough: DEFAULT_SETTINGS.targetDough,
         hydration: DEFAULT_SETTINGS.hydration,
+        starterHydration: DEFAULT_SETTINGS.starterHydration,
         starterPercent: DEFAULT_SETTINGS.starterPercent,
         saltPercent: DEFAULT_SETTINGS.saltPercent,
         oilPercent: DEFAULT_SETTINGS.oilPercent,
@@ -3952,7 +3974,7 @@ export default function Home() {
   const exportSettings = () => {
     const payload = {
       app: "DoughGarden",
-      version: 8,
+      version: 9,
       exportedAt: new Date().toISOString(),
       settings: currentSettings(),
       yeast: { name: yeastName.trim() || "เจ้าก้อนแป้ง", birth: yeastBirth },
@@ -3996,6 +4018,8 @@ export default function Home() {
       setFlourProfile(settings.flourProfile);
       setTargetDough(settings.targetDough);
       setHydration(settings.hydration);
+      setStarterHydration(settings.starterHydration);
+      setFeedHydration(settings.feedHydration);
       setStarterPercent(settings.starterPercent);
       setSaltPercent(settings.saltPercent);
       setOilPercent(settings.oilPercent);
@@ -4204,9 +4228,30 @@ export default function Home() {
         : "",
     );
   };
-  const starterHydration =
-    ((starterOld / 2 + feedWater) / Math.max(0.1, starterOld / 2 + feedFlour)) *
-    100;
+  const feedStarterMath = useMemo(() => {
+    const seed = Math.max(0, starterOld);
+    const flour = Math.max(0, feedFlour);
+    const seedHydrationRatio = starterHydration / 100;
+    const seedFlour = seed / (1 + seedHydrationRatio);
+    const seedWater = seed - seedFlour;
+    const totalFlour = seedFlour + flour;
+    const targetWater = totalFlour * (feedHydration / 100);
+    const waterToAdd = Math.max(0, targetWater - seedWater);
+    const finalWeight = seed + flour + waterToAdd;
+    const finalWater = seedWater + waterToAdd;
+    const actualHydration = totalFlour > 0 ? (finalWater / totalFlour) * 100 : 0;
+    const needsWaterRemoval = targetWater < seedWater - 0.01;
+    return {
+      seedFlour,
+      seedWater,
+      totalFlour,
+      targetWater,
+      waterToAdd,
+      finalWeight,
+      actualHydration,
+      needsWaterRemoval,
+    };
+  }, [starterOld, feedFlour, starterHydration, feedHydration]);
   const levainPredictedPeak = levainStartedAt
     ? new Date(new Date(levainStartedAt).getTime() + levainPeakHours * 3600000)
     : null;
@@ -4678,25 +4723,33 @@ export default function Home() {
           </span>
         </div>
         <b>＋</b>
-        <div className="mini-input">
-          <label>น้ำ</label>
+        <div className="mini-input starter-hydration-input">
+          <label>Hydration เป้าหมาย</label>
           <span>
-            <input
-              type="number"
-              value={feedWater}
-              onChange={(e) => setFeedWater(clamp(+e.target.value))}
-            />{" "}
-            กรัม
+            <select
+              value={feedHydration}
+              onChange={(e) => setFeedHydration(+e.target.value)}
+              aria-label="Hydration เป้าหมายของหัวเชื้อ"
+            >
+              {Array.from({ length: 61 }, (_, i) => i + 40).map((value) => (
+                <option key={value} value={value}>
+                  {value}%
+                </option>
+              ))}
+            </select>
           </span>
         </div>
         <div className="starter-result">
-          <span>พร้อมใช้ประมาณ</span>
-          <strong>{duration(adaptive.starterPeak)}</strong>
+          <span>น้ำที่ต้องเติม</span>
+          <strong>{round(feedStarterMath.waterToAdd)} g</strong>
           <small>
-            {round(starterOld + feedFlour + feedWater)} กรัม · ไฮเดรชัน{" "}
-            {Math.round(starterHydration)}%
+            เสร็จแล้ว {round(feedStarterMath.finalWeight)} g · Hydration {Math.round(feedStarterMath.actualHydration)}%
           </small>
         </div>
+        <small className="starter-feed-note">คำนวณจากหัวเชื้อเดิม {starterOld} g ที่ {starterHydration}% + แป้งใหม่ {feedFlour} g · เลือก Hydration เป้าหมายได้ 40–100%</small>
+        {feedStarterMath.needsWaterRemoval && (
+          <small className="starter-feed-warning">⚠ Hydration เป้าหมายต่ำเกินไปสำหรับน้ำที่มีอยู่ในหัวเชื้อเดิม — ต้องเอาน้ำออกประมาณ {round(feedStarterMath.seedWater - feedStarterMath.targetWater)} g จึงจะได้ {feedHydration}%</small>
+        )}
       </section>
       <div
         className="shell setting-actions starter-actions"
@@ -4820,7 +4873,7 @@ export default function Home() {
             <strong>ไทม์ไลน์รอบการเลี้ยง</strong>
             <span>
               {levainObservations.length} บันทึก · อัตราเลี้ยง{" "}
-              {round(starterOld)} : {round(feedFlour)} : {round(feedWater)}
+              {round(starterOld)} + {round(feedFlour)} + {round(feedStarterMath.waterToAdd)}g · {Math.round(feedStarterMath.actualHydration)}% Hydration
             </span>
           </div>
           {levainObservations.length ? (
@@ -5260,9 +5313,28 @@ export default function Home() {
               />
             </div>
             <div className="control-row starter-control">
-              <label>
-                หัวเชื้อ 100% Hydration <strong>{starterPercent}%</strong>
-              </label>
+              <div className="starter-control-heading">
+                <label>
+                  ปริมาณหัวเชื้อ <strong>{starterPercent}%</strong>
+                </label>
+                <label className="starter-hydration-select">
+                  Hydration หัวเชื้อ
+                  <select
+                    value={starterHydration}
+                    onChange={(e) => {
+                      setStarterHydration(+e.target.value);
+                      setActiveRecipeId("");
+                    }}
+                    aria-label="เลือก Hydration ของหัวเชื้อ"
+                  >
+                    {Array.from({ length: 61 }, (_, i) => i + 40).map((value) => (
+                      <option key={value} value={value}>
+                        {value}%
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
               <div className="starter-adjust-grid">
                 <input
                   className="starter-range"
@@ -5308,9 +5380,9 @@ export default function Home() {
                 ))}
               </div>
               <div className="starter-impact">
-                <span>แป้งจาก Starter <b>{Math.round(recipe.levain / 2)} g</b></span>
-                <span>น้ำจาก Starter <b>{Math.round(recipe.levain / 2)} g</b></span>
-                <span>Fermented flour <b>{(starterPercent / 2).toFixed(1)}%</b></span>
+                <span>แป้งจาก Starter <b>{Math.round(recipe.levain / (1 + starterHydration / 100))} g</b></span>
+                <span>น้ำจาก Starter <b>{Math.round(recipe.levain - recipe.levain / (1 + starterHydration / 100))} g</b></span>
+                <span>Fermented flour <b>{((recipe.levain / (1 + starterHydration / 100)) / Math.max(recipe.totalFlour, 0.1) * 100).toFixed(1)}%</b></span>
               </div>
               <small className="starter-help">ปรับ Starter แล้วระบบจะคำนวณปริมาณ Levain, น้ำ และแป้งในสูตรใหม่ให้อัตโนมัติ โดยยังคงน้ำหนักโดว์เป้าหมายเดิม</small>
               <div className={`starter-fermentation-card ${starterFermentation.starterBand.tone}`}>
@@ -5326,7 +5398,7 @@ export default function Home() {
                   <span><small>Final proof ที่อุณหภูมิห้อง</small><b>{duration(starterFermentation.finalRoomLow)}–{duration(starterFermentation.finalRoomHigh)}</b></span>
                   <span><small>รวมกรณี Room Proof</small><b>{duration(starterFermentation.totalRoomLow)}–{duration(starterFermentation.totalRoomHigh)}</b></span>
                 </div>
-                <p>อิงอุณหภูมิหมัก {fermentationTemperature}°C · Starter {starterPercent}% · เวลาเป็นค่าประมาณ ให้ยืนยันด้วยปริมาตร ฟอง ความยืดหยุ่น และแรงของโดว์จริง</p>
+                <p>อิงอุณหภูมิหมัก {fermentationTemperature}°C · Starter {starterPercent}% · Hydration หัวเชื้อ {starterHydration}% · เวลาเป็นค่าประมาณ ให้ยืนยันด้วยปริมาตร ฟอง ความยืดหยุ่น และแรงของโดว์จริง</p>
               </div>
             </div>
             <div className="recipe-minor-settings">
