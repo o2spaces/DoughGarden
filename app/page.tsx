@@ -5613,7 +5613,7 @@ export default function Home() {
                 <b>{round(recipe.water)} กรัม</b>
               </p>
               <p>
-                <span>หัวเชื้อ 100%</span>
+                <span>หัวเชื้อ {starterHydration}% Hydration</span>
                 <b>{round(recipe.levain)} กรัม</b>
               </p>
               <p>
