@@ -203,7 +203,6 @@ const BREAD_STYLES: BreadStyle[] = [
     hydration: 73,
     hydrationRange: "70–75%",
     starterPercent: 20,
-  starterFeedRatio: 5,
     saltPercent: 2,
     oilPercent: 0,
     doughTemperature: 26,
