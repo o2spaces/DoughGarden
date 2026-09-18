@@ -1,0 +1,76 @@
+      }),
+    );
+    setToast("รีเซ็ตวิธีพักแป้ง ไฟนอลพรูฟ และการอบแล้ว");
+  };
+  const exportSettings = () => {
+    const payload = {
+      app: "DoughGarden",
+      version: 9,
+      exportedAt: new Date().toISOString(),
+      settings: currentSettings(),
+      yeast: { name: yeastName.trim() || "เจ้าก้อนแป้ง", birth: yeastBirth },
+      recipes: savedRecipes,
+      levainBuild: {
+        startedAt: levainStartedAt,
+        temperature: levainTemperature,
+        starterName: yeastName.trim() || "หัวเชื้อของฉัน",
+        observations: levainObservations,
+      },
+      bulkRun,
+      bakeJournal: bakeEntries,
+    };
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(payload, null, 2)], {
+        type: "application/json",
+      }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `DoughGarden-settings-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setToast("ส่งออกไฟล์ค่าตั้งแล้ว");
+  };
+  const importSettings = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const payload = JSON.parse(await file.text());
+      const settings = normalizeSettings(payload?.settings || payload);
+      setTemperature(settings.temperature);
+      setHumidity(settings.humidity);
+      setStarterOld(settings.starterOld);
+      setFeedFlour(settings.feedFlour);
+      setFeedWater(settings.feedWater);
+      setWholeWheat(settings.wholeWheat);
+      setApFlour(settings.apFlour);
+      setSpeltFlour(settings.speltFlour);
+      setRyeFlour(settings.ryeFlour);
+      setFlourProfile(settings.flourProfile);
+      setTargetDough(settings.targetDough);
+      setHydration(settings.hydration);
+      setStarterHydration(settings.starterHydration);
+      setFeedHydration(settings.feedHydration);
+      setStarterPercent(settings.starterPercent);
+      setSaltPercent(settings.saltPercent);
+      setOilPercent(settings.oilPercent);
+      setDoughTemperature(settings.doughTemperature);
+      setLoafCount(settings.loafCount);
+      setLoavesPerBake(Math.min(settings.loafCount, settings.loavesPerBake));
+      setProofMode(settings.proofMode);
+      setColdHours(settings.coldHours);
+      setFridgeTemp(settings.fridgeTemp);
+      setPrepMethod(settings.prepMethod);
+      setAdaptiveTempSource(settings.adaptiveTempSource);
+      setBakeMode(settings.bakeMode);
+      setSteamWater(settings.steamWater);
+      setOvenVolume(settings.ovenVolume);
+      setTrayWidth(settings.trayWidth);
+      setTrayLength(settings.trayLength);
+      setSteamMinutes(settings.steamMinutes);
+      setOvenSeal(settings.ovenSeal);
+      setAlertSound(settings.alertSound);
+      setTargetBakeAt(settings.targetBakeAt);
+      setFlourTemperature(settings.flourTemperature);
+      setLevainMixTemperature(settings.levainMixTemperature);
+      setFrictionFactor(settings.frictionFactor);

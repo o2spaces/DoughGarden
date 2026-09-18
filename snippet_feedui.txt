@@ -1,0 +1,141 @@
+                const age = starterDaysOld(record.birth, today);
+                return (
+                  <article
+                    className={record.id === activeYeastId ? "active" : ""}
+                    key={record.id}
+                  >
+                    <button
+                      type="button"
+                      className="starter-select"
+                      onClick={() => selectYeast(record)}
+                    >
+                      <strong>{record.name}</strong>
+                      <span>
+                        เกิด{" "}
+                        {new Date(
+                          `${record.birth}T00:00:00`,
+                        ).toLocaleDateString("th-TH", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                      <b>
+                        อายุ {age.toLocaleString("th-TH")} วัน · เดย์{" "}
+                        {(age + 1).toLocaleString("th-TH")}
+                      </b>
+                    </button>
+                    <button
+                      type="button"
+                      className="starter-delete"
+                      aria-label={`ลบ ${record.name}`}
+                      onClick={() => deleteYeast(record.id)}
+                    >
+                      ลบ
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="saved-empty">
+              ยังไม่มีรายการ กรอกชื่อและวันเกิดแล้วกด “บันทึก”
+            </p>
+          )}
+        </div>
+      </section>
+
+      <section className="starter-strip shell" hidden={activePage !== "starter"}>
+        <div>
+          <p className="section-kicker">สตาร์ตเตอร์เรดดี</p>
+          <h2>เลี้ยงหัวเชื้อ</h2>
+        </div>
+        <div className="mini-input">
+          <label>หัวเชื้อเดิม</label>
+          <span>
+            <input
+              type="number"
+              value={starterOld}
+              onChange={(e) => setStarterOld(clamp(+e.target.value))}
+            />{" "}
+            กรัม
+          </span>
+        </div>
+        <b>＋</b>
+        <div className="mini-input">
+          <label>แป้งใหม่</label>
+          <span>
+            <input
+              type="number"
+              value={feedFlour}
+              onChange={(e) => setFeedFlour(clamp(+e.target.value))}
+            />{" "}
+            กรัม
+          </span>
+        </div>
+        <b>＋</b>
+        <div className="mini-input starter-hydration-input">
+          <label>Hydration เป้าหมาย</label>
+          <span>
+            <select
+              value={feedHydration}
+              onChange={(e) => setFeedHydration(+e.target.value)}
+              aria-label="Hydration เป้าหมายของหัวเชื้อ"
+            >
+              {Array.from({ length: 61 }, (_, i) => i + 40).map((value) => (
+                <option key={value} value={value}>
+                  {value}%
+                </option>
+              ))}
+            </select>
+          </span>
+        </div>
+        <div className="starter-result">
+          <span>น้ำที่ต้องเติม</span>
+          <strong>{round(feedStarterMath.waterToAdd)} g</strong>
+          <small>
+            เสร็จแล้ว {round(feedStarterMath.finalWeight)} g · Hydration {Math.round(feedStarterMath.actualHydration)}%
+          </small>
+        </div>
+        <small className="starter-feed-note">คำนวณจากหัวเชื้อเดิม {starterOld} g ที่ {starterHydration}% + แป้งใหม่ {feedFlour} g · เลือก Hydration เป้าหมายได้ 40–100%</small>
+        {feedStarterMath.needsWaterRemoval && (
+          <small className="starter-feed-warning">⚠ Hydration เป้าหมายต่ำเกินไปสำหรับน้ำที่มีอยู่ในหัวเชื้อเดิม — ต้องเอาน้ำออกประมาณ {round(feedStarterMath.seedWater - feedStarterMath.targetWater)} g จึงจะได้ {feedHydration}%</small>
+        )}
+      </section>
+      <div
+        className="shell setting-actions starter-actions"
+        hidden={activePage !== "starter"}
+      >
+        <button onClick={saveSettings}>บันทึกค่าการเลี้ยงหัวเชื้อ</button>
+        <button className="secondary" onClick={resetStarter}>
+          รีเซ็ต
+        </button>
+      </div>
+
+      <section className="levain-tracker shell" id="levain-tracker" hidden={activePage !== "starter"}>
+        <div className="levain-heading">
+          <p className="section-kicker">
+            เลอแวงบิลด์ — {yeastName.trim() || "หัวเชื้อสำหรับรอบนี้"}
+          </p>
+          <h2>ติดตามพัฒนาการก่อนนำไปทำขนมปัง</h2>
+          <p>
+            บันทึกเปอร์เซ็นต์การขึ้นและสภาพจริง ไม่ตัดสินจากเวลาเพียงอย่างเดียว
+          </p>
+        </div>
+        <div className={`levain-readiness ${levainReadiness.key}`}>
+          <span>สถานะปัจจุบัน</span>
+          <strong>{levainReadiness.label}</strong>
+          <p>{levainReadiness.detail}</p>
+          <div>
+            <b>{levainRise}%</b>
+            <i>
+              <em style={{ width: `${Math.min(150, levainRise) / 1.5}%` }} />
+            </i>
+          </div>
+          {levainPredictedPeak && (
+            <small>คาดว่าพีคประมาณ {thaiDateTime(levainPredictedPeak)}</small>
+          )}
+        </div>
+        <div className="levain-controls">
+          <label>
+            เริ่มให้อาหาร

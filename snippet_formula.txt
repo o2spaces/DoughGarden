@@ -1,0 +1,86 @@
+            <div className="formula-head">
+              <div>
+                <span>ยัวร์ฟอร์มูลา · {loafCount} โลฟ</span>
+                <h3>{recipeName.trim() || "สูตรกำหนดเอง"}</h3>
+                <small>
+                  {loafCount} × {targetDough} กรัม · Bulk เป้าหมาย{" "}
+                  {bulkRiseTarget}%
+                </small>
+              </div>
+              <strong>
+                {recipe.totalDough}
+                <small> กรัม</small>
+              </strong>
+            </div>
+            <div className="ingredients">
+              <p>
+                <span>แป้งขนมปัง{breadFlourBrand.trim() ? ` · ${breadFlourBrand.trim()}` : ""}</span>
+                <b>{round(recipe.bread)} กรัม</b>
+              </p>
+              {apFlour > 0 && (
+                <p>
+                  <span>แป้งอเนกประสงค์</span>
+                  <b>{round(recipe.ap)} กรัม</b>
+                </p>
+              )}
+              {speltFlour > 0 && (
+                <p>
+                  <span>แป้งสเปลต์</span>
+                  <b>{round(recipe.spelt)} กรัม</b>
+                </p>
+              )}
+              {wholeWheat > 0 && (
+                <p>
+                  <span>แป้งโฮลวีท</span>
+                  <b>{round(recipe.whole)} กรัม</b>
+                </p>
+              )}
+              {ryeFlour > 0 && (
+                <p>
+                  <span>แป้งไรย์</span>
+                  <b>{round(recipe.rye)} กรัม</b>
+                </p>
+              )}
+              {recipe.customFlourTotals.map((item) => (
+                item.percent > 0 ? (
+                  <p key={item.id}>
+                    <span>{item.label} {item.percent}%</span>
+                    <b>{round(item.grams)} กรัม</b>
+                  </p>
+                ) : null
+              ))}
+              <p>
+                <span>น้ำเย็น</span>
+                <b>{round(recipe.water)} กรัม</b>
+              </p>
+              <p>
+                <span>หัวเชื้อ {starterHydration}% Hydration</span>
+                <b>{round(recipe.levain)} กรัม</b>
+              </p>
+              <p>
+                <span>เกลือ {saltPercent}%</span>
+                <b>{round(recipe.salt)} กรัม</b>
+              </p>
+              {oilPercent > 0 && (
+                <p>
+                  <span>{activeBreadStyle.id === "sandwich" ? "เนยหรือน้ำมัน" : "น้ำมัน"} {oilPercent}%</span>
+                  <b>{round(recipe.oil)} กรัม</b>
+                </p>
+              )}
+              {recipe.extras.map((item) => (
+                <p key={item.label}>
+                  <span>{item.label} {item.percent}%</span>
+                  <b>{round(item.grams)} กรัม</b>
+                </p>
+              ))}
+              {recipe.customExtras.map((item) => (
+                <p key={`custom-${item.id}`}>
+                  <span>{item.label} {item.percent}%</span>
+                  <b>{round(item.grams)} กรัม</b>
+                </p>
+              ))}
+            </div>
+            <div className="bulk-target-card">
+              <span>
+                เป้าหมายบัลก์จากอุณหภูมิ
+                {adaptiveTempSource === "dough" ? "โดว์" : "ห้อง"}

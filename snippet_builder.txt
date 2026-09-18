@@ -1,0 +1,361 @@
+                <p>ส่วนตะกร้าจะใช้เฉพาะชนิดที่ต้องพรูฟใน Banneton</p>
+              </div>
+              <div className="bread-equipment-grid">
+                {activeBreadStyle.equipment.map((item, index) => (
+                  <div key={item}><b>{String(index + 1).padStart(2, "0")}</b><span>{item}</span></div>
+                ))}
+              </div>
+              <div className="bread-method-facts">
+                <p><span>ขึ้นรูป</span><strong>{activeBreadStyle.shape}</strong></p>
+                <p><span>พรูฟ</span><strong>{activeBreadStyle.proof}</strong></p>
+                <p><span>อบ</span><strong>{activeBreadStyle.bake}</strong></p>
+              </div>
+            </div>
+          )}
+
+          {breadBuilderStep === 5 && (
+            <div className="bread-builder-panel">
+              <div className="bread-panel-title">
+                <span>ขั้นที่ 5</span>
+                <h3>วิธีทำ {activeBreadStyle.name}</h3>
+                <p>เวลาจริงจะ Adaptive จากอุณหภูมิห้องและอุณหภูมิโดว์</p>
+              </div>
+              <div className="bread-method-timeline">
+                {activeBreadStyle.method.map((method, index) => (
+                  <div key={method}>
+                    <b>{String(index + 1).padStart(2, "0")}</b>
+                    <span>{method}</span>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="bread-start-workflow"
+                onClick={() => openPage("workflow")}
+              >
+                เริ่ม Guided Workflow สำหรับ {activeBreadStyle.name} →
+              </button>
+            </div>
+          )}
+
+          <div className="bread-builder-nav">
+            <button
+              type="button"
+              disabled={breadBuilderStep === 1}
+              onClick={() => setBreadBuilderStep((step) => Math.max(1, step - 1))}
+            >
+              ← ย้อนกลับ
+            </button>
+            <span>{activeBreadStyle.name} · {BREAD_GOALS.find((goal) => goal.id === breadGoal)?.label}</span>
+            <button
+              type="button"
+              disabled={breadBuilderStep === 5}
+              onClick={() => setBreadBuilderStep((step) => Math.min(5, step + 1))}
+            >
+              ถัดไป →
+            </button>
+          </div>
+        </div>
+
+        <header>
+          <p className="section-kicker">01B — ปรับสูตรละเอียด</p>
+          <h2>ปรับกรัม สัดส่วน และบันทึกสูตร</h2>
+          <span>สัดส่วนแป้งรวม 100% และคำนวณแป้ง/น้ำที่อยู่ในหัวเชื้อแล้ว</span>
+        </header>
+        <div className="recipe-preset-grid">
+          {RECIPE_PRESETS.map((preset) => (
+            <button
+              type="button"
+              onClick={() => applyPreset(preset)}
+              key={preset.id}
+            >
+              <span>{preset.name}</span>
+              <small>{preset.description}</small>
+              <b>
+                น้ำ {preset.hydration}% · Starter {preset.starterPercent}% · Add-on {preset.customInclusions?.reduce((sum, item) => sum + item.percent, 0) || 0}%
+              </b>
+            </button>
+          ))}
+        </div>
+        <div className="recipe-grid">
+          <div className="control-card" id="recipe-editor">
+            <div className="recipe-name-field">
+              <label>
+                ชื่อสูตรของฉัน
+                <input
+                  type="text"
+                  maxLength={60}
+                  value={recipeName}
+                  onChange={(e) => setRecipeName(e.target.value)}
+                  placeholder="เช่น สูตรวันอาทิตย์"
+                />
+              </label>
+              <span>
+                {activeRecipeId
+                  ? "กำลังแก้สูตรที่บันทึกไว้"
+                  : "บันทึกเป็นสูตรใหม่"}
+              </span>
+            </div>
+            <div className="ingredient-builder-section">
+              <div className="builder-section-head">
+                <div>
+                  <b>แป้งรวม 100%</b>
+                  <span>เพิ่ม/ลบแป้งได้เอง · แป้งชนิดหลักเป็นส่วนที่เหลือ · ยี่ห้อจำไว้ในเครื่อง</span>
+                </div>
+                <strong>{Math.round(recipe.breadPercent + apFlour + speltFlour + wholeWheat + ryeFlour + recipe.customFlourPercent)}%</strong>
+              </div>
+              <div className="flour-mix flour-mix-horizontal">
+                <div className="bread-share bread-primary-card">
+                  <div className="bread-primary-title">
+                    <span>แป้งชนิดหลัก (Bread Flour)</span>
+                    <strong>{recipe.breadPercent}%</strong>
+                  </div>
+                  <input className="bread-brand-input" type="text" value={breadFlourBrand} onChange={(e) => { setBreadFlourBrand(e.target.value); setActiveRecipeId(""); }} placeholder="ยี่ห้อ เช่น King Arthur / หงส์ขาว" maxLength={60} />
+                  <small>ส่วนที่เหลืออัตโนมัติ · ยี่ห้อจะจำไว้ในเครื่อง</small>
+                </div>
+                {activeStandardFlours.map((item) => (
+                  <div className="flour-pill-row" key={item.id}>
+                    <div>
+                      <b>{item.label}</b>
+                      <small>กำหนดเอง</small>
+                    </div>
+                    <span className="flour-pill-controls">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={item.percent}
+                        onChange={(e) => setFlourPercent(item.id as "ap" | "spelt" | "whole" | "rye", +e.target.value)}
+                      />%
+                      <button type="button" className="icon-delete" onClick={() => removeStandardFlour(item.id as "ap" | "spelt" | "whole" | "rye")} aria-label={`ลบ ${item.label}`}>×</button>
+                    </span>
+                  </div>
+                ))}
+                {customFlours.map((item) => (
+                  <div className="flour-pill-row" key={item.id}>
+                    <div>
+                      <b>{item.label}</b>
+                      <small>{CUSTOM_FLOUR_SUGGESTIONS[item.id]}</small>
+                    </div>
+                    <span className="flour-pill-controls">
+                      <input type="number" min="0" max="100" value={item.percent} onChange={(e) => updateCustomFlour(item.id, +e.target.value)} />%
+                      <button type="button" className="icon-delete" onClick={() => removeCustomFlour(item.id)} aria-label={`ลบ ${item.label}`}>×</button>
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="dynamic-add-row">
+                <span>+ เพิ่มชนิดแป้ง</span>
+                <div className="chip-list">
+                  {FLOUR_LIBRARY.filter((item) => {
+                    if (item.id === "ap") return apFlour === 0;
+                    if (item.id === "spelt") return speltFlour === 0;
+                    if (item.id === "whole") return wholeWheat === 0;
+                    if (item.id === "rye") return ryeFlour === 0;
+                    return !customFlours.some((chosen) => chosen.id === item.id);
+                  }).map((item) => (
+                    <button type="button" key={item.id} onClick={() => addFlourFromLibrary(item)}>+ {item.label}</button>
+                  ))}
+                  {userFlours.filter((item) => !customFlours.some((chosen) => chosen.id === item.id)).map((item) => (
+                    <button type="button" key={item.id} onClick={() => addCustomFlour(item)}>+ {item.label}</button>
+                  ))}
+                </div>
+                <div className="library-manager">
+                  <div className="library-create">
+                    <input type="text" value={newFlourName} onChange={(e) => setNewFlourName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") addUserFlourToLibrary(); }} placeholder="เพิ่มแป้งของฉัน เช่น T65" />
+                    <button type="button" onClick={addUserFlourToLibrary}>+ สร้างแป้ง</button>
+                  </div>
+                  {userFlours.length > 0 && <div className="library-user-list">{userFlours.map((item) => <button type="button" key={item.id} onClick={() => removeUserFlourFromLibrary(item.id)} title="ลบจากคลัง">{item.label} ×</button>)}</div>}
+                </div>
+              </div>
+            </div>
+            {flourProfile && (
+              <div className="flour-profile">
+                <b>รายละเอียดสูตรนี้</b>
+                <span>{flourProfile}</span>
+                <small>
+                  คำว่า “ก้อนใหญ่/ก้อนเล็ก” หมายถึงปริมาตรหลังฟู
+                  ไม่ใช่ปริมาณแป้ง · ปรับเปอร์เซ็นต์แป้งเมื่อใด
+                  ระบบจะเปลี่ยนกลับเป็นสูตรกำหนดเอง
+                </small>
+              </div>
+            )}
+            <div className="inclusion-builder-section">
+              <div className="builder-section-head">
+                <div>
+                  <b>ส่วนผสมเพิ่มเติม</b>
+                  <span>คำนวณเป็น Baker’s % จากแป้งรวม และรวมในน้ำหนักโดว์อัตโนมัติ</span>
+                </div>
+                <strong>{customInclusions.reduce((sum, item) => sum + item.percent, 0)}%</strong>
+              </div>
+              {customInclusions.length > 0 ? (
+                <div className="dynamic-item-list">
+                  {customInclusions.map((item) => (
+                    <div className="dynamic-item" key={item.id}>
+                      <div>
+                        <b>{item.label}</b>
+                        <small>{item.category}</small>
+                      </div>
+                      <span>
+                        <input type="number" min="0" max="40" step="1" value={item.percent} onChange={(e) => updateCustomInclusion(item.id, +e.target.value)} />%
+                        <button type="button" className="icon-delete" onClick={() => removeCustomInclusion(item.id)} aria-label={`ลบ ${item.label}`}>×</button>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="empty-builder">ยังไม่มีส่วนผสมเพิ่ม — ลองเพิ่ม Almond + Cranberry เพื่อทดสอบระบบคำนวณ</p>
+              )}
+              <div className="dynamic-add-row">
+                <span>+ เพิ่มส่วนผสม</span>
+                <div className="chip-list">
+                  {INCLUSION_LIBRARY.filter((item) => !customInclusions.some((chosen) => chosen.id === item.id)).map((item) => (
+                    <button type="button" key={item.id} onClick={() => addCustomInclusion(item)}>{item.label}</button>
+                  ))}
+                  {userInclusions.filter((item) => !customInclusions.some((chosen) => chosen.id === item.id)).map((item) => (
+                    <button type="button" key={item.id} onClick={() => addCustomInclusion(item)}>{item.label}</button>
+                  ))}
+                </div>
+                <div className="library-manager">
+                  <div className="library-create">
+                    <input type="text" value={newInclusionName} onChange={(e) => setNewInclusionName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") addUserInclusionToLibrary(); }} placeholder="เพิ่มส่วนผสม เช่น ลูกเกดทอง" />
+                    <select value={newInclusionCategory} onChange={(e) => setNewInclusionCategory(e.target.value)}>
+                      <option value="Custom">Custom</option><option value="Nuts">Nuts</option><option value="Dried Fruit">Dried Fruit</option><option value="Seeds">Seeds</option><option value="Cheese">Cheese</option><option value="Chocolate">Chocolate</option><option value="Savory">Savory</option><option value="Sweet">Sweet</option>
+                    </select>
+                    <button type="button" onClick={addUserInclusionToLibrary}>+ สร้างส่วนผสม</button>
+                  </div>
+                  {userInclusions.length > 0 && <div className="library-user-list">{userInclusions.map((item) => <button type="button" key={item.id} onClick={() => removeUserInclusionFromLibrary(item.id)} title="ลบจากคลัง">{item.label} ×</button>)}</div>}
+                </div>
+              </div>
+              {customInclusions.length > 0 && (
+                <div className="inclusion-analysis">
+                  <b>วิเคราะห์สูตร</b>
+                  <span>
+                    {customInclusions.reduce((sum, item) => sum + item.percent, 0) >= 30
+                      ? "⚠ Total inclusions สูง — โครงสร้างและโพรงเปิดอาจลดลง"
+                      : "✓ ปริมาณส่วนผสมอยู่ในช่วงใช้งานทั่วไป"}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="control-row">
+              <label>
+                ไฮเดรชันจริง <strong>{hydration}%</strong>
+              </label>
+              <input
+                type="range"
+                min="55"
+                max="90"
+                value={hydration}
+                onChange={(e) => {
+                  setHydration(+e.target.value);
+                  setActiveRecipeId("");
+                }}
+              />
+            </div>
+            <div className="control-row starter-control">
+              <div className="starter-control-heading">
+                <label>
+                  ปริมาณหัวเชื้อ <strong>{starterPercent}%</strong>
+                </label>
+                <label className="starter-hydration-select">
+                  Hydration หัวเชื้อ
+                  <select
+                    value={starterHydration}
+                    onChange={(e) => {
+                      setStarterHydration(+e.target.value);
+                      setActiveRecipeId("");
+                    }}
+                    aria-label="เลือก Hydration ของหัวเชื้อ"
+                  >
+                    {Array.from({ length: 61 }, (_, i) => i + 40).map((value) => (
+                      <option key={value} value={value}>
+                        {value}%
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="starter-adjust-grid">
+                <input
+                  className="starter-range"
+                  type="range"
+                  min="5"
+                  max={activeBreadStyle.id === "high-rye" ? 100 : 50}
+                  value={starterPercent}
+                  onChange={(e) => {
+                    setStarterPercent(Math.min(activeBreadStyle.id === "high-rye" ? 100 : 50, Math.max(5, +e.target.value)));
+                    setActiveRecipeId("");
+                  }}
+                  aria-label="ปรับเปอร์เซ็นต์หัวเชื้อ"
+                />
+                <div className="starter-value-input">
+                  <input
+                    type="number"
+                    min="5"
+                    max={activeBreadStyle.id === "high-rye" ? 100 : 50}
+                    step="1"
+                    value={starterPercent}
+                    onChange={(e) => {
+                      setStarterPercent(Math.min(activeBreadStyle.id === "high-rye" ? 100 : 50, Math.max(5, +e.target.value || 5)));
+                      setActiveRecipeId("");
+                    }}
+                    aria-label="เปอร์เซ็นต์หัวเชื้อ"
+                  />
+                  <span>%</span>
+                </div>
+              </div>
+              <div className="starter-quick-presets" aria-label="ค่าหัวเชื้อที่ใช้บ่อย">
+                {[10, 15, 20, 25, 30].map((value) => (
+                  <button
+                    type="button"
+                    key={value}
+                    className={starterPercent === value ? "selected" : ""}
+                    onClick={() => {
+                      setStarterPercent(value);
+                      setActiveRecipeId("");
+                    }}
+                  >
+                    {value}%
+                  </button>
+                ))}
+              </div>
+              <div className="starter-impact">
+                <span>แป้งจาก Starter <b>{Math.round(recipe.levain / (1 + starterHydration / 100))} g</b></span>
+                <span>น้ำจาก Starter <b>{Math.round(recipe.levain - recipe.levain / (1 + starterHydration / 100))} g</b></span>
+                <span>Fermented flour <b>{((recipe.levain / (1 + starterHydration / 100)) / Math.max(recipe.totalFlour, 0.1) * 100).toFixed(1)}%</b></span>
+              </div>
+              <small className="starter-help">ปรับ Starter แล้วระบบจะคำนวณปริมาณ Levain, น้ำ และแป้งในสูตรใหม่ให้อัตโนมัติ โดยยังคงน้ำหนักโดว์เป้าหมายเดิม</small>
+              <div className={`starter-fermentation-card ${starterFermentation.starterBand.tone}`}>
+                <div className="starter-fermentation-head">
+                  <div>
+                    <b>ผลต่อกระบวนการหมัก</b>
+                    <small>{starterFermentation.starterBand.detail}</small>
+                  </div>
+                  <strong>{starterFermentation.starterBand.label}</strong>
+                </div>
+                <div className="starter-fermentation-stats">
+                  <span><small>Bulk fermentation</small><b>{duration(starterFermentation.bulkLow)}–{duration(starterFermentation.bulkHigh)}</b></span>
+                  <span><small>Final proof ที่อุณหภูมิห้อง</small><b>{duration(starterFermentation.finalRoomLow)}–{duration(starterFermentation.finalRoomHigh)}</b></span>
+                  <span><small>รวมกรณี Room Proof</small><b>{duration(starterFermentation.totalRoomLow)}–{duration(starterFermentation.totalRoomHigh)}</b></span>
+                </div>
+                <p>อิงอุณหภูมิหมัก {fermentationTemperature}°C · Starter {starterPercent}% · Hydration หัวเชื้อ {starterHydration}% · เวลาเป็นค่าประมาณ ให้ยืนยันด้วยปริมาตร ฟอง ความยืดหยุ่น และแรงของโดว์จริง</p>
+              </div>
+            </div>
+            <div className="recipe-minor-settings">
+              <label>
+                เกลือ
+                <span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="3"
+                    step=".1"
+                    value={saltPercent}
+                    onChange={(e) => setSaltPercent(clamp(+e.target.value, 1))}
+                  />
+                  %
+                </span>
+              </label>
+              <label>
+                น้ำมัน

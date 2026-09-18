@@ -203,6 +203,7 @@ const BREAD_STYLES: BreadStyle[] = [
     hydration: 73,
     hydrationRange: "70–75%",
     starterPercent: 20,
+  starterFeedRatio: 5,
     saltPercent: 2,
     oilPercent: 0,
     doughTemperature: 26,
@@ -1258,6 +1259,7 @@ const normalizeSettings = (
     data?.starterPercent,
     DEFAULT_SETTINGS.starterPercent,
   ),
+  starterFeedRatio: Math.max(0.1, validNumber(data?.starterFeedRatio, DEFAULT_SETTINGS.starterFeedRatio)),
   saltPercent: validNumber(data?.saltPercent, DEFAULT_SETTINGS.saltPercent),
   oilPercent: validNumber(data?.oilPercent, DEFAULT_SETTINGS.oilPercent),
   doughTemperature: validNumber(
@@ -1930,6 +1932,7 @@ export default function Home() {
     starterHydration,
     feedHydration,
     starterPercent,
+    starterFeedRatio,
     saltPercent,
     oilPercent,
     wholeWheat,
@@ -2935,6 +2938,7 @@ export default function Home() {
         setStarterHydration(settings.starterHydration);
         setFeedHydration(settings.feedHydration);
         setStarterPercent(settings.starterPercent);
+        setStarterFeedRatio(settings.starterFeedRatio);
         setSaltPercent(settings.saltPercent);
         setOilPercent(settings.oilPercent);
         setDoughTemperature(settings.doughTemperature);
@@ -3320,17 +3324,32 @@ export default function Home() {
     ...(ryeFlour > 0 ? [{ id: "rye", label: "ไรย์ (Rye)", percent: ryeFlour }] : []),
   ];
 
+  const persistIngredientLibrary = (key: "doughgarden-flour-library" | "doughgarden-inclusion-library", items: UserLibraryItem[]) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(items));
+    } catch {
+      /* The in-memory library remains usable if browser storage is unavailable. */
+    }
+  };
+
   const addUserFlourToLibrary = () => {
     const label = newFlourName.trim();
     if (!label) return;
     const id = `user-flour-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    setUserFlours((items) => [...items, { id, label, category: "My Flour" }]);
+    const item = { id, label, category: "My Flour" };
+    const next = userFlours.some((entry) => entry.label.trim().toLocaleLowerCase() === label.toLocaleLowerCase())
+      ? userFlours
+      : [...userFlours, item];
+    setUserFlours(next);
+    persistIngredientLibrary("doughgarden-flour-library", next);
     setNewFlourName("");
-    setToast(`เพิ่ม “${label}” ในรายการแป้งแล้ว`);
+    setToast(next === userFlours ? `มี “${label}” อยู่ในคลังแล้ว` : `เพิ่ม “${label}” ในรายการแป้งแล้ว`);
   };
   const removeUserFlourFromLibrary = (id: string) => {
     const item = userFlours.find((entry) => entry.id === id);
-    setUserFlours((items) => items.filter((entry) => entry.id !== id));
+    const next = userFlours.filter((entry) => entry.id !== id);
+    setUserFlours(next);
+    persistIngredientLibrary("doughgarden-flour-library", next);
     setCustomFlours((items) => items.filter((entry) => entry.id !== id));
     if (item) setToast(`ลบ “${item.label}” จากรายการแป้งแล้ว`);
   };
@@ -3338,13 +3357,20 @@ export default function Home() {
     const label = newInclusionName.trim();
     if (!label) return;
     const id = `user-inclusion-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    setUserInclusions((items) => [...items, { id, label, category: newInclusionCategory || "Custom" }]);
+    const item = { id, label, category: newInclusionCategory || "Custom" };
+    const next = userInclusions.some((entry) => entry.label.trim().toLocaleLowerCase() === label.toLocaleLowerCase())
+      ? userInclusions
+      : [...userInclusions, item];
+    setUserInclusions(next);
+    persistIngredientLibrary("doughgarden-inclusion-library", next);
     setNewInclusionName("");
-    setToast(`เพิ่ม “${label}” ในรายการส่วนผสมแล้ว`);
+    setToast(next === userInclusions ? `มี “${label}” อยู่ในคลังแล้ว` : `เพิ่ม “${label}” ในรายการส่วนผสมแล้ว`);
   };
   const removeUserInclusionFromLibrary = (id: string) => {
     const item = userInclusions.find((entry) => entry.id === id);
-    setUserInclusions((items) => items.filter((entry) => entry.id !== id));
+    const next = userInclusions.filter((entry) => entry.id !== id);
+    setUserInclusions(next);
+    persistIngredientLibrary("doughgarden-inclusion-library", next);
     setCustomInclusions((items) => items.filter((entry) => entry.id !== id));
     if (item) setToast(`ลบ “${item.label}” จากรายการส่วนผสมแล้ว`);
   };
@@ -3887,6 +3913,7 @@ export default function Home() {
     setFeedFlour(DEFAULT_SETTINGS.feedFlour);
     setFeedWater(DEFAULT_SETTINGS.feedWater);
     setFeedHydration(DEFAULT_SETTINGS.feedHydration);
+    setStarterFeedRatio(DEFAULT_SETTINGS.starterFeedRatio);
     localStorage.setItem(
       "doughgarden-settings",
       JSON.stringify({
@@ -3895,6 +3922,7 @@ export default function Home() {
         feedFlour: DEFAULT_SETTINGS.feedFlour,
         feedWater: DEFAULT_SETTINGS.feedWater,
         feedHydration: DEFAULT_SETTINGS.feedHydration,
+        starterFeedRatio: DEFAULT_SETTINGS.starterFeedRatio,
       }),
     );
     setToast("รีเซ็ตค่าหัวเชื้อแล้ว");
@@ -3913,6 +3941,7 @@ export default function Home() {
     setHydration(DEFAULT_SETTINGS.hydration);
     setStarterHydration(DEFAULT_SETTINGS.starterHydration);
     setStarterPercent(DEFAULT_SETTINGS.starterPercent);
+    setStarterFeedRatio(DEFAULT_SETTINGS.starterFeedRatio);
     setSaltPercent(DEFAULT_SETTINGS.saltPercent);
     setOilPercent(DEFAULT_SETTINGS.oilPercent);
     setDoughTemperature(DEFAULT_SETTINGS.doughTemperature);
@@ -3931,6 +3960,7 @@ export default function Home() {
         hydration: DEFAULT_SETTINGS.hydration,
         starterHydration: DEFAULT_SETTINGS.starterHydration,
         starterPercent: DEFAULT_SETTINGS.starterPercent,
+        starterFeedRatio: DEFAULT_SETTINGS.starterFeedRatio,
         saltPercent: DEFAULT_SETTINGS.saltPercent,
         oilPercent: DEFAULT_SETTINGS.oilPercent,
         doughTemperature: DEFAULT_SETTINGS.doughTemperature,
@@ -4241,6 +4271,8 @@ export default function Home() {
     const finalWater = seedWater + waterToAdd;
     const actualHydration = totalFlour > 0 ? (finalWater / totalFlour) * 100 : 0;
     const needsWaterRemoval = targetWater < seedWater - 0.01;
+    const flourRatio = seed > 0 ? flour / seed : 0;
+    const waterRatio = seed > 0 ? waterToAdd / seed : 0;
     return {
       seedFlour,
       seedWater,
@@ -4250,8 +4282,29 @@ export default function Home() {
       finalWeight,
       actualHydration,
       needsWaterRemoval,
+      flourRatio,
+      waterRatio,
     };
   }, [starterOld, feedFlour, starterHydration, feedHydration]);
+
+  const selectStarterFeedRatio = (ratio: number) => {
+    const safeSeed = Math.max(0, starterOld);
+    const nextFlour = safeSeed * Math.max(0.1, ratio);
+    setStarterFeedRatio(Math.max(0.1, ratio));
+    setFeedFlour(nextFlour);
+  };
+  const updateStarterSeed = (raw: number) => {
+    const parsed = Number(raw);
+    const nextSeed = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+    setStarterOld(nextSeed);
+    if (starterFeedRatio > 0) setFeedFlour(nextSeed * starterFeedRatio);
+  };
+  const updateStarterFeedFlour = (raw: number) => {
+    const parsed = Number(raw);
+    const nextFlour = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+    setFeedFlour(nextFlour);
+    setStarterFeedRatio(starterOld > 0 ? nextFlour / starterOld : 0.1);
+  };
   const levainPredictedPeak = levainStartedAt
     ? new Date(new Date(levainStartedAt).getTime() + levainPeakHours * 3600000)
     : null;
@@ -4705,7 +4758,7 @@ export default function Home() {
             <input
               type="number"
               value={starterOld}
-              onChange={(e) => setStarterOld(clamp(+e.target.value))}
+              onChange={(e) => updateStarterSeed(+e.target.value)}
             />{" "}
             กรัม
           </span>
@@ -4717,7 +4770,7 @@ export default function Home() {
             <input
               type="number"
               value={feedFlour}
-              onChange={(e) => setFeedFlour(clamp(+e.target.value))}
+              onChange={(e) => updateStarterFeedFlour(+e.target.value)}
             />{" "}
             กรัม
           </span>
@@ -4739,6 +4792,29 @@ export default function Home() {
             </select>
           </span>
         </div>
+        <div className="starter-ratio-group">
+          <div className="mini-input starter-ratio-picker">
+            <label>อัตราส่วนให้อาหาร</label>
+            <div className="feed-ratio-tabs compact-feed-ratios">
+              {[1, 2, 5, 10].map((ratio) => (
+                <button
+                  type="button"
+                  key={ratio}
+                  className={Math.abs(starterFeedRatio - ratio) < 0.001 ? "active" : ""}
+                  onClick={() => selectStarterFeedRatio(ratio)}
+                >
+                  1:{ratio}
+                </button>
+              ))}
+            </div>
+            <small>เลือกหัวเชื้อ : แป้งใหม่ · น้ำปรับตาม Hydration เป้าหมาย</small>
+          </div>
+          <div className="starter-ratio-readout">
+            <span>สัดส่วนจริง</span>
+            <strong>1 : {feedStarterMath.flourRatio.toFixed(2)} : {feedStarterMath.waterRatio.toFixed(2)}</strong>
+            <small>หัวเชื้อเดิม : แป้งใหม่ : น้ำที่เติมจริง</small>
+          </div>
+        </div>
         <div className="starter-result">
           <span>น้ำที่ต้องเติม</span>
           <strong>{round(feedStarterMath.waterToAdd)} g</strong>
@@ -4746,7 +4822,7 @@ export default function Home() {
             เสร็จแล้ว {round(feedStarterMath.finalWeight)} g · Hydration {Math.round(feedStarterMath.actualHydration)}%
           </small>
         </div>
-        <small className="starter-feed-note">คำนวณจากหัวเชื้อเดิม {starterOld} g ที่ {starterHydration}% + แป้งใหม่ {feedFlour} g · เลือก Hydration เป้าหมายได้ 40–100%</small>
+        <small className="starter-feed-note">คำนวณจากหัวเชื้อเดิม {starterOld} g ที่ {starterHydration}% + แป้งใหม่ {round(feedFlour)} g · อัตราส่วน 1:{feedStarterMath.flourRatio.toFixed(2)}:{feedStarterMath.waterRatio.toFixed(2)} · เลือก Hydration เป้าหมายได้ 40–100%</small>
         {feedStarterMath.needsWaterRemoval && (
           <small className="starter-feed-warning">⚠ Hydration เป้าหมายต่ำเกินไปสำหรับน้ำที่มีอยู่ในหัวเชื้อเดิม — ต้องเอาน้ำออกประมาณ {round(feedStarterMath.seedWater - feedStarterMath.targetWater)} g จึงจะได้ {feedHydration}%</small>
         )}

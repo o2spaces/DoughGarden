@@ -1,0 +1,111 @@
+            const observations = levainBuild.observations.filter(
+              (item) => item?.id && item?.at && typeof item?.rise === "number",
+            );
+            setLevainObservations(observations);
+            const latest = observations[observations.length - 1];
+            if (latest) {
+              setLevainRise(latest.rise);
+              setLevainStage(latest.stage);
+            }
+          }
+        }
+        const savedBulkRun = normalizeBulkRun(
+          JSON.parse(localStorage.getItem("doughgarden-bulk-run") || "null"),
+        );
+        if (savedBulkRun) {
+          setBulkRun(savedBulkRun);
+          const latest = savedBulkRun.observations.at(-1);
+          if (latest) {
+            setBulkTemperature(latest.temperature);
+            setBulkRise(latest.rise);
+            setBulkSurface(latest.surface);
+            setBulkStrength(latest.strength);
+            setBulkBubbles(latest.bubbles);
+            setBulkJiggle(latest.jiggle);
+          }
+        }
+        const settings = normalizeSettings(
+          JSON.parse(localStorage.getItem("doughgarden-settings") || "null"),
+        );
+        // Load user-created ingredient libraries from dedicated storage keys first.
+        // Fall back to the embedded settings fields for migration from older builds.
+        const savedFlourLibraryRaw = JSON.parse(
+          localStorage.getItem("doughgarden-flour-library") || "null",
+        );
+        const savedInclusionLibraryRaw = JSON.parse(
+          localStorage.getItem("doughgarden-inclusion-library") || "null",
+        );
+        const savedFlourLibrary = Array.isArray(savedFlourLibraryRaw)
+          ? savedFlourLibraryRaw.filter(
+              (item): item is UserLibraryItem => Boolean(item?.id && item?.label),
+            )
+          : settings.userFlours;
+        const savedInclusionLibrary = Array.isArray(savedInclusionLibraryRaw)
+          ? savedInclusionLibraryRaw.filter(
+              (item): item is UserLibraryItem => Boolean(item?.id && item?.label),
+            )
+          : settings.userInclusions;
+        setUserFlours(savedFlourLibrary);
+        setUserInclusions(savedInclusionLibrary);
+        // Persist migrated libraries immediately so older saved settings are upgraded.
+        localStorage.setItem(
+          "doughgarden-flour-library",
+          JSON.stringify(savedFlourLibrary),
+        );
+        localStorage.setItem(
+          "doughgarden-inclusion-library",
+          JSON.stringify(savedInclusionLibrary),
+        );
+        setTemperature(settings.temperature);
+        setHumidity(settings.humidity);
+        setStarterOld(settings.starterOld);
+        setFeedFlour(settings.feedFlour);
+        setFeedWater(settings.feedWater);
+        setWholeWheat(settings.wholeWheat);
+        setApFlour(settings.apFlour);
+        setSpeltFlour(settings.speltFlour);
+        setRyeFlour(settings.ryeFlour);
+        setCustomFlours(settings.customFlours || []);
+        setCustomInclusions(settings.customInclusions || []);
+        setUserFlours(savedFlourLibrary);
+        setUserInclusions(savedInclusionLibrary);
+        setBreadFlourBrand(settings.breadFlourBrand || "");
+        setFlourProfile(settings.flourProfile);
+        setTargetDough(settings.targetDough);
+        setHydration(settings.hydration);
+        setStarterHydration(settings.starterHydration);
+        setFeedHydration(settings.feedHydration);
+        setStarterPercent(settings.starterPercent);
+        setSaltPercent(settings.saltPercent);
+        setOilPercent(settings.oilPercent);
+        setDoughTemperature(settings.doughTemperature);
+        setLoafCount(settings.loafCount);
+        setLoavesPerBake(Math.min(settings.loafCount, settings.loavesPerBake));
+        setProofMode(settings.proofMode);
+        setColdHours(settings.coldHours);
+        setFridgeTemp(settings.fridgeTemp);
+        setPrepMethod(settings.prepMethod);
+        setAdaptiveTempSource(settings.adaptiveTempSource);
+        setBakeMode(settings.bakeMode);
+        setSteamWater(settings.steamWater);
+        setOvenVolume(settings.ovenVolume);
+        setTrayWidth(settings.trayWidth);
+        setTrayLength(settings.trayLength);
+        setSteamMinutes(settings.steamMinutes);
+        setOvenSeal(settings.ovenSeal);
+        setAlertSound(settings.alertSound);
+        setTargetBakeAt(settings.targetBakeAt);
+        setFlourTemperature(settings.flourTemperature);
+        setLevainMixTemperature(settings.levainMixTemperature);
+        setFrictionFactor(settings.frictionFactor);
+        setColdWaterTemperature(settings.coldWaterTemperature);
+        setWarmWaterTemperature(settings.warmWaterTemperature);
+        setBannetonShape(settings.bannetonShape);
+        setBannetonWidth(settings.bannetonWidth);
+        setBannetonLength(settings.bannetonLength);
+        setBannetonDepth(settings.bannetonDepth);
+        setSettingsHydrated(true);
+        const latestSavedBulk = savedBulkRun?.observations.at(-1);
+        if (latestSavedBulk) {
+          setDoughTemperature(latestSavedBulk.temperature);
+          setAdaptiveTempSource("dough");

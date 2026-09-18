@@ -1,0 +1,191 @@
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h ? `${h} ชม.${m ? ` ${m} นาที` : ""}` : `${m} นาที`;
+};
+const countdown = (ms: number) => {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const h = Math.floor(total / 3600)
+    .toString()
+    .padStart(2, "0");
+  const m = Math.floor((total % 3600) / 60)
+    .toString()
+    .padStart(2, "0");
+  const s = (total % 60).toString().padStart(2, "0");
+  return `${h}:${m}:${s}`;
+};
+const starterDaysOld = (birth: string, currentDate: string) => {
+  if (!birth || !currentDate) return 0;
+  const born = new Date(`${birth}T00:00:00`);
+  const current = new Date(`${currentDate}T00:00:00`);
+  return Math.max(
+    0,
+    Math.floor((current.getTime() - born.getTime()) / 86400000),
+  );
+};
+
+export default function Home() {
+  const [temperature, setTemperature] = useState(28);
+  const [humidity, setHumidity] = useState(70);
+  const [starterOld, setStarterOld] = useState(20);
+  const [feedFlour, setFeedFlour] = useState(40);
+  const [feedWater, setFeedWater] = useState(40);
+  const [wholeWheat, setWholeWheat] = useState(5);
+  const [apFlour, setApFlour] = useState(10);
+  const [speltFlour, setSpeltFlour] = useState(0);
+  const [ryeFlour, setRyeFlour] = useState(5);
+  const [customFlours, setCustomFlours] = useState<CustomFlour[]>([]);
+  const [customInclusions, setCustomInclusions] = useState<CustomInclusion[]>([]);
+  const [userFlours, setUserFlours] = useState<UserLibraryItem[]>([]);
+  const [userInclusions, setUserInclusions] = useState<UserLibraryItem[]>([]);
+  const [settingsHydrated, setSettingsHydrated] = useState(false);
+  const [breadFlourBrand, setBreadFlourBrand] = useState("");
+  const [newFlourName, setNewFlourName] = useState("");
+  const [newInclusionName, setNewInclusionName] = useState("");
+  const [newInclusionCategory, setNewInclusionCategory] = useState("Custom");
+  const [flourProfile, setFlourProfile] = useState("");
+  const [targetDough, setTargetDough] = useState(950);
+  const [targetDoughInput, setTargetDoughInput] = useState("950");
+  const [hydration, setHydration] = useState(73);
+  const [starterHydration, setStarterHydration] = useState(100);
+  const [feedHydration, setFeedHydration] = useState(100);
+  const [starterPercent, setStarterPercent] = useState(20);
+  const [saltPercent, setSaltPercent] = useState(2);
+  const [oilPercent, setOilPercent] = useState(0);
+  const [doughTemperature, setDoughTemperature] = useState(26);
+  const [recipeName, setRecipeName] = useState("คันทรีซาวโดว์ · สมดุล");
+  const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
+  const [activeRecipeId, setActiveRecipeId] = useState("");
+  const [loafCount, setLoafCount] = useState(1);
+  useEffect(() => {
+    setTargetDoughInput(String(targetDough));
+  }, [targetDough]);
+  const [loavesPerBake, setLoavesPerBake] = useState(1);
+  const [proofMode, setProofMode] = useState<ProofMode>("cold");
+  const [coldHours, setColdHours] = useState(12);
+  const [fridgeTemp, setFridgeTemp] = useState(4);
+  const [prepMethod, setPrepMethod] = useState<PrepMethod>("fermentolyse");
+  const [adaptiveTempSource, setAdaptiveTempSource] =
+    useState<AdaptiveTempSource>("room");
+  const [bakeMode, setBakeMode] = useState<BakeMode>("dutch");
+  const [steamWater, setSteamWater] = useState(200);
+  const [proofOpen, setProofOpen] = useState(true);
+  const [bakeOpen, setBakeOpen] = useState(false);
+  const [ovenVolume, setOvenVolume] = useState(60);
+  const [trayWidth, setTrayWidth] = useState(30);
+  const [trayLength, setTrayLength] = useState(20);
+  const [steamMinutes, setSteamMinutes] = useState(20);
+  const [ovenSeal, setOvenSeal] = useState<"tight" | "normal" | "leaky">(
+    "normal",
+  );
+  const [alertSound, setAlertSound] = useState<AlertSound>("bell");
+  const [soundMenuOpen, setSoundMenuOpen] = useState(false);
+  const [targetBakeAt, setTargetBakeAt] = useState("");
+  const [flourTemperature, setFlourTemperature] = useState(28);
+  const [levainMixTemperature, setLevainMixTemperature] = useState(26);
+  const [frictionFactor, setFrictionFactor] = useState(3);
+  const [coldWaterTemperature, setColdWaterTemperature] = useState(8);
+  const [warmWaterTemperature, setWarmWaterTemperature] = useState(40);
+  const [bannetonShape, setBannetonShape] =
+    useState<BannetonShape>("round");
+  const [bannetonWidth, setBannetonWidth] = useState(22.9);
+  const [bannetonLength, setBannetonLength] = useState(22.9);
+  const [bannetonDepth, setBannetonDepth] = useState(8.5);
+  const [activePage, setActivePage] = useState<PageId>("home");
+  const [activeBreadStyleId, setActiveBreadStyleId] = useState("country");
+  const [breadFamilyFilter, setBreadFamilyFilter] =
+    useState<BreadFamilyFilter>("all");
+  const [breadGoal, setBreadGoal] = useState<BreadGoal>("balanced");
+  const [breadBuilderStep, setBreadBuilderStep] = useState(1);
+  const [activeLessonId, setActiveLessonId] = useState(LEARNING_LESSONS[0].id);
+  const [lessonLanguage, setLessonLanguage] =
+    useState<LessonLanguage>("all");
+  const [completedLessons, setCompletedLessons] = useState<string[]>([]);
+  const [learningLoaded, setLearningLoaded] = useState(false);
+  const [activePhase, setActivePhase] = useState(0);
+  const [phaseStart, setPhaseStart] = useState<number | null>(null);
+  const [phaseEnd, setPhaseEnd] = useState<number | null>(null);
+  const [running, setRunning] = useState(false);
+  const [now, setNow] = useState(0);
+  const [notifyStatus, setNotifyStatus] = useState<
+    "default" | "granted" | "denied"
+  >("default");
+  const [toast, setToast] = useState("");
+  const [yeastName, setYeastName] = useState("เจ้าก้อนแป้ง");
+  const [yeastBirth, setYeastBirth] = useState("");
+  const [savedYeasts, setSavedYeasts] = useState<SavedYeast[]>([]);
+  const [activeYeastId, setActiveYeastId] = useState("");
+  const [levainStartedAt, setLevainStartedAt] = useState("");
+  const [levainTemperature, setLevainTemperature] = useState(28);
+  const [levainRise, setLevainRise] = useState(0);
+  const [levainStage, setLevainStage] = useState<LevainStage>("fed");
+  const [levainNote, setLevainNote] = useState("");
+  const [levainObservations, setLevainObservations] = useState<
+    LevainObservation[]
+  >([]);
+  const [bulkRun, setBulkRun] = useState<BulkRun | null>(null);
+  const [bulkTemperature, setBulkTemperature] = useState(26);
+  const [bulkRise, setBulkRise] = useState(0);
+  const [bulkSurface, setBulkSurface] = useState<BulkSurface>("flat");
+  const [bulkStrength, setBulkStrength] = useState<BulkStrength>("weak");
+  const [bulkBubbles, setBulkBubbles] = useState(false);
+  const [bulkJiggle, setBulkJiggle] = useState(false);
+  const [bulkNote, setBulkNote] = useState("");
+  const [bakeEntries, setBakeEntries] = useState<BakeEntry[]>([]);
+  const [journalBulkMinutes, setJournalBulkMinutes] = useState(0);
+  const [journalOvenSpring, setJournalOvenSpring] = useState(3);
+  const [journalCrumb, setJournalCrumb] = useState(3);
+  const [journalSourness, setJournalSourness] = useState(3);
+  const [journalCrust, setJournalCrust] = useState(3);
+  const [journalNotes, setJournalNotes] = useState("");
+  const [pokeResult, setPokeResult] = useState<PokeResult>("slow");
+  const [proofRise, setProofRise] = useState(30);
+  const [proofTension, setProofTension] =
+    useState<ProofTension>("soft");
+  const [proofJiggle, setProofJiggle] = useState(true);
+  const [crumbPattern, setCrumbPattern] =
+    useState<CrumbPattern>("balanced");
+  const [starterFeedRatio, setStarterFeedRatio] = useState(5);
+  const [starterSeed, setStarterSeed] = useState(10);
+  const [flavorTarget, setFlavorTarget] =
+    useState<FlavorTarget>("balanced");
+  const [today, setToday] = useState("");
+  const alertedMilestones = useRef<Set<number>>(new Set());
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const importRef = useRef<HTMLInputElement>(null);
+
+  const activeBreadStyle =
+    BREAD_STYLES.find((style) => style.id === activeBreadStyleId) ||
+    BREAD_STYLES[0];
+  const visibleBreadStyles =
+    breadFamilyFilter === "all"
+      ? BREAD_STYLES
+      : BREAD_STYLES.filter((style) => style.family === breadFamilyFilter);
+
+  const recipeCalibration = useMemo(() => {
+    const key = recipeName.trim().toLocaleLowerCase("th-TH");
+    const matching = bakeEntries
+      .filter(
+        (entry) => entry.recipeName.trim().toLocaleLowerCase("th-TH") === key,
+      )
+      .slice(0, 6);
+    if (!matching.length)
+      return {
+        factor: 1,
+        count: 0,
+        confidence: 0,
+        label: "ยังไม่มีประวัติสูตรนี้",
+      };
+    const weighted = matching.reduce(
+      (result, entry, index) => {
+        const weight = Math.max(1, matching.length - index);
+        const ratio = entry.actualBulkMinutes / entry.predictedBulkMinutes;
+        return {
+          total: result.total + ratio * weight,
+          weight: result.weight + weight,
+        };
+      },
+      { total: 0, weight: 0 },
+    );
+    const factor = Math.min(1.22, Math.max(0.78, weighted.total / weighted.weight));
+    const difference = Math.round((factor - 1) * 100);
+    return {

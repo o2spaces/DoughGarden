@@ -1,0 +1,76 @@
+    if (phaseEnd !== nextEnd) {
+      setPhaseEnd(nextEnd);
+      if (nextEnd <= Date.now()) {
+        setNow(Date.now());
+        setRunning(false);
+      }
+    }
+  }, [
+    running,
+    phaseStart,
+    phaseEnd,
+    activePhase,
+    activeBreadStyle.id,
+    activePhaseHours,
+  ]);
+
+  const targetBakeDate = targetBakeAt.split("T")[0] || "";
+  const targetBakeTime = targetBakeAt.split("T")[1] || "";
+  const setBakeDate = (date: string) =>
+    setTargetBakeAt(date ? `${date}T${targetBakeTime || "09:00"}` : "");
+  const setBakeTime = (time: string) => {
+    const localDate = new Date();
+    localDate.setMinutes(
+      localDate.getMinutes() - localDate.getTimezoneOffset(),
+    );
+    setTargetBakeAt(
+      time
+        ? `${targetBakeDate || localDate.toISOString().slice(0, 10)}T${time}`
+        : "",
+    );
+  };
+  const feedStarterMath = useMemo(() => {
+    const seed = Math.max(0, starterOld);
+    const flour = Math.max(0, feedFlour);
+    const seedHydrationRatio = starterHydration / 100;
+    const seedFlour = seed / (1 + seedHydrationRatio);
+    const seedWater = seed - seedFlour;
+    const totalFlour = seedFlour + flour;
+    const targetWater = totalFlour * (feedHydration / 100);
+    const waterToAdd = Math.max(0, targetWater - seedWater);
+    const finalWeight = seed + flour + waterToAdd;
+    const finalWater = seedWater + waterToAdd;
+    const actualHydration = totalFlour > 0 ? (finalWater / totalFlour) * 100 : 0;
+    const needsWaterRemoval = targetWater < seedWater - 0.01;
+    return {
+      seedFlour,
+      seedWater,
+      totalFlour,
+      targetWater,
+      waterToAdd,
+      finalWeight,
+      actualHydration,
+      needsWaterRemoval,
+    };
+  }, [starterOld, feedFlour, starterHydration, feedHydration]);
+  const levainPredictedPeak = levainStartedAt
+    ? new Date(new Date(levainStartedAt).getTime() + levainPeakHours * 3600000)
+    : null;
+  const latestLevainObservation =
+    levainObservations[levainObservations.length - 1];
+
+  return (
+    <main data-active-page={activePage}>
+      {toast && (
+        <button className="toast" onClick={() => setToast("")}>
+          ✓ {toast}
+        </button>
+      )}
+      <nav className="nav shell" aria-label="เมนูหลัก">
+        <button className="brand" type="button" onClick={() => openPage("home")}>
+          <span>D</span>
+          <strong>
+            DoughGarden<small>กระดุ๊กกระดิ๊ก กระจุ๊กกระจิ๊กหัวใจ</small>
+          </strong>
+        </button>
+        <div className="nav-links">

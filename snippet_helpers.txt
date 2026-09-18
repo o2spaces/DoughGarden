@@ -1,0 +1,156 @@
+    try {
+      localStorage.setItem("doughgarden-starters", JSON.stringify(next));
+      localStorage.setItem(
+        "doughgarden-yeast",
+        JSON.stringify({ name, birth: yeastBirth }),
+      );
+      setSavedYeasts(next);
+      setActiveYeastId(id);
+      setYeastName(name);
+      setToast(`บันทึก “${name}” แล้ว`);
+    } catch {
+      setToast("บันทึกไม่ได้ กรุณาอนุญาตการจัดเก็บข้อมูลของเว็บไซต์");
+    }
+  };
+  const resetYeast = () => {
+    setYeastName("");
+    setYeastBirth("");
+    setActiveYeastId("");
+    localStorage.removeItem("doughgarden-yeast");
+    setToast("ล้างช่องกรอกแล้ว รายการที่บันทึกยังอยู่");
+  };
+  const selectYeast = (record: SavedYeast) => {
+    setYeastName(record.name);
+    setYeastBirth(record.birth);
+    setActiveYeastId(record.id);
+    localStorage.setItem(
+      "doughgarden-yeast",
+      JSON.stringify({ name: record.name, birth: record.birth }),
+    );
+    setToast(`เปิดข้อมูล “${record.name}” แล้ว`);
+  };
+  const deleteYeast = (id: string) => {
+    const next = savedYeasts.filter((item) => item.id !== id);
+    localStorage.setItem("doughgarden-starters", JSON.stringify(next));
+    setSavedYeasts(next);
+    if (activeYeastId === id) {
+      setActiveYeastId("");
+      setYeastName("");
+      setYeastBirth("");
+      localStorage.removeItem("doughgarden-yeast");
+    }
+    setToast("ลบรายการหัวเชื้อแล้ว");
+  };
+  const applyRecipe = (
+    values: Pick<
+      SavedRecipe,
+      | "name"
+      | "targetDough"
+      | "hydration"
+      | "starterHydration"
+      | "starterPercent"
+      | "saltPercent"
+      | "oilPercent"
+      | "apFlour"
+      | "speltFlour"
+      | "wholeWheat"
+      | "ryeFlour"
+      | "doughTemperature"
+      | "flourProfile"
+      | "breadStyleId"
+      | "breadGoal"
+      | "customFlours"
+      | "customInclusions"
+      | "breadFlourBrand"
+    >,
+    id = "",
+  ) => {
+    setRecipeName(values.name);
+    setTargetDough(values.targetDough);
+    setHydration(values.hydration);
+    setStarterHydration(values.starterHydration ?? 100);
+    setStarterPercent(values.starterPercent);
+    setSaltPercent(values.saltPercent);
+    setOilPercent(values.oilPercent);
+    setApFlour(values.apFlour);
+    setSpeltFlour(values.speltFlour);
+    setWholeWheat(values.wholeWheat);
+    setRyeFlour(values.ryeFlour);
+    setCustomFlours(values.customFlours || []);
+    setCustomInclusions(values.customInclusions || []);
+    setBreadFlourBrand(values.breadFlourBrand || "");
+    setFlourProfile(values.flourProfile);
+    setDoughTemperature(values.doughTemperature);
+    const savedStyle = BREAD_STYLES.find(
+      (style) => style.id === values.breadStyleId,
+    );
+    if (savedStyle) {
+      setActiveBreadStyleId(savedStyle.id);
+      setBreadGoal(
+        values.breadGoal && savedStyle.goals.includes(values.breadGoal)
+          ? values.breadGoal
+          : "balanced",
+      );
+      setPrepMethod(savedStyle.prepMethod);
+      setProofMode(savedStyle.proofMode);
+      setBakeMode(savedStyle.bakeMode);
+    }
+    setActiveRecipeId(id);
+    setToast(`เปิดสูตร “${values.name}” แล้ว`);
+  };
+  const applyBreadStyle = (
+    style: BreadStyle,
+    goal: BreadGoal = "balanced",
+  ) => {
+    const safeGoal = style.goals.includes(goal) ? goal : "balanced";
+    const hydrationAdjust =
+      safeGoal === "open" ? 2 : safeGoal === "soft" ? -1 : safeGoal === "grain" ? 1 : 0;
+    const starterAdjust = safeGoal === "mild" ? -5 : 0;
+    const oilAdjust = safeGoal === "soft" ? Math.max(style.oilPercent, 3) : style.oilPercent;
+    setActiveBreadStyleId(style.id);
+    setBreadGoal(safeGoal);
+    setRecipeName(`${style.name} · ${BREAD_GOALS.find((item) => item.id === safeGoal)?.label || "สมดุล"}`);
+    setTargetDough(style.targetDough);
+    setHydration(Math.min(92, Math.max(50, style.hydration + hydrationAdjust)));
+    setStarterPercent(Math.max(5, style.starterPercent + starterAdjust));
+    setSaltPercent(style.saltPercent);
+    setOilPercent(oilAdjust);
+    setApFlour(style.flour.ap);
+    setSpeltFlour(style.flour.spelt);
+    setWholeWheat(style.flour.whole);
+    setRyeFlour(style.flour.rye);
+    setCustomFlours([]);
+    setCustomInclusions([]);
+    setDoughTemperature(style.doughTemperature);
+    setPrepMethod(style.prepMethod);
+    setProofMode(style.proofMode);
+    setBakeMode(style.bakeMode);
+    setFlourProfile(
+      `${style.english} · ${style.texture} · ${style.description}`,
+    );
+    setActiveRecipeId("");
+    setActivePhase(0);
+    setRunning(false);
+    setPhaseStart(null);
+    setPhaseEnd(null);
+    try {
+      localStorage.setItem(
+        "doughgarden-bread-builder",
+        JSON.stringify({ styleId: style.id, goal: safeGoal }),
+      );
+    } catch {
+      /* Bread selection remains usable without local storage. */
+    }
+  };
+  const applyPreset = (preset: (typeof RECIPE_PRESETS)[number]) => {
+    applyRecipe(preset);
+    setActiveBreadStyleId("country");
+    setBreadGoal("balanced");
+    setActiveRecipeId("");
+  };
+  const setFlourPercent = (
+    kind: "ap" | "spelt" | "whole" | "rye",
+    raw: number,
+  ) => {
+    const value = Math.max(0, Math.round(raw));
+    if (kind === "ap")

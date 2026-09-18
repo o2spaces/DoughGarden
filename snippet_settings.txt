@@ -1,0 +1,296 @@
+  { id: "date", label: "อินทผลัม", category: "Dried Fruit" },
+  { id: "cherry", label: "เชอร์รี่แห้ง", category: "Dried Fruit" },
+  { id: "sunflower", label: "เมล็ดทานตะวัน", category: "Seeds" },
+  { id: "pumpkin", label: "เมล็ดฟักทอง", category: "Seeds" },
+  { id: "sesame", label: "งา", category: "Seeds" },
+  { id: "flax", label: "แฟลกซ์", category: "Seeds" },
+  { id: "chia", label: "เจีย", category: "Seeds" },
+  { id: "olive", label: "มะกอก", category: "Savory" },
+  { id: "rosemary", label: "โรสแมรี่", category: "Savory" },
+  { id: "garlic", label: "กระเทียม", category: "Savory" },
+  { id: "tomato", label: "มะเขือเทศตากแห้ง", category: "Savory" },
+  { id: "cheddar", label: "เชดดาร์ (Cheddar)", category: "Cheese" },
+  { id: "mozzarella", label: "มอซซาเรลลา (Mozzarella)", category: "Cheese" },
+  { id: "parmesan", label: "พาร์เมซาน (Parmesan)", category: "Cheese" },
+  { id: "gruyere", label: "กรูแยร์ (Gruyère)", category: "Cheese" },
+  { id: "gouda", label: "เกาดา (Gouda)", category: "Cheese" },
+  { id: "emmental", label: "เอ็มเมนทัล (Emmental)", category: "Cheese" },
+  { id: "blue-cheese", label: "บลูชีส (Blue Cheese)", category: "Cheese" },
+  { id: "feta", label: "เฟตา (Feta)", category: "Cheese" },
+  { id: "cream-cheese", label: "ครีมชีส (Cream Cheese)", category: "Cheese" },
+  { id: "jalapeno", label: "ฮาลาปิโน", category: "Savory" },
+  { id: "dark-choc-chips", label: "ช็อกโกแลตชิพดาร์ก", category: "Chocolate" },
+  { id: "milk-choc-chips", label: "ช็อกโกแลตชิพนม", category: "Chocolate" },
+  { id: "white-choc-chips", label: "ไวท์ช็อกโกแลตชิพ", category: "Chocolate" },
+  { id: "semi-sweet-choc-chips", label: "ช็อกโกแลตชิพ Semi-sweet", category: "Chocolate" },
+  { id: "ruby-choc-chips", label: "รูบี้ช็อกโกแลตชิพ", category: "Chocolate" },
+  { id: "chocolate-chunks", label: "ช็อกโกแลตชังก์", category: "Chocolate" },
+  { id: "chocolate", label: "ช็อกโกแลต", category: "Chocolate" },
+  { id: "cocoa", label: "โกโก้", category: "Sweet" },
+  { id: "sugar", label: "น้ำตาล", category: "Sweet" },
+  { id: "cinnamon", label: "อบเชย", category: "Sweet" },
+  { id: "orange-zest", label: "ผิวส้ม", category: "Sweet" },
+  { id: "oat-flakes", label: "Rolled Oats", category: "Grains" },
+  { id: "rye-flakes", label: "Rye Flakes", category: "Grains" },
+] as const;
+
+const CUSTOM_FLOUR_SUGGESTIONS: Record<string, string> = {
+  einkorn: "เริ่ม 5–25% · กลูเตนอ่อน",
+  emmer: "เริ่ม 10–30% · ancient grain",
+  khorasan: "เริ่ม 10–30% · หอมและหวาน",
+  durum: "เริ่ม 10–30% · สีทองและหนึบ",
+  buckwheat: "เริ่ม 5–15% · ไม่มีกลูเตน",
+  oat: "เริ่ม 5–15% · เนื้อนุ่มและดูดน้ำ",
+  barley: "เริ่ม 5–15% · กลิ่นธัญพืช",
+  corn: "เริ่ม 5–15% · กลิ่นข้าวโพด",
+};
+
+const DEFAULT_SETTINGS = {
+  temperature: 28,
+  humidity: 70,
+  starterOld: 20,
+  feedFlour: 40,
+  feedWater: 40,
+  wholeWheat: 10,
+  apFlour: 10,
+  speltFlour: 0,
+  ryeFlour: 0,
+  customFlours: [] as CustomFlour[],
+  customInclusions: [] as CustomInclusion[],
+  userFlours: [] as UserLibraryItem[],
+  userInclusions: [] as UserLibraryItem[],
+  breadFlourBrand: "",
+  flourProfile: "",
+  targetDough: 800,
+  hydration: 71,
+  starterHydration: 100,
+  feedHydration: 100,
+  starterPercent: 20,
+  saltPercent: 2,
+  oilPercent: 0,
+  doughTemperature: 26,
+  loafCount: 1,
+  loavesPerBake: 1,
+  proofMode: "cold" as ProofMode,
+  coldHours: 12,
+  fridgeTemp: 4,
+  prepMethod: "fermentolyse" as PrepMethod,
+  adaptiveTempSource: "room" as AdaptiveTempSource,
+  bakeMode: "dutch" as BakeMode,
+  steamWater: 200,
+  ovenVolume: 60,
+  trayWidth: 30,
+  trayLength: 20,
+  steamMinutes: 20,
+  ovenSeal: "normal" as "tight" | "normal" | "leaky",
+  alertSound: "bell" as AlertSound,
+  targetBakeAt: "",
+  flourTemperature: 28,
+  levainMixTemperature: 26,
+  frictionFactor: 3,
+  coldWaterTemperature: 8,
+  warmWaterTemperature: 40,
+  bannetonShape: "round" as BannetonShape,
+  bannetonWidth: 22.9,
+  bannetonLength: 22.9,
+  bannetonDepth: 8.5,
+};
+
+type SavedSettings = typeof DEFAULT_SETTINGS;
+const validNumber = (value: unknown, fallback: number) =>
+  typeof value === "number" && Number.isFinite(value) ? value : fallback;
+const normalizeSettings = (
+  data: Record<string, unknown> | null | undefined,
+): SavedSettings => ({
+  temperature: validNumber(data?.temperature, DEFAULT_SETTINGS.temperature),
+  humidity: validNumber(data?.humidity, DEFAULT_SETTINGS.humidity),
+  starterOld: validNumber(data?.starterOld, DEFAULT_SETTINGS.starterOld),
+  feedFlour: validNumber(data?.feedFlour, DEFAULT_SETTINGS.feedFlour),
+  feedWater: validNumber(data?.feedWater, DEFAULT_SETTINGS.feedWater),
+  wholeWheat: validNumber(data?.wholeWheat, DEFAULT_SETTINGS.wholeWheat),
+  apFlour: validNumber(
+    data?.apFlour,
+    data && "wholeWheat" in data ? 0 : DEFAULT_SETTINGS.apFlour,
+  ),
+  speltFlour: validNumber(data?.speltFlour, DEFAULT_SETTINGS.speltFlour),
+  ryeFlour: validNumber(data?.ryeFlour, DEFAULT_SETTINGS.ryeFlour),
+  customFlours: Array.isArray(data?.customFlours)
+    ? data.customFlours.filter((item): item is CustomFlour => !!item?.id && typeof item?.label === "string" && typeof item?.percent === "number")
+    : [],
+  customInclusions: Array.isArray(data?.customInclusions)
+    ? data.customInclusions.filter((item): item is CustomInclusion => !!item?.id && typeof item?.label === "string" && typeof item?.percent === "number")
+    : [],
+  userFlours: Array.isArray(data?.userFlours)
+    ? data.userFlours.filter((item): item is UserLibraryItem => !!item?.id && typeof item?.label === "string")
+    : [],
+  userInclusions: Array.isArray(data?.userInclusions)
+    ? data.userInclusions.filter((item): item is UserLibraryItem => !!item?.id && typeof item?.label === "string")
+    : [],
+  breadFlourBrand: typeof data?.breadFlourBrand === "string" ? data.breadFlourBrand : "",
+  flourProfile:
+    typeof data?.flourProfile === "string"
+      ? data.flourProfile
+      : DEFAULT_SETTINGS.flourProfile,
+  targetDough: validNumber(data?.targetDough, DEFAULT_SETTINGS.targetDough),
+  hydration: validNumber(data?.hydration, DEFAULT_SETTINGS.hydration),
+  starterHydration: Math.min(100, Math.max(40, validNumber(data?.starterHydration, DEFAULT_SETTINGS.starterHydration))),
+  feedHydration: Math.min(100, Math.max(40, validNumber(data?.feedHydration, DEFAULT_SETTINGS.feedHydration))),
+  starterPercent: validNumber(
+    data?.starterPercent,
+    DEFAULT_SETTINGS.starterPercent,
+  ),
+  saltPercent: validNumber(data?.saltPercent, DEFAULT_SETTINGS.saltPercent),
+  oilPercent: validNumber(data?.oilPercent, DEFAULT_SETTINGS.oilPercent),
+  doughTemperature: validNumber(
+    data?.doughTemperature,
+    DEFAULT_SETTINGS.doughTemperature,
+  ),
+  loafCount: Math.min(
+    6,
+    Math.max(
+      1,
+      Math.round(validNumber(data?.loafCount, DEFAULT_SETTINGS.loafCount)),
+    ),
+  ),
+  loavesPerBake: Math.min(
+    6,
+    Math.max(
+      1,
+      Math.round(
+        validNumber(data?.loavesPerBake, DEFAULT_SETTINGS.loavesPerBake),
+      ),
+    ),
+  ),
+  proofMode:
+    data?.proofMode === "room" ||
+    data?.proofMode === "cold" ||
+    data?.proofMode === "combo"
+      ? data.proofMode
+      : DEFAULT_SETTINGS.proofMode,
+  coldHours: validNumber(data?.coldHours, DEFAULT_SETTINGS.coldHours),
+  fridgeTemp: validNumber(data?.fridgeTemp, DEFAULT_SETTINGS.fridgeTemp),
+  prepMethod:
+    data?.prepMethod === "autolyse" || data?.prepMethod === "fermentolyse"
+      ? data.prepMethod
+      : DEFAULT_SETTINGS.prepMethod,
+  adaptiveTempSource:
+    data?.adaptiveTempSource === "dough" || data?.adaptiveTempSource === "room"
+      ? data.adaptiveTempSource
+      : DEFAULT_SETTINGS.adaptiveTempSource,
+  bakeMode:
+    data?.bakeMode === "dutch" || data?.bakeMode === "open"
+      ? data.bakeMode
+      : DEFAULT_SETTINGS.bakeMode,
+  steamWater: validNumber(data?.steamWater, DEFAULT_SETTINGS.steamWater),
+  ovenVolume: validNumber(data?.ovenVolume, DEFAULT_SETTINGS.ovenVolume),
+  trayWidth: validNumber(data?.trayWidth, DEFAULT_SETTINGS.trayWidth),
+  trayLength: validNumber(data?.trayLength, DEFAULT_SETTINGS.trayLength),
+  steamMinutes: validNumber(data?.steamMinutes, DEFAULT_SETTINGS.steamMinutes),
+  ovenSeal:
+    data?.ovenSeal === "tight" ||
+    data?.ovenSeal === "normal" ||
+    data?.ovenSeal === "leaky"
+      ? data.ovenSeal
+      : DEFAULT_SETTINGS.ovenSeal,
+  alertSound:
+    data?.alertSound === "bell" ||
+    data?.alertSound === "chime" ||
+    data?.alertSound === "soft" ||
+    data?.alertSound === "none"
+      ? data.alertSound
+      : DEFAULT_SETTINGS.alertSound,
+  targetBakeAt:
+    typeof data?.targetBakeAt === "string"
+      ? data.targetBakeAt
+      : DEFAULT_SETTINGS.targetBakeAt,
+  flourTemperature: validNumber(
+    data?.flourTemperature,
+    DEFAULT_SETTINGS.flourTemperature,
+  ),
+  levainMixTemperature: validNumber(
+    data?.levainMixTemperature,
+    DEFAULT_SETTINGS.levainMixTemperature,
+  ),
+  frictionFactor: validNumber(
+    data?.frictionFactor,
+    DEFAULT_SETTINGS.frictionFactor,
+  ),
+  coldWaterTemperature: validNumber(
+    data?.coldWaterTemperature,
+    DEFAULT_SETTINGS.coldWaterTemperature,
+  ),
+  warmWaterTemperature: validNumber(
+    data?.warmWaterTemperature,
+    DEFAULT_SETTINGS.warmWaterTemperature,
+  ),
+  bannetonShape:
+    data?.bannetonShape === "oval" || data?.bannetonShape === "round"
+      ? data.bannetonShape
+      : DEFAULT_SETTINGS.bannetonShape,
+  bannetonWidth: validNumber(
+    data?.bannetonWidth,
+    DEFAULT_SETTINGS.bannetonWidth,
+  ),
+  bannetonLength: validNumber(
+    data?.bannetonLength,
+    DEFAULT_SETTINGS.bannetonLength,
+  ),
+  bannetonDepth: validNumber(
+    data?.bannetonDepth,
+    DEFAULT_SETTINGS.bannetonDepth,
+  ),
+});
+
+const normalizeRecipe = (
+  data: Record<string, unknown> | null | undefined,
+): SavedRecipe | null => {
+  if (!data?.id || !data?.name || typeof data.hydration !== "number")
+    return null;
+  return {
+    id: String(data.id),
+    name: String(data.name),
+    savedAt:
+      typeof data.savedAt === "string"
+        ? data.savedAt
+        : new Date().toISOString(),
+    targetDough: validNumber(data.targetDough, DEFAULT_SETTINGS.targetDough),
+    hydration: validNumber(data.hydration, DEFAULT_SETTINGS.hydration),
+    starterHydration: Math.min(100, Math.max(40, validNumber(data.starterHydration, DEFAULT_SETTINGS.starterHydration))),
+    starterPercent: validNumber(
+      data.starterPercent,
+      DEFAULT_SETTINGS.starterPercent,
+    ),
+    saltPercent: validNumber(data.saltPercent, DEFAULT_SETTINGS.saltPercent),
+    oilPercent: validNumber(data.oilPercent, DEFAULT_SETTINGS.oilPercent),
+    apFlour: validNumber(data.apFlour, 0),
+    speltFlour: validNumber(data.speltFlour, 0),
+    wholeWheat: validNumber(data.wholeWheat, 0),
+    ryeFlour: validNumber(data.ryeFlour, 0),
+    customFlours: Array.isArray(data.customFlours) ? data.customFlours.filter((item): item is CustomFlour => !!item?.id && typeof item?.label === "string" && typeof item?.percent === "number") : [],
+    customInclusions: Array.isArray(data.customInclusions) ? data.customInclusions.filter((item): item is CustomInclusion => !!item?.id && typeof item?.label === "string" && typeof item?.percent === "number") : [],
+    doughTemperature: validNumber(
+      data.doughTemperature,
+      DEFAULT_SETTINGS.doughTemperature,
+    ),
+    flourProfile:
+      typeof data.flourProfile === "string" ? data.flourProfile : "",
+    breadStyleId:
+      typeof data.breadStyleId === "string" &&
+      BREAD_STYLES.some((style) => style.id === data.breadStyleId)
+        ? data.breadStyleId
+        : "country",
+    breadGoal:
+      data.breadGoal === "open" ||
+      data.breadGoal === "soft" ||
+      data.breadGoal === "mild" ||
+      data.breadGoal === "grain"
+        ? data.breadGoal
+        : "balanced",
+  };
+};
+
+const normalizeBulkRun = (
+  data: Record<string, unknown> | null | undefined,
+): BulkRun | null => {
+  if (!data?.startedAt || typeof data.startedAt !== "string") return null;
+  const rawObservations = Array.isArray(data.observations)
