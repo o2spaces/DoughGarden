@@ -1184,6 +1184,7 @@ const DEFAULT_SETTINGS = {
   hydration: 71,
   starterHydration: 100,
   feedHydration: 100,
+  starterFeedRatio: 5,
   starterPercent: 20,
   saltPercent: 2,
   oilPercent: 0,
