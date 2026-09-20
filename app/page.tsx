@@ -3830,6 +3830,7 @@ export default function Home() {
     starterHydration,
     feedHydration,
     starterPercent,
+    starterFeedRatio,
     saltPercent,
     oilPercent,
     doughTemperature,
