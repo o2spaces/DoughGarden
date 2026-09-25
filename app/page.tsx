@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type ProofMode = "room" | "cold" | "combo";
+type PizzaFermentationMode = "cold-bulk" | "cold-ball";
 type BakeMode = "dutch" | "open";
 type PrepMethod = "fermentolyse" | "autolyse";
 type AdaptiveTempSource = "room" | "dough";
@@ -1193,6 +1194,8 @@ const DEFAULT_SETTINGS = {
   loavesPerBake: 1,
   proofMode: "cold" as ProofMode,
   coldHours: 12,
+  pizzaFermentationMode: "cold-ball" as PizzaFermentationMode,
+  pizzaColdHours: 24,
   fridgeTemp: 4,
   prepMethod: "fermentolyse" as PrepMethod,
   adaptiveTempSource: "room" as AdaptiveTempSource,
@@ -1289,6 +1292,12 @@ const normalizeSettings = (
       ? data.proofMode
       : DEFAULT_SETTINGS.proofMode,
   coldHours: validNumber(data?.coldHours, DEFAULT_SETTINGS.coldHours),
+  pizzaFermentationMode:
+    data?.pizzaFermentationMode === "cold-bulk" ||
+    data?.pizzaFermentationMode === "cold-ball"
+      ? data.pizzaFermentationMode
+      : DEFAULT_SETTINGS.pizzaFermentationMode,
+  pizzaColdHours: Math.min(48, Math.max(12, validNumber(data?.pizzaColdHours, DEFAULT_SETTINGS.pizzaColdHours))),
   fridgeTemp: validNumber(data?.fridgeTemp, DEFAULT_SETTINGS.fridgeTemp),
   prepMethod:
     data?.prepMethod === "autolyse" || data?.prepMethod === "fermentolyse"
@@ -1563,6 +1572,8 @@ export default function Home() {
   const [loavesPerBake, setLoavesPerBake] = useState(1);
   const [proofMode, setProofMode] = useState<ProofMode>("cold");
   const [coldHours, setColdHours] = useState(12);
+  const [pizzaFermentationMode, setPizzaFermentationMode] = useState<PizzaFermentationMode>("cold-ball");
+  const [pizzaColdHours, setPizzaColdHours] = useState(24);
   const [fridgeTemp, setFridgeTemp] = useState(4);
   const [prepMethod, setPrepMethod] = useState<PrepMethod>("fermentolyse");
   const [adaptiveTempSource, setAdaptiveTempSource] =
@@ -2339,8 +2350,221 @@ export default function Home() {
     };
   }, [ovenVolume, trayWidth, trayLength, steamMinutes, ovenSeal]);
 
+  const pizzaFermentation = useMemo(() => {
+    const tempFactor = Math.pow(2, (26 - fermentationTemperature) / 10);
+    const starterFactor = Math.pow(20 / Math.max(starterPercent, 5), 0.42);
+    const activityFactor = levainActivity.factor;
+    const calibrationFactor = recipeCalibration.factor;
+    const warmBulk = Math.min(6.5, Math.max(2.25, 4.5 * tempFactor * starterFactor * activityFactor * calibrationFactor * 0.68));
+    const roomTempFactor = Math.pow(2, (26 - temperature) / 10);
+    const temperHours = Math.min(3, Math.max(1.5, 1.9 * roomTempFactor));
+    const riseTarget = fermentationTemperature >= 29 ? 25 : fermentationTemperature >= 27 ? 30 : fermentationTemperature >= 24 ? 40 : 50;
+    const warmBulkWindowStart = warmBulk * 0.85;
+    const warmBulkWindowEnd = warmBulk * 1.15;
+    return { warmBulk, warmBulkWindowStart, warmBulkWindowEnd, temperHours, riseTarget };
+  }, [
+    fermentationTemperature,
+    temperature,
+    starterPercent,
+    levainActivity.factor,
+    recipeCalibration.factor,
+  ]);
+
   const phases = useMemo<Phase[]>(
     () => {
+      if (activeBreadStyle.id === "pizza") {
+        const prepTitle = prepMethod === "autolyse" ? "ออโตไลซ์" : "เฟอร์เมนโตไลซ์";
+        const divideHours = Math.max(0.25, (10 + Math.max(0, loafCount - 1) * 3) / 60);
+        const temperHours = pizzaFermentation.temperHours;
+        if (pizzaFermentationMode === "cold-bulk") {
+          return [
+            {
+              icon: "01",
+              title: prepTitle,
+              subtitle: `พิซซ่าซาวโดว์ · เตรียมโดว์`,
+              hours: prepRestHours,
+              temp: `โดว์ ${doughTemperature}°C`,
+              cue: "ไม่มีผงแห้ง โดว์เริ่มยืดและรับแรงได้ดีขึ้น",
+              guide: [
+                `${prepTitle}: ผสมแป้งและน้ำตามวิธีที่เลือก`,
+                `พักประมาณ ${duration(prepRestHours)} แล้วเตรียมใส่หัวเชื้อ/เกลือ`,
+                "วัดอุณหภูมิโดว์หลังผสมให้ใกล้เป้าหมายก่อนเข้า Bulk",
+              ],
+            },
+            {
+              icon: "02",
+              title: "พัฒนากลูเตน",
+              subtitle: "ผสมหัวเชื้อและเกลือจนโดว์มีแรง",
+              hours: mixDevelopHours,
+              temp: `โดว์ ${doughTemperature}°C`,
+              cue: "โดว์รวมตัวเป็นก้อนและยืดได้มากขึ้นโดยไม่ขาดทันที",
+              guide: [
+                `ใช้หัวเชื้อ ${round(recipe.levain)} กรัมตามสูตร`,
+                `เติมเกลือ ${round(recipe.salt)} กรัมและน้ำที่เหลือ`,
+                "หยุดเมื่อโดว์เริ่มเนียนและมีแรง ไม่ต้องนวดจนสุด",
+              ],
+            },
+            {
+              icon: "03",
+              title: "Warm Bulk",
+              subtitle: `บัลก์อุ่น · เป้าหมายขึ้น ${pizzaFermentation.riseTarget}%`,
+              hours: pizzaFermentation.warmBulk,
+              temp: `${adaptiveTempSource === "dough" ? "โดว์" : "ห้อง"} ${fermentationTemperature}°C`,
+              cue: `เริ่มตรวจเมื่อครบประมาณ ${duration(pizzaFermentation.warmBulkWindowStart)} และหยุดเมื่อโดว์ได้แรง/ปริมาตรตามจริง`,
+              guide: [
+                `ตั้งเป้าการขึ้นประมาณ ${pizzaFermentation.riseTarget}% ที่อุณหภูมิ ${fermentationTemperature}°C`,
+                "พับเบา ๆ ในช่วงต้น 1–2 รอบตามแรงโดว์ ไม่จำเป็นต้องแบ่งเป็นขั้นจับเวลาแยก",
+                `ช่วงเวลาประมาณ ${duration(pizzaFermentation.warmBulkWindowStart)}–${duration(pizzaFermentation.warmBulkWindowEnd)} · ใช้สภาพโดว์ตัดสิน`,
+              ],
+            },
+            {
+              icon: "04",
+              title: "Cold Bulk",
+              subtitle: `พักโดว์ทั้งก้อน ${pizzaColdHours} ชม.`,
+              hours: pizzaColdHours,
+              temp: `${fridgeTemp}°C`,
+              cue: "โดว์เย็นลงและเกิดรสชาติ/การหมักต่ออย่างช้า ๆ",
+              guide: [
+                `ปิดภาชนะแล้วเข้าตู้เย็น ${pizzaColdHours} ชม.`,
+                "อย่าปิดฝาหรืออัดโดว์จนแน่นเกินไป ควรมีพื้นที่ให้ขยายตัวเล็กน้อย",
+                "หากหมักนานกว่าค่าเป้าหมาย ให้เช็กกำลังของโดว์ก่อนแบ่ง",
+              ],
+            },
+            {
+              icon: "05",
+              title: "แบ่งและกลึงเป็นลูก",
+              subtitle: "แบ่งตามน้ำหนักต่อพิซซ่าแล้วจัดทรงลูก",
+              hours: divideHours,
+              temp: "ห้องครัว",
+              cue: "ผิวลูกโดว์ตึงเรียบ แต่ไม่ถูกกดแก๊สออกหมด",
+              guide: [
+                `แบ่งโดว์เป็น ${loafCount} ลูกตามน้ำหนักต่อโลฟที่ตั้งไว้`,
+                "กลึงเป็นลูกเบา ๆ ให้ผิวตึง แล้วใส่กล่องที่มีฝาปิด",
+                "ปล่อยให้ผิวโดว์เรียบและไม่แห้งก่อนเข้าขั้นต่อไป",
+              ],
+            },
+            {
+              icon: "06",
+              title: "คืนอุณหภูมิ",
+              subtitle: "นำลูกโดว์ออกจากเย็นก่อนยืด",
+              hours: temperHours,
+              temp: `ห้อง ${temperature}°C`,
+              cue: "โดว์คลายตัวและยืดได้โดยไม่ดีดกลับแรง",
+              guide: [
+                `นำออกจากตู้เย็นประมาณ ${duration(temperHours)} ก่อนอบ`,
+                "ไม่ต้องนวดซ้ำ ให้โดว์คลายตัวเอง",
+                "เมื่อกดแล้วผิวคลายและยังมีแรงตึงเล็กน้อย ให้เตรียมยืด",
+              ],
+            },
+            {
+              icon: "07",
+              title: "ยืด ใส่หน้า และอบร้อนจัด",
+              subtitle: "เปิดแป้งจากกลางออกขอบ รักษาขอบฟู",
+              hours: 0.75,
+              temp: activeBreadStyle.bake,
+              cue: "ขอบพอง สีด้านล่างสุก และชีส/หน้าพิซซ่าพอดีตามเตา",
+              guide: [
+                "วอร์ม Stone/Steel ให้ร้อนเต็มที่ก่อนเริ่มยืดลูกสุดท้าย",
+                "กดจากกลางออกขอบโดยรักษาแก๊สบริเวณขอบไว้",
+                "อบจนขอบพองและด้านล่างได้สีตามเตา จากนั้นพักสั้น ๆ ก่อนเสิร์ฟ",
+              ],
+            },
+          ];
+        }
+        return [
+          {
+            icon: "01",
+            title: prepTitle,
+            subtitle: "พิซซ่าซาวโดว์ · เตรียมโดว์",
+            hours: prepRestHours,
+            temp: `โดว์ ${doughTemperature}°C`,
+            cue: "ไม่มีผงแห้ง โดว์เริ่มยืดและรับแรงได้ดีขึ้น",
+            guide: [
+              `${prepTitle}: ผสมแป้งและน้ำตามวิธีที่เลือก`,
+              `พักประมาณ ${duration(prepRestHours)} แล้วเตรียมใส่หัวเชื้อ/เกลือ`,
+              "วัดอุณหภูมิโดว์หลังผสมให้ใกล้เป้าหมายก่อนเข้า Bulk",
+            ],
+          },
+          {
+            icon: "02",
+            title: "พัฒนากลูเตน",
+            subtitle: "ผสมหัวเชื้อและเกลือจนโดว์มีแรง",
+            hours: mixDevelopHours,
+            temp: `โดว์ ${doughTemperature}°C`,
+            cue: "โดว์รวมตัวเป็นก้อนและยืดได้มากขึ้นโดยไม่ขาดทันที",
+            guide: [
+              `ใช้หัวเชื้อ ${round(recipe.levain)} กรัมตามสูตร`,
+              `เติมเกลือ ${round(recipe.salt)} กรัมและน้ำที่เหลือ`,
+              "หยุดเมื่อโดว์เริ่มเนียนและมีแรง ไม่ต้องนวดจนสุด",
+            ],
+          },
+          {
+            icon: "03",
+            title: "Warm Bulk",
+            subtitle: `บัลก์อุ่น · เป้าหมายขึ้น ${pizzaFermentation.riseTarget}%`,
+            hours: pizzaFermentation.warmBulk,
+            temp: `${adaptiveTempSource === "dough" ? "โดว์" : "ห้อง"} ${fermentationTemperature}°C`,
+            cue: `เริ่มตรวจเมื่อครบประมาณ ${duration(pizzaFermentation.warmBulkWindowStart)} และหยุดเมื่อโดว์ได้แรง/ปริมาตรตามจริง`,
+            guide: [
+              `ตั้งเป้าการขึ้นประมาณ ${pizzaFermentation.riseTarget}% ที่อุณหภูมิ ${fermentationTemperature}°C`,
+              "พับเบา ๆ ในช่วงต้น 1–2 รอบตามแรงโดว์ ไม่ต้องแยกเป็นขั้นจับเวลาอีก",
+              `ช่วงเวลาประมาณ ${duration(pizzaFermentation.warmBulkWindowStart)}–${duration(pizzaFermentation.warmBulkWindowEnd)} · ใช้สภาพโดว์ตัดสิน`,
+            ],
+          },
+          {
+            icon: "04",
+            title: "แบ่งและกลึงเป็นลูก",
+            subtitle: "แบ่งเป็นลูกก่อนเข้าหมักเย็น",
+            hours: divideHours,
+            temp: "ห้องครัว",
+            cue: "ลูกโดว์ผิวตึงเรียบ ไม่ถูกไล่แก๊สออกหมด",
+            guide: [
+              `แบ่งโดว์เป็น ${loafCount} ลูกตามน้ำหนักต่อโลฟที่ตั้งไว้`,
+              "กลึงเป็นลูกเบา ๆ ให้ผิวตึง แล้วใส่กล่องที่มีฝาปิด",
+              "ระวังไม่กดโดว์จนแก๊สหายหมด เพราะต้องการขอบพิซซ่าพอง",
+            ],
+          },
+          {
+            icon: "05",
+            title: "Cold Ball Ferment",
+            subtitle: `หมักเย็นแบบลูก ${pizzaColdHours} ชม.`,
+            hours: pizzaColdHours,
+            temp: `${fridgeTemp}°C`,
+            cue: "ลูกโดว์ขยายตัว กลิ่นพัฒนาขึ้น และผิวไม่แห้ง",
+            guide: [
+              `ปิดกล่องแล้วเข้าตู้เย็น ${pizzaColdHours} ชม.`,
+              "ถ้าอุณหภูมิตู้เย็นสูงกว่าปกติ ให้เริ่มเช็กสภาพลูกโดว์เร็วขึ้น",
+              "ก่อนอบนำออกมาตามเวลาคืนอุณหภูมิด้านถัดไป",
+            ],
+          },
+          {
+            icon: "06",
+            title: "คืนอุณหภูมิ",
+            subtitle: "ปล่อยลูกโดว์คลายตัวก่อนยืด",
+            hours: temperHours,
+            temp: `ห้อง ${temperature}°C`,
+            cue: "โดว์นุ่มลงและยืดได้โดยไม่ดีดกลับแรง",
+            guide: [
+              `นำออกจากตู้เย็นประมาณ ${duration(temperHours)} ก่อนอบ`,
+              "อย่านวดซ้ำ ปล่อยให้โดว์คลายตัวและฟื้นการยืด",
+              "เมื่อกดแล้วผิวคลายและยังมีแรงตึงเล็กน้อย ให้เตรียมยืด",
+            ],
+          },
+          {
+            icon: "07",
+            title: "ยืด ใส่หน้า และอบร้อนจัด",
+            subtitle: "เปิดแป้งจากกลางออกขอบ รักษาขอบฟู",
+            hours: 0.75,
+            temp: activeBreadStyle.bake,
+            cue: "ขอบพอง สีด้านล่างสุก และหน้าพิซซ่าพอดีตามเตา",
+            guide: [
+              "วอร์ม Stone/Steel ให้ร้อนเต็มที่ก่อนเริ่มยืด",
+              "กดจากกลางออกขอบโดยรักษาแก๊สบริเวณขอบไว้",
+              "ใส่หน้าแล้วอบจนขอบพองและด้านล่างได้สีตามเตา",
+            ],
+          },
+        ];
+      }
       if (activeBreadStyle.id !== "country") {
         return activeBreadStyle.method.map((method, index) => {
           const isBulk = /Bulk|บัลก์/i.test(method);
@@ -2626,6 +2850,12 @@ export default function Home() {
       prepMethod,
       prepRestHours,
       mixDevelopHours,
+      pizzaFermentationMode,
+      pizzaColdHours,
+      pizzaFermentation,
+      loafCount,
+      fermentationTemperature,
+      adaptiveTempSource,
       recipe.levain,
       recipe.oil,
       oilPercent,
@@ -2946,6 +3176,8 @@ export default function Home() {
         setLoavesPerBake(Math.min(settings.loafCount, settings.loavesPerBake));
         setProofMode(settings.proofMode);
         setColdHours(settings.coldHours);
+        setPizzaFermentationMode(settings.pizzaFermentationMode);
+        setPizzaColdHours(settings.pizzaColdHours);
         setFridgeTemp(settings.fridgeTemp);
         setPrepMethod(settings.prepMethod);
         setAdaptiveTempSource(settings.adaptiveTempSource);
@@ -3083,14 +3315,16 @@ export default function Home() {
       audioContextRef.current = new AudioContext();
     const start = Date.now();
     const end = start + phases[activePhase].hours * 3600000;
-    if (activeBreadStyle.id === "country" && !bulkRun) {
+    if ((activeBreadStyle.id === "country" || activeBreadStyle.id === "pizza") && !bulkRun) {
       if (
         (activePhase === 0 && prepMethod === "fermentolyse") ||
         (activePhase === 1 && prepMethod === "autolyse")
       ) {
         startBulkRun(new Date(start));
-      } else if (activePhase === 3) {
+      } else if (activeBreadStyle.id === "country" && activePhase === 3) {
         startBulkRun(new Date(start - bulkElapsedBeforePhaseFour * 3600000));
+      } else if (activeBreadStyle.id === "pizza" && activePhase === 2) {
+        startBulkRun(new Date(start));
       }
     }
     setNow(start);
@@ -3100,6 +3334,8 @@ export default function Home() {
     setToast(
       activeBreadStyle.id === "country" && activePhase === 2
         ? "เริ่มจับเวลา — จะเตือนที่นาที 30, 60 และ 90"
+        : activeBreadStyle.id === "pizza" && activePhase === 2
+          ? "เริ่ม Warm Bulk พิซซ่า — ใช้สภาพโดว์เป็นเกณฑ์หลัก"
         : `เริ่ม ${phases[activePhase].title} แล้ว`,
     );
   };
@@ -3278,14 +3514,17 @@ export default function Home() {
     setPrepMethod(style.prepMethod);
     setProofMode(style.proofMode);
     setBakeMode(style.bakeMode);
-    setFlourProfile(
-      `${style.english} · ${style.texture} · ${style.description}`,
-    );
-    setActiveRecipeId("");
+    if (style.id === "pizza") {
+      setPizzaFermentationMode("cold-ball");
+    }
     setActivePhase(0);
     setRunning(false);
     setPhaseStart(null);
     setPhaseEnd(null);
+    setFlourProfile(
+      `${style.english} · ${style.texture} · ${style.description}`,
+    );
+    setActiveRecipeId("");
     try {
       localStorage.setItem(
         "doughgarden-bread-builder",
@@ -3838,6 +4077,8 @@ export default function Home() {
     loavesPerBake,
     proofMode,
     coldHours,
+    pizzaFermentationMode,
+    pizzaColdHours,
     fridgeTemp,
     prepMethod,
     adaptiveTempSource,
@@ -3893,6 +4134,23 @@ export default function Home() {
       /* Custom libraries remain in the current session if storage is unavailable. */
     }
   }, [userFlours, userInclusions, breadFlourBrand, settingsHydrated]);
+
+  useEffect(() => {
+    if (!settingsHydrated) return;
+    try {
+      const current = JSON.parse(localStorage.getItem("doughgarden-settings") || "{}");
+      localStorage.setItem(
+        "doughgarden-settings",
+        JSON.stringify({
+          ...current,
+          pizzaFermentationMode,
+          pizzaColdHours,
+        }),
+      );
+    } catch {
+      /* Pizza workflow preferences remain usable for this session. */
+    }
+  }, [pizzaFermentationMode, pizzaColdHours, settingsHydrated]);
 
   const resetClimate = () => {
     setTemperature(DEFAULT_SETTINGS.temperature);
@@ -3974,6 +4232,8 @@ export default function Home() {
   const resetProofBake = () => {
     setProofMode(DEFAULT_SETTINGS.proofMode);
     setColdHours(DEFAULT_SETTINGS.coldHours);
+    setPizzaFermentationMode(DEFAULT_SETTINGS.pizzaFermentationMode);
+    setPizzaColdHours(DEFAULT_SETTINGS.pizzaColdHours);
     setFridgeTemp(DEFAULT_SETTINGS.fridgeTemp);
     setPrepMethod(DEFAULT_SETTINGS.prepMethod);
     setBakeMode(DEFAULT_SETTINGS.bakeMode);
@@ -3989,6 +4249,8 @@ export default function Home() {
         ...currentSettings(),
         proofMode: DEFAULT_SETTINGS.proofMode,
         coldHours: DEFAULT_SETTINGS.coldHours,
+        pizzaFermentationMode: DEFAULT_SETTINGS.pizzaFermentationMode,
+        pizzaColdHours: DEFAULT_SETTINGS.pizzaColdHours,
         fridgeTemp: DEFAULT_SETTINGS.fridgeTemp,
         prepMethod: DEFAULT_SETTINGS.prepMethod,
         bakeMode: DEFAULT_SETTINGS.bakeMode,
@@ -4059,6 +4321,8 @@ export default function Home() {
       setLoavesPerBake(Math.min(settings.loafCount, settings.loavesPerBake));
       setProofMode(settings.proofMode);
       setColdHours(settings.coldHours);
+      setPizzaFermentationMode(settings.pizzaFermentationMode);
+      setPizzaColdHours(settings.pizzaColdHours);
       setFridgeTemp(settings.fridgeTemp);
       setPrepMethod(settings.prepMethod);
       setAdaptiveTempSource(settings.adaptiveTempSource);
@@ -4159,8 +4423,9 @@ export default function Home() {
   const totalHours =
     phases.reduce((sum, p) => sum + p.hours, 0) +
     Math.max(0, bakeBatches - 1) * (bakeCycleHours + 0.2);
+  const bakePhaseIndex = activeBreadStyle.id === "pizza" ? Math.max(0, phases.length - 1) : 8;
   const hoursUntilFirstBake = phases
-    .slice(0, 8)
+    .slice(0, bakePhaseIndex)
     .reduce((sum, phase) => sum + phase.hours, 0);
   const bakePlan = useMemo(() => {
     if (!targetBakeAt) return null;
@@ -4183,6 +4448,7 @@ export default function Home() {
   }, [
     targetBakeAt,
     hoursUntilFirstBake,
+    bakePhaseIndex,
     levainPeakHours,
     bakeBatches,
     bakeCycleHours,
@@ -4208,13 +4474,14 @@ export default function Home() {
     if (!bakePlan) return null;
     let cursor = new Date(bakePlan.start);
     return phases.map((phase, index) => {
-      if (index === 8) cursor = new Date(bakePlan.firstBake);
+      const bakeIndex = activeBreadStyle.id === "pizza" ? phases.length - 1 : 8;
+      if (index === bakeIndex) cursor = new Date(bakePlan.firstBake);
       const start = new Date(cursor);
       const end = new Date(start.getTime() + phase.hours * 3600000);
       cursor = end;
       return { start, end };
     });
-  }, [bakePlan, phases]);
+  }, [bakePlan, phases, activeBreadStyle.id]);
   // Keep the live Guided Workflow countdown synchronized with adaptive
   // fermentation time when temperature changes on the Overview page.
   const activePhaseHours = phases[activePhase]?.hours ?? 0;
@@ -4224,7 +4491,9 @@ export default function Home() {
     const fermentationSensitive =
       activeBreadStyle.id === "country"
         ? [2, 3, 6].includes(activePhase)
-        : /Bulk|บัลก์|Proof|พรูฟ/i.test(phases[activePhase]?.title || "");
+        : activeBreadStyle.id === "pizza"
+          ? activePhase === 2
+          : /Bulk|บัลก์|Proof|พรูฟ/i.test(phases[activePhase]?.title || "");
     if (!fermentationSensitive) return;
 
     const nextEnd = phaseStart + activePhaseHours * 3600000;
@@ -7004,8 +7273,54 @@ export default function Home() {
         </div>
         <div className="workflow-recalc-note">
           <strong>↻ เวลา Workflow คำนวณจากสูตรปัจจุบัน</strong>
-          <span>Starter {starterPercent}% · Bulk เป้าหมาย {duration(adaptive.bulk)} · มีแผนอบแล้ววัน/เวลาเริ่มงานจะเลื่อนตามอัตโนมัติ</span>
+          <span>Starter {starterPercent}% · {activeBreadStyle.id === "pizza" ? `Warm Bulk เป้าหมาย ${duration(pizzaFermentation.warmBulk)}` : `Bulk เป้าหมาย ${duration(adaptive.bulk)}`} · มีแผนอบแล้ววัน/เวลาเริ่มงานจะเลื่อนตามอัตโนมัติ</span>
         </div>
+        {activeBreadStyle.id === "pizza" && (
+          <div className="workflow-recalc-note" style={{ display: "grid", gap: 10 }}>
+            <strong>🍕 Pizza Fermentation Mode</strong>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                className={pizzaFermentationMode === "cold-bulk" ? "active" : ""}
+                onClick={() => {
+                  setPizzaFermentationMode("cold-bulk");
+                  setActivePhase(0);
+                  setRunning(false);
+                  setPhaseStart(null);
+                  setPhaseEnd(null);
+                }}
+              >
+                Cold Bulk
+              </button>
+              <button
+                type="button"
+                className={pizzaFermentationMode === "cold-ball" ? "active" : ""}
+                onClick={() => {
+                  setPizzaFermentationMode("cold-ball");
+                  setActivePhase(0);
+                  setRunning(false);
+                  setPhaseStart(null);
+                  setPhaseEnd(null);
+                }}
+              >
+                Cold Ball Ferment
+              </button>
+            </div>
+            <label style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 10 }}>
+              <span>เวลาหมักเย็น</span>
+              <input
+                type="number"
+                min={12}
+                max={48}
+                step={1}
+                value={pizzaColdHours}
+                onChange={(e) => setPizzaColdHours(Math.min(48, Math.max(12, Number(e.target.value) || 12)))}
+                style={{ width: 90 }}
+              />
+            </label>
+            <span>Warm Bulk ประมาณ {duration(pizzaFermentation.warmBulkWindowStart)}–{duration(pizzaFermentation.warmBulkWindowEnd)} · เป้าขึ้น {pizzaFermentation.riseTarget}% · เวลาเป็นค่าประมาณ ให้ดูสภาพโดว์จริง</span>
+          </div>
+        )}
         <div className="workflow">
           <div className="phase-nav">
             {phases.map((phase, index) => {
@@ -7141,6 +7456,25 @@ export default function Home() {
                 ))}
               </ol>
             </div>
+            {activeBreadStyle.id === "pizza" && activePhase === 2 && (
+              <div className="bulk-readiness-panel">
+                <div>
+                  <span>เริ่มตรวจ</span>
+                  <strong>{duration(pizzaFermentation.warmBulkWindowStart)}</strong>
+                  <small>นับจากเริ่ม Warm Bulk</small>
+                </div>
+                <div>
+                  <span>คาดว่าพร้อมจริง</span>
+                  <strong>{duration(pizzaFermentation.warmBulkWindowStart)}–{duration(pizzaFermentation.warmBulkWindowEnd)}</strong>
+                  <small>ช่วงที่ควรเช็กถี่ขึ้น</small>
+                </div>
+                <div>
+                  <span>เป้าการขึ้น</span>
+                  <strong>{pizzaFermentation.riseTarget}%</strong>
+                  <small>ใช้สภาพโดว์ยืนยัน</small>
+                </div>
+              </div>
+            )}
             {activePhase === 3 && (
               <div className="bulk-readiness-panel">
                 <div>
