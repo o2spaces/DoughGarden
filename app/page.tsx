@@ -27,8 +27,29 @@ type BreadFamily = "artisan" | "soft" | "high-hydration" | "specialty";
 type BreadFamilyFilter = "all" | BreadFamily;
 type BreadGoal = "balanced" | "open" | "soft" | "mild" | "grain";
 type CustomFlour = { id: string; label: string; percent: number };
-type CustomInclusion = { id: string; label: string; percent: number; category?: string; note?: string };
-type UserLibraryItem = { id: string; label: string; category?: string };
+type WaterProfile = {
+  moisturePct: number;
+  waterAvailabilityPct: number;
+  waterDemandFactor: number;
+};
+type CustomInclusion = {
+  id: string;
+  label: string;
+  percent: number;
+  category?: string;
+  note?: string;
+  moisturePct?: number;
+  waterAvailabilityPct?: number;
+  waterDemandFactor?: number;
+};
+type UserLibraryItem = {
+  id: string;
+  label: string;
+  category?: string;
+  moisturePct?: number;
+  waterAvailabilityPct?: number;
+  waterDemandFactor?: number;
+};
 type BreadWorkflowKind =
   | "artisan"
   | "pan"
@@ -1147,12 +1168,58 @@ const INCLUSION_LIBRARY = [
   { id: "chocolate-chunks", label: "ช็อกโกแลตชังก์", category: "Chocolate" },
   { id: "chocolate", label: "ช็อกโกแลต", category: "Chocolate" },
   { id: "cocoa", label: "โกโก้", category: "Sweet" },
+  { id: "matcha", label: "ผงมัทฉะ", category: "Sweet" },
+  { id: "milk-powder", label: "นมผง", category: "Dry Powder" },
   { id: "sugar", label: "น้ำตาล", category: "Sweet" },
   { id: "cinnamon", label: "อบเชย", category: "Sweet" },
   { id: "orange-zest", label: "ผิวส้ม", category: "Sweet" },
   { id: "oat-flakes", label: "Rolled Oats", category: "Grains" },
   { id: "rye-flakes", label: "Rye Flakes", category: "Grains" },
-] as const;
+ ] as const;
+
+const WATER_PROFILE_BY_CATEGORY: Record<string, WaterProfile> = {
+  "Dry Powder": { moisturePct: 5, waterAvailabilityPct: 0, waterDemandFactor: 0.25 },
+  Nuts: { moisturePct: 5, waterAvailabilityPct: 0, waterDemandFactor: 0.12 },
+  "Dried Fruit": { moisturePct: 18, waterAvailabilityPct: 70, waterDemandFactor: 0.18 },
+  Seeds: { moisturePct: 8, waterAvailabilityPct: 0, waterDemandFactor: 0.12 },
+  Cheese: { moisturePct: 35, waterAvailabilityPct: 35, waterDemandFactor: 0.04 },
+  Chocolate: { moisturePct: 2, waterAvailabilityPct: 0, waterDemandFactor: 0.20 },
+  "Fresh/Wet": { moisturePct: 75, waterAvailabilityPct: 75, waterDemandFactor: 0.05 },
+  Liquid: { moisturePct: 90, waterAvailabilityPct: 95, waterDemandFactor: 0 },
+  Fat: { moisturePct: 15, waterAvailabilityPct: 0, waterDemandFactor: 0 },
+  Savory: { moisturePct: 35, waterAvailabilityPct: 50, waterDemandFactor: 0.05 },
+  Sweet: { moisturePct: 5, waterAvailabilityPct: 0, waterDemandFactor: 0.08 },
+  Grains: { moisturePct: 8, waterAvailabilityPct: 0, waterDemandFactor: 0.20 },
+  Custom: { moisturePct: 0, waterAvailabilityPct: 0, waterDemandFactor: 0 },
+};
+
+const WATER_PROFILE_BY_ID: Record<string, WaterProfile> = {
+  cocoa: { moisturePct: 5, waterAvailabilityPct: 0, waterDemandFactor: 0.50 },
+  matcha: { moisturePct: 5, waterAvailabilityPct: 0, waterDemandFactor: 0.20 },
+  "milk-powder": { moisturePct: 4, waterAvailabilityPct: 0, waterDemandFactor: 0.20 },
+  almond: { moisturePct: 5, waterAvailabilityPct: 0, waterDemandFactor: 0.12 },
+  walnut: { moisturePct: 4, waterAvailabilityPct: 0, waterDemandFactor: 0.12 },
+  cranberry: { moisturePct: 18, waterAvailabilityPct: 70, waterDemandFactor: 0.18 },
+  raisin: { moisturePct: 16, waterAvailabilityPct: 70, waterDemandFactor: 0.18 },
+  fig: { moisturePct: 24, waterAvailabilityPct: 70, waterDemandFactor: 0.18 },
+  olive: { moisturePct: 65, waterAvailabilityPct: 35, waterDemandFactor: 0.04 },
+  tomato: { moisturePct: 15, waterAvailabilityPct: 40, waterDemandFactor: 0.12 },
+  jalapeno: { moisturePct: 90, waterAvailabilityPct: 75, waterDemandFactor: 0.05 },
+  rosemary: { moisturePct: 8, waterAvailabilityPct: 0, waterDemandFactor: 0.10 },
+  garlic: { moisturePct: 60, waterAvailabilityPct: 70, waterDemandFactor: 0.04 },
+  sugar: { moisturePct: 0.5, waterAvailabilityPct: 0, waterDemandFactor: 0.08 },
+  "oat-flakes": { moisturePct: 8, waterAvailabilityPct: 0, waterDemandFactor: 0.20 },
+  "rye-flakes": { moisturePct: 8, waterAvailabilityPct: 0, waterDemandFactor: 0.20 },
+};
+
+const getWaterProfile = (item: { id: string; category?: string; moisturePct?: number; waterAvailabilityPct?: number; waterDemandFactor?: number }): WaterProfile => {
+  const base = WATER_PROFILE_BY_ID[item.id] || WATER_PROFILE_BY_CATEGORY[item.category || "Custom"] || WATER_PROFILE_BY_CATEGORY.Custom;
+  return {
+    moisturePct: typeof item.moisturePct === "number" ? item.moisturePct : base.moisturePct,
+    waterAvailabilityPct: typeof item.waterAvailabilityPct === "number" ? item.waterAvailabilityPct : base.waterAvailabilityPct,
+    waterDemandFactor: typeof item.waterDemandFactor === "number" ? item.waterDemandFactor : base.waterDemandFactor,
+  };
+};
 
 const CUSTOM_FLOUR_SUGGESTIONS: Record<string, string> = {
   einkorn: "เริ่ม 5–25% · กลูเตนอ่อน",
@@ -1880,13 +1947,21 @@ export default function Home() {
     );
     const customInclusionPercent = customInclusions.reduce((sum, item) => sum + item.percent, 0);
     const extraPercent = builtInExtraPercent + customInclusionPercent;
+    const waterBalancePerFlour = [
+      ...activeBreadStyle.extras.map((item) => ({ ...item, ...getWaterProfile(item) })),
+      ...customInclusions.map((item) => ({ ...item, ...getWaterProfile(item) })),
+    ].reduce(
+      (sum, item) => sum + (item.percent / 100) * ((item.moisturePct / 100) * (item.waterAvailabilityPct / 100) - item.waterDemandFactor),
+      0,
+    );
     const totalFlour =
       totalDough /
-      (1 +
+      Math.max(0.1, 1 +
         hydration / 100 +
         saltPercent / 100 +
         oilPercent / 100 +
-        extraPercent / 100);
+        extraPercent / 100 +
+        waterBalancePerFlour);
     const levain = (totalFlour * starterPercent) / 100;
     const starterRatio = starterHydration / 100;
     const levainFlour = levain / (1 + starterRatio);
@@ -1911,7 +1986,21 @@ export default function Home() {
       0,
       ryeTotal - (activeBreadStyle.levainFlour === "rye" ? levainFlour : 0),
     );
-    const water = Math.max(0, (totalFlour * hydration) / 100 - levainWater);
+    const inclusionWaterContribution = [
+      ...activeBreadStyle.extras.map((item) => ({ ...item, ...getWaterProfile(item) })),
+      ...customInclusions.map((item) => ({ ...item, ...getWaterProfile(item) })),
+    ].reduce(
+      (sum, item) => sum + (totalFlour * item.percent / 100) * (item.moisturePct / 100) * (item.waterAvailabilityPct / 100),
+      0,
+    );
+    const inclusionWaterDemand = [
+      ...activeBreadStyle.extras.map((item) => ({ ...item, ...getWaterProfile(item) })),
+      ...customInclusions.map((item) => ({ ...item, ...getWaterProfile(item) })),
+    ].reduce(
+      (sum, item) => sum + (totalFlour * item.percent / 100) * item.waterDemandFactor,
+      0,
+    );
+    const water = Math.max(0, (totalFlour * hydration) / 100 - levainWater - inclusionWaterContribution + inclusionWaterDemand);
     const salt = (totalFlour * saltPercent) / 100;
     const oil = (totalFlour * oilPercent) / 100;
     const extras = activeBreadStyle.extras.map((item) => ({ ...item, grams: (totalFlour * item.percent) / 100 }));
@@ -1933,6 +2022,9 @@ export default function Home() {
       customFlourTotals,
       customExtras,
       customFlourPercent,
+      inclusionWaterContribution,
+      inclusionWaterDemand,
+      netInclusionWaterEffect: inclusionWaterContribution - inclusionWaterDemand,
       baked: totalDough * 0.997 * 0.86,
       bakedEach: targetDough * 0.997 * 0.86,
     };
@@ -3571,6 +3663,14 @@ export default function Home() {
     }
   };
 
+  const updateUserInclusionWaterProfile = (id: string, profile: WaterProfile) => {
+    const next = userInclusions.map((item) => item.id === id ? { ...item, ...profile } : item);
+    if (next.some((item, index) => item !== userInclusions[index])) {
+      setUserInclusions(next);
+      persistIngredientLibrary("doughgarden-inclusion-library", next);
+    }
+  };
+
   const addUserFlourToLibrary = () => {
     const label = newFlourName.trim();
     if (!label) return;
@@ -3596,7 +3696,9 @@ export default function Home() {
     const label = newInclusionName.trim();
     if (!label) return;
     const id = `user-inclusion-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    const item = { id, label, category: newInclusionCategory || "Custom" };
+    const category = newInclusionCategory || "Custom";
+    const profile = getWaterProfile({ id, category });
+    const item = { id, label, category, ...profile };
     const next = userInclusions.some((entry) => entry.label.trim().toLocaleLowerCase() === label.toLocaleLowerCase())
       ? userInclusions
       : [...userInclusions, item];
@@ -3650,8 +3752,9 @@ export default function Home() {
   };
   const addCustomInclusion = (item: UserLibraryItem | (typeof INCLUSION_LIBRARY)[number]) => {
     if (customInclusions.some((entry) => entry.id === item.id)) return;
-    const defaultPercent = item.category === "Savory" ? 10 : item.category === "Sweet" ? 5 : 15;
-    setCustomInclusions((entries) => [...entries, { ...item, percent: defaultPercent }]);
+    const defaultPercent = item.category === "Savory" ? 10 : item.category === "Sweet" ? 5 : item.category === "Dry Powder" ? 5 : item.category === "Fresh/Wet" ? 10 : 15;
+    const profile = getWaterProfile(item);
+    setCustomInclusions((entries) => [...entries, { ...item, ...profile, percent: defaultPercent }]);
     setActiveRecipeId("");
   };
   const updateCustomInclusion = (id: string, raw: number) => {
@@ -3659,6 +3762,15 @@ export default function Home() {
     setCustomInclusions((items) => items.map((item) => item.id === id ? { ...item, percent } : item));
     setActiveRecipeId("");
   };
+  const updateCustomInclusionWaterProfile = (id: string, patch: Partial<WaterProfile>) => {
+    setCustomInclusions((items) => items.map((item) => item.id === id ? { ...item, ...patch } : item));
+    const current = customInclusions.find((item) => item.id === id);
+    if (current && userInclusions.some((item) => item.id === id)) {
+      updateUserInclusionWaterProfile(id, { ...getWaterProfile(current), ...patch });
+    }
+    setActiveRecipeId("");
+  };
+
   const removeCustomInclusion = (id: string) => {
     setCustomInclusions((items) => items.filter((item) => item.id !== id));
     setActiveRecipeId("");
@@ -5600,6 +5712,26 @@ export default function Home() {
                       <div>
                         <b>{item.label}</b>
                         <small>{item.category}</small>
+                        <details className="water-profile-editor">
+                          <summary>💧 ตั้งค่าน้ำ / ความแห้ง</summary>
+                          <div className="water-profile-grid">
+                            <label>
+                              Moisture %
+                              <input type="number" min="0" max="100" step="0.5" value={getWaterProfile(item).moisturePct} onChange={(e) => updateCustomInclusionWaterProfile(item.id, { moisturePct: Number(e.target.value) || 0 })} />
+                              <small>น้ำทั้งหมดที่อยู่ในวัตถุดิบโดยประมาณ</small>
+                            </label>
+                            <label>
+                              Water Availability %
+                              <input type="number" min="0" max="100" step="0.5" value={getWaterProfile(item).waterAvailabilityPct} onChange={(e) => updateCustomInclusionWaterProfile(item.id, { waterAvailabilityPct: Number(e.target.value) || 0 })} />
+                              <small>สัดส่วนของน้ำนั้นที่คาดว่าจะพร้อมมีผลกับความชุ่มชื้นของโดว์</small>
+                            </label>
+                            <label>
+                              Water Demand ×
+                              <input type="number" min="0" max="2" step="0.05" value={getWaterProfile(item).waterDemandFactor} onChange={(e) => updateCustomInclusionWaterProfile(item.id, { waterDemandFactor: Number(e.target.value) || 0 })} />
+                              <small>น้ำที่วัตถุดิบต้องการเพิ่ม เช่น 0.50× = 50 g น้ำต่อ 100 g วัตถุดิบ</small>
+                            </label>
+                          </div>
+                        </details>
                       </div>
                       <span>
                         <input type="number" min="0" max="40" step="1" value={item.percent} onChange={(e) => updateCustomInclusion(item.id, +e.target.value)} />%
@@ -5625,13 +5757,26 @@ export default function Home() {
                   <div className="library-create">
                     <input type="text" value={newInclusionName} onChange={(e) => setNewInclusionName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") addUserInclusionToLibrary(); }} placeholder="เพิ่มส่วนผสม เช่น ลูกเกดทอง" />
                     <select value={newInclusionCategory} onChange={(e) => setNewInclusionCategory(e.target.value)}>
-                      <option value="Custom">Custom</option><option value="Nuts">Nuts</option><option value="Dried Fruit">Dried Fruit</option><option value="Seeds">Seeds</option><option value="Cheese">Cheese</option><option value="Chocolate">Chocolate</option><option value="Savory">Savory</option><option value="Sweet">Sweet</option>
+                      <option value="Custom">Custom</option><option value="Dry Powder">Dry Powder</option><option value="Nuts">Nuts</option><option value="Dried Fruit">Dried Fruit</option><option value="Seeds">Seeds</option><option value="Cheese">Cheese</option><option value="Chocolate">Chocolate</option><option value="Fresh/Wet">Fresh / Wet</option><option value="Liquid">Liquid</option><option value="Fat">Fat</option><option value="Grains">Grains</option><option value="Savory">Savory</option><option value="Sweet">Sweet</option>
                     </select>
                     <button type="button" onClick={addUserInclusionToLibrary}>+ สร้างส่วนผสม</button>
                   </div>
                   {userInclusions.length > 0 && <div className="library-user-list">{userInclusions.map((item) => <button type="button" key={item.id} onClick={() => removeUserInclusionFromLibrary(item.id)} title="ลบจากคลัง">{item.label} ×</button>)}</div>}
                 </div>
               </div>
+              {customInclusions.length > 0 && (
+                <div className="inclusion-water-balance">
+                  <div className="water-balance-head">
+                    <b>สมดุลน้ำจากส่วนผสม</b>
+                    <span>เป็นค่าประมาณจาก profile ของวัตถุดิบ — แก้ค่าได้ตามฉลากหรือประสบการณ์จริง</span>
+                  </div>
+                  <div className="water-balance-grid">
+                    <div><span>น้ำที่พร้อมให้โดว์</span><b>+{round(recipe.inclusionWaterContribution)} g</b></div>
+                    <div><span>น้ำที่วัตถุดิบต้องการ</span><b>−{round(recipe.inclusionWaterDemand)} g</b></div>
+                    <div className={recipe.netInclusionWaterEffect < 0 ? "drying" : recipe.netInclusionWaterEffect > 0 ? "wetting" : "neutral"}><span>ผลสุทธิ</span><b>{recipe.netInclusionWaterEffect >= 0 ? "+" : "−"}{round(Math.abs(recipe.netInclusionWaterEffect))} g</b></div>
+                  </div>
+                </div>
+              )}
               {customInclusions.length > 0 && (
                 <div className="inclusion-analysis">
                   <b>วิเคราะห์สูตร</b>
