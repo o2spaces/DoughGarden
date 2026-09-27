@@ -77,7 +77,7 @@ type BreadStyle = {
   oilPercent: number;
   doughTemperature: number;
   targetDough: number;
-  extras: { label: string; percent: number }[];
+  extras: CustomInclusion[];
   equipment: string[];
   shape: string;
   proof: string;
@@ -320,7 +320,7 @@ const BREAD_STYLES: BreadStyle[] = [
     oilPercent: 0,
     doughTemperature: 26,
     targetDough: 800,
-    extras: [{ label: "Rye Scald", percent: 5 }],
+    extras: [{ id: "rye-scald", label: "Rye Scald", percent: 5, category: "Grains" }],
     equipment: ["พิมพ์โลฟ 1 ปอนด์", "หม้อทำ Rye Scald", "ตะแกรงพัก"],
     shape: "Preshape สั้นแล้วม้วนลงพิมพ์",
     proof: "พรูฟในพิมพ์จนฟูใกล้ขอบ",
@@ -381,7 +381,7 @@ const BREAD_STYLES: BreadStyle[] = [
     oilPercent: 5,
     doughTemperature: 26,
     targetDough: 850,
-    extras: [{ label: "น้ำตาลหรือน้ำผึ้ง", percent: 5 }],
+    extras: [{ id: "sugar-or-honey", label: "น้ำตาลหรือน้ำผึ้ง", percent: 5, category: "Sweet" }],
     equipment: ["พิมพ์โลฟ", "เครื่องผสมหรือพื้นที่นวด", "แปรงทาเนย"],
     shape: "ม้วนแน่นสม่ำเสมอแล้ววางในพิมพ์",
     proof: "พรูฟจนยอดโดว์ใกล้หรือสูงกว่าขอบพิมพ์เล็กน้อย",
@@ -411,7 +411,7 @@ const BREAD_STYLES: BreadStyle[] = [
     oilPercent: 0,
     doughTemperature: 26,
     targetDough: 850,
-    extras: [{ label: "เนย", percent: 15 }, { label: "น้ำตาล", percent: 8 }, { label: "ไข่", percent: 10 }],
+    extras: [{ id: "butter", label: "เนย", percent: 15, category: "Fat" }, { id: "sugar", label: "น้ำตาล", percent: 8, category: "Sweet" }, { id: "egg", label: "ไข่", percent: 10, category: "Fresh/Wet" }],
     equipment: ["พิมพ์โลฟสูง", "หม้อทำ Tangzhong", "เครื่องผสมแนะนำ"],
     shape: "แบ่ง 3–4 ชิ้น รีด ม้วน และเรียงในพิมพ์",
     proof: "อุ่นและชื้นจนยอดโดว์ถึงขอบพิมพ์",
@@ -563,7 +563,7 @@ const BREAD_STYLES: BreadStyle[] = [
     oilPercent: 0,
     doughTemperature: 25,
     targetDough: 120,
-    extras: [{ label: "น้ำตาลหรือมอลต์", percent: 3 }],
+    extras: [{ id: "sugar-or-malt", label: "น้ำตาลหรือมอลต์", percent: 3, category: "Sweet" }],
     equipment: ["หม้อต้มน้ำ", "ถาดอบ", "ตะแกรงสะเด็ดน้ำ"],
     shape: "ม้วนเชือกต่อปลายหรือเจาะกลาง",
     proof: "พรูฟสั้นหรือแช่เย็นข้ามคืน",
@@ -1210,6 +1210,11 @@ const WATER_PROFILE_BY_ID: Record<string, WaterProfile> = {
   sugar: { moisturePct: 0.5, waterAvailabilityPct: 0, waterDemandFactor: 0.08 },
   "oat-flakes": { moisturePct: 8, waterAvailabilityPct: 0, waterDemandFactor: 0.20 },
   "rye-flakes": { moisturePct: 8, waterAvailabilityPct: 0, waterDemandFactor: 0.20 },
+  "rye-scald": { moisturePct: 65, waterAvailabilityPct: 90, waterDemandFactor: 0.25 },
+  "sugar-or-honey": { moisturePct: 18, waterAvailabilityPct: 80, waterDemandFactor: 0.08 },
+  butter: { moisturePct: 16, waterAvailabilityPct: 100, waterDemandFactor: 0 },
+  egg: { moisturePct: 74, waterAvailabilityPct: 95, waterDemandFactor: 0 },
+  "sugar-or-malt": { moisturePct: 5, waterAvailabilityPct: 0, waterDemandFactor: 0.08 },
 };
 
 const getWaterProfile = (item: { id: string; category?: string; moisturePct?: number; waterAvailabilityPct?: number; waterDemandFactor?: number }): WaterProfile => {
