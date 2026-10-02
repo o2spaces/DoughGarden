@@ -3754,7 +3754,7 @@ export default function Home() {
     if (customInclusions.some((entry) => entry.id === item.id)) return;
     const defaultPercent = item.category === "Savory" ? 10 : item.category === "Sweet" ? 5 : item.category === "Dry Powder" ? 5 : item.category === "Fresh/Wet" ? 10 : 15;
     const profile = getWaterProfile(item);
-    setCustomInclusions((entries) => [...entries, { ...item, ...profile, waterProfileEnabled: item.waterProfileEnabled === true, percent: defaultPercent }]);
+    setCustomInclusions((entries) => [...entries, { ...item, ...profile, waterProfileEnabled: profile.enabled, percent: defaultPercent }]);
     setActiveRecipeId("");
   };
   const updateCustomInclusion = (id: string, raw: number) => {
