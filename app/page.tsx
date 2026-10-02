@@ -32,6 +32,7 @@ type WaterProfile = {
   waterAvailabilityPct: number;
   waterDemandFactor: number;
 };
+type WaterProfileSettings = WaterProfile & { enabled: boolean };
 type CustomInclusion = {
   id: string;
   label: string;
@@ -41,6 +42,7 @@ type CustomInclusion = {
   moisturePct?: number;
   waterAvailabilityPct?: number;
   waterDemandFactor?: number;
+  waterProfileEnabled?: boolean;
 };
 type UserLibraryItem = {
   id: string;
@@ -49,6 +51,7 @@ type UserLibraryItem = {
   moisturePct?: number;
   waterAvailabilityPct?: number;
   waterDemandFactor?: number;
+  waterProfileEnabled?: boolean;
 };
 type BreadWorkflowKind =
   | "artisan"
@@ -1217,12 +1220,13 @@ const WATER_PROFILE_BY_ID: Record<string, WaterProfile> = {
   "sugar-or-malt": { moisturePct: 5, waterAvailabilityPct: 0, waterDemandFactor: 0.08 },
 };
 
-const getWaterProfile = (item: { id: string; category?: string; moisturePct?: number; waterAvailabilityPct?: number; waterDemandFactor?: number }): WaterProfile => {
+const getWaterProfile = (item: { id: string; category?: string; moisturePct?: number; waterAvailabilityPct?: number; waterDemandFactor?: number; waterProfileEnabled?: boolean }): WaterProfileSettings => {
   const base = WATER_PROFILE_BY_ID[item.id] || WATER_PROFILE_BY_CATEGORY[item.category || "Custom"] || WATER_PROFILE_BY_CATEGORY.Custom;
   return {
     moisturePct: typeof item.moisturePct === "number" ? item.moisturePct : base.moisturePct,
     waterAvailabilityPct: typeof item.waterAvailabilityPct === "number" ? item.waterAvailabilityPct : base.waterAvailabilityPct,
     waterDemandFactor: typeof item.waterDemandFactor === "number" ? item.waterDemandFactor : base.waterDemandFactor,
+    enabled: item.waterProfileEnabled === true,
   };
 };
 
@@ -1952,13 +1956,16 @@ export default function Home() {
     );
     const customInclusionPercent = customInclusions.reduce((sum, item) => sum + item.percent, 0);
     const extraPercent = builtInExtraPercent + customInclusionPercent;
-    const waterBalancePerFlour = [
-      ...activeBreadStyle.extras.map((item) => ({ ...item, ...getWaterProfile(item) })),
-      ...customInclusions.map((item) => ({ ...item, ...getWaterProfile(item) })),
-    ].reduce(
-      (sum, item) => sum + (item.percent / 100) * ((item.moisturePct / 100) * (item.waterAvailabilityPct / 100) - item.waterDemandFactor),
+    const enabledCustomInclusions = customInclusions.filter((item) => getWaterProfile(item).enabled);
+    const waterContributionFactor = enabledCustomInclusions.reduce(
+      (sum, item) => sum + (item.percent / 100) * (getWaterProfile(item).moisturePct / 100) * (getWaterProfile(item).waterAvailabilityPct / 100),
       0,
     );
+    const waterDemandFactor = enabledCustomInclusions.reduce(
+      (sum, item) => sum + (item.percent / 100) * getWaterProfile(item).waterDemandFactor,
+      0,
+    );
+    const netWaterCorrectionFactor = waterDemandFactor - waterContributionFactor;
     const totalFlour =
       totalDough /
       Math.max(0.1, 1 +
@@ -1966,7 +1973,7 @@ export default function Home() {
         saltPercent / 100 +
         oilPercent / 100 +
         extraPercent / 100 +
-        waterBalancePerFlour);
+        netWaterCorrectionFactor);
     const levain = (totalFlour * starterPercent) / 100;
     const starterRatio = starterHydration / 100;
     const levainFlour = levain / (1 + starterRatio);
@@ -1991,20 +1998,8 @@ export default function Home() {
       0,
       ryeTotal - (activeBreadStyle.levainFlour === "rye" ? levainFlour : 0),
     );
-    const inclusionWaterContribution = [
-      ...activeBreadStyle.extras.map((item) => ({ ...item, ...getWaterProfile(item) })),
-      ...customInclusions.map((item) => ({ ...item, ...getWaterProfile(item) })),
-    ].reduce(
-      (sum, item) => sum + (totalFlour * item.percent / 100) * (item.moisturePct / 100) * (item.waterAvailabilityPct / 100),
-      0,
-    );
-    const inclusionWaterDemand = [
-      ...activeBreadStyle.extras.map((item) => ({ ...item, ...getWaterProfile(item) })),
-      ...customInclusions.map((item) => ({ ...item, ...getWaterProfile(item) })),
-    ].reduce(
-      (sum, item) => sum + (totalFlour * item.percent / 100) * item.waterDemandFactor,
-      0,
-    );
+    const inclusionWaterContribution = totalFlour * waterContributionFactor;
+    const inclusionWaterDemand = totalFlour * waterDemandFactor;
     const water = Math.max(0, (totalFlour * hydration) / 100 - levainWater - inclusionWaterContribution + inclusionWaterDemand);
     const salt = (totalFlour * saltPercent) / 100;
     const oil = (totalFlour * oilPercent) / 100;
@@ -3668,7 +3663,7 @@ export default function Home() {
     }
   };
 
-  const updateUserInclusionWaterProfile = (id: string, profile: WaterProfile) => {
+  const updateUserInclusionWaterProfile = (id: string, profile: Partial<WaterProfileSettings>) => {
     const next = userInclusions.map((item) => item.id === id ? { ...item, ...profile } : item);
     if (next.some((item, index) => item !== userInclusions[index])) {
       setUserInclusions(next);
@@ -3703,7 +3698,7 @@ export default function Home() {
     const id = `user-inclusion-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const category = newInclusionCategory || "Custom";
     const profile = getWaterProfile({ id, category });
-    const item = { id, label, category, ...profile };
+    const item = { id, label, category, ...profile, waterProfileEnabled: false };
     const next = userInclusions.some((entry) => entry.label.trim().toLocaleLowerCase() === label.toLocaleLowerCase())
       ? userInclusions
       : [...userInclusions, item];
@@ -3759,7 +3754,7 @@ export default function Home() {
     if (customInclusions.some((entry) => entry.id === item.id)) return;
     const defaultPercent = item.category === "Savory" ? 10 : item.category === "Sweet" ? 5 : item.category === "Dry Powder" ? 5 : item.category === "Fresh/Wet" ? 10 : 15;
     const profile = getWaterProfile(item);
-    setCustomInclusions((entries) => [...entries, { ...item, ...profile, percent: defaultPercent }]);
+    setCustomInclusions((entries) => [...entries, { ...item, ...profile, waterProfileEnabled: item.waterProfileEnabled === true, percent: defaultPercent }]);
     setActiveRecipeId("");
   };
   const updateCustomInclusion = (id: string, raw: number) => {
@@ -3767,7 +3762,7 @@ export default function Home() {
     setCustomInclusions((items) => items.map((item) => item.id === id ? { ...item, percent } : item));
     setActiveRecipeId("");
   };
-  const updateCustomInclusionWaterProfile = (id: string, patch: Partial<WaterProfile>) => {
+  const updateCustomInclusionWaterProfile = (id: string, patch: Partial<WaterProfileSettings>) => {
     setCustomInclusions((items) => items.map((item) => item.id === id ? { ...item, ...patch } : item));
     const current = customInclusions.find((item) => item.id === id);
     if (current && userInclusions.some((item) => item.id === id)) {
@@ -5719,23 +5714,39 @@ export default function Home() {
                         <small>{item.category}</small>
                         <details className="water-profile-editor">
                           <summary>💧 ตั้งค่าน้ำ / ความแห้ง</summary>
-                          <div className="water-profile-grid">
-                            <label>
-                              Moisture %
-                              <input type="number" min="0" max="100" step="0.5" value={getWaterProfile(item).moisturePct} onChange={(e) => updateCustomInclusionWaterProfile(item.id, { moisturePct: Number(e.target.value) || 0 })} />
-                              <small>น้ำทั้งหมดที่อยู่ในวัตถุดิบโดยประมาณ</small>
+                          <div className="water-profile-toggle">
+                            <label className="water-profile-switch">
+                              <input
+                                type="checkbox"
+                                checked={getWaterProfile(item).enabled}
+                                onChange={(e) => updateCustomInclusionWaterProfile(item.id, { enabled: e.target.checked })}
+                              />
+                              <span>ใช้ข้อมูลนี้ในการคำนวณน้ำสูตร</span>
                             </label>
-                            <label>
-                              Water Availability %
-                              <input type="number" min="0" max="100" step="0.5" value={getWaterProfile(item).waterAvailabilityPct} onChange={(e) => updateCustomInclusionWaterProfile(item.id, { waterAvailabilityPct: Number(e.target.value) || 0 })} />
-                              <small>สัดส่วนของน้ำนั้นที่คาดว่าจะพร้อมมีผลกับความชุ่มชื้นของโดว์</small>
-                            </label>
-                            <label>
-                              Water Demand ×
-                              <input type="number" min="0" max="2" step="0.05" value={getWaterProfile(item).waterDemandFactor} onChange={(e) => updateCustomInclusionWaterProfile(item.id, { waterDemandFactor: Number(e.target.value) || 0 })} />
-                              <small>น้ำที่วัตถุดิบต้องการเพิ่ม เช่น 0.50× = 50 g น้ำต่อ 100 g วัตถุดิบ</small>
-                            </label>
+                            <small>{getWaterProfile(item).enabled ? "เปิดอยู่ · มีผลกับน้ำหลักที่แนะนำ" : "ปิดอยู่ · เป็นข้อมูลอ้างอิงเท่านั้น"}</small>
                           </div>
+                          {getWaterProfile(item).enabled && (
+                            <div className="water-profile-grid">
+                              <label>
+                                <span>Moisture % <em>ความชื้นในวัตถุดิบ</em></span>
+                                <input type="number" min="0" max="100" step="0.5" value={getWaterProfile(item).moisturePct} onChange={(e) => updateCustomInclusionWaterProfile(item.id, { moisturePct: Number(e.target.value) || 0 })} />
+                                <small>วัตถุดิบนี้มีน้ำอยู่ประมาณกี่ % ของน้ำหนักทั้งหมด</small>
+                                <b>ผลกับสูตร: ใช้คำนวณ “น้ำที่มากับวัตถุดิบ”</b>
+                              </label>
+                              <label>
+                                <span>Water Availability % <em>น้ำที่พร้อมให้โดว์ใช้</em></span>
+                                <input type="number" min="0" max="100" step="0.5" value={getWaterProfile(item).waterAvailabilityPct} onChange={(e) => updateCustomInclusionWaterProfile(item.id, { waterAvailabilityPct: Number(e.target.value) || 0 })} />
+                                <small>จากน้ำในวัตถุดิบ มีประมาณกี่ % ที่ถือว่าพร้อมมีผลต่อโดว์</small>
+                                <b>ผลกับสูตร: ยิ่งสูง ยิ่งลดน้ำหลักที่ต้องเติม</b>
+                              </label>
+                              <label>
+                                <span>Water Demand × <em>ความต้องการน้ำเพิ่ม</em></span>
+                                <input type="number" min="0" max="2" step="0.05" value={getWaterProfile(item).waterDemandFactor} onChange={(e) => updateCustomInclusionWaterProfile(item.id, { waterDemandFactor: Number(e.target.value) || 0 })} />
+                                <small>น้ำที่ใช้ชดเชยต่อวัตถุดิบ 1 g เช่น 0.50× = 50 g ต่อ 100 g</small>
+                                <b>ผลกับสูตร: ยิ่งสูง ยิ่งเพิ่มน้ำหลักที่ต้องเติม</b>
+                              </label>
+                            </div>
+                          )}
                         </details>
                       </div>
                       <span>
@@ -5770,19 +5781,6 @@ export default function Home() {
                 </div>
               </div>
               {customInclusions.length > 0 && (
-                <div className="inclusion-water-balance">
-                  <div className="water-balance-head">
-                    <b>สมดุลน้ำจากส่วนผสม</b>
-                    <span>เป็นค่าประมาณจาก profile ของวัตถุดิบ — แก้ค่าได้ตามฉลากหรือประสบการณ์จริง</span>
-                  </div>
-                  <div className="water-balance-grid">
-                    <div><span>น้ำที่พร้อมให้โดว์</span><b>+{round(recipe.inclusionWaterContribution)} g</b></div>
-                    <div><span>น้ำที่วัตถุดิบต้องการ</span><b>−{round(recipe.inclusionWaterDemand)} g</b></div>
-                    <div className={recipe.netInclusionWaterEffect < 0 ? "drying" : recipe.netInclusionWaterEffect > 0 ? "wetting" : "neutral"}><span>ผลสุทธิ</span><b>{recipe.netInclusionWaterEffect >= 0 ? "+" : "−"}{round(Math.abs(recipe.netInclusionWaterEffect))} g</b></div>
-                  </div>
-                </div>
-              )}
-              {customInclusions.length > 0 && (
                 <div className="inclusion-analysis">
                   <b>วิเคราะห์สูตร</b>
                   <span>
@@ -5790,6 +5788,9 @@ export default function Home() {
                       ? "⚠ Total inclusions สูง — โครงสร้างและโพรงเปิดอาจลดลง"
                       : "✓ ปริมาณส่วนผสมอยู่ในช่วงใช้งานทั่วไป"}
                   </span>
+                  {customInclusions.some((item) => getWaterProfile(item).enabled) && (
+                    <small className="water-balance-active-note">💧 Water Balance เปิดอยู่เฉพาะรายการที่ติ๊ก · น้ำหลักจะถูกปรับตามโปรไฟล์นั้น</small>
+                  )}
                 </div>
               )}
             </div>
@@ -5995,6 +5996,7 @@ export default function Home() {
                     if (e.target.value !== "custom") setTargetDough(Number(e.target.value));
                   }}
                 >
+                  <option value="50">50 กรัม</option>
                   <option value="600">600 กรัม</option>
                   <option value="800">800 กรัม</option>
                   <option value="950">950 กรัม</option>
@@ -6004,7 +6006,7 @@ export default function Home() {
                 </select>
                 <input
                   type="number"
-                  min="300"
+                  min="50"
                   max="1800"
                   step="10"
                   inputMode="numeric"
@@ -6022,7 +6024,7 @@ export default function Home() {
                       setTargetDoughInput(String(targetDough));
                       return;
                     }
-                    const normalized = Math.round(Math.min(1800, Math.max(300, value)) / 10) * 10;
+                    const normalized = Math.round(Math.min(1800, Math.max(50, value)) / 10) * 10;
                     setTargetDough(normalized);
                     setTargetDoughInput(String(normalized));
                   }}
@@ -6032,10 +6034,10 @@ export default function Home() {
                 />
                 <span>กรัม</span>
               </div>
-              <div className="dough-weight-hint">เลือกค่าที่มีให้ หรือพิมพ์น้ำหนักเองได้ 300–1,800 กรัม</div>
+              <div className="dough-weight-hint">เลือกค่าที่มีให้ หรือพิมพ์น้ำหนักเองได้ 50–1,800 กรัม</div>
             </div>
             <div className="presets">
-              {[600, 800, 950, 1000, 1200].map((n) => (
+              {[50, 600, 800, 950, 1000, 1200].map((n) => (
                 <button
                   type="button"
                   className={targetDough === n ? "selected" : ""}
@@ -6108,6 +6110,12 @@ export default function Home() {
                 <span>น้ำเย็น</span>
                 <b>{round(recipe.water)} กรัม</b>
               </p>
+              {(recipe.inclusionWaterContribution > 0 || recipe.inclusionWaterDemand > 0) && (
+                <p className="formula-water-balance-row">
+                  <span>💧 Water Balance <small>(เฉพาะวัตถุดิบที่เปิดใช้)</small></span>
+                  <b>{recipe.netInclusionWaterEffect > 0 ? "+" : "−"}{round(Math.abs(recipe.netInclusionWaterEffect))} กรัม</b>
+                </p>
+              )}
               <p>
                 <span>หัวเชื้อ {starterHydration}% Hydration</span>
                 <b>{round(recipe.levain)} กรัม</b>

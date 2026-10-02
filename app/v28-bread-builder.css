@@ -653,3 +653,24 @@
   .water-profile-grid,
   .water-balance-grid { grid-template-columns: 1fr; }
 }
+
+/* Optional ingredient water-balance controls */
+.water-profile-editor{margin-top:7px;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:6px 8px;background:rgba(255,255,255,.025)}
+.water-profile-editor summary{cursor:pointer;font-size:.72rem;color:#d8c6a8;list-style:none}
+.water-profile-editor summary::-webkit-details-marker{display:none}
+.water-profile-toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:9px 0 8px;padding:8px 9px;border-radius:9px;background:rgba(231,161,62,.05);border:1px solid rgba(231,161,62,.12)}
+.water-profile-switch{display:flex!important;align-items:center;gap:8px!important;font-size:.7rem!important;color:#e3d7c9!important}
+.water-profile-switch input{width:15px!important;height:15px!important;accent-color:#e6a13e}
+.water-profile-toggle>small{font-size:.6rem;color:#988e82;text-align:right;line-height:1.35}
+.water-profile-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+.water-profile-grid label{display:grid;gap:4px;font-size:.66rem;color:#d8d1c8}
+.water-profile-grid label>span{display:flex;flex-direction:column;gap:2px;font-size:.68rem;color:#ded3c6}
+.water-profile-grid label>span em{font-style:normal;color:#8f8579;font-size:.6rem;font-weight:400}
+.water-profile-grid input{width:100%;min-width:0;padding:5px 7px;border-radius:7px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.18);color:inherit}
+.water-profile-grid small{font-size:.58rem;line-height:1.35;color:#978d82}
+.water-profile-grid b{font-size:.56rem;line-height:1.35;color:#b7a98f;font-weight:600}
+.water-balance-active-note{display:block;margin-top:5px;color:#c9b58f}
+@media(max-width:760px){.water-profile-grid{grid-template-columns:1fr}.water-profile-toggle{align-items:flex-start;flex-direction:column}.water-profile-toggle>small{text-align:left}}
+.formula-water-balance-row{margin-top:-4px!important;padding-top:2px!important;color:#b5a588}
+.formula-water-balance-row small{font-size:.58rem;color:#81776d;margin-left:4px}
+.formula-water-balance-row b{color:#c9b384!important}

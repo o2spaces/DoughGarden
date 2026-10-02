@@ -1,24 +1,31 @@
-# DoughGarden V28 — Water Balance for User-Added Ingredients
+# DoughGarden · Optional Water Balance Ingredient Profiles
 
-## What changed
-The Ingredient Builder now distinguishes three water concepts for non-flour additions:
+## Behavior
+Water Balance is **off by default per inclusion**. It is enabled only when the user ticks `ใช้ข้อมูลนี้ในการคำนวณน้ำสูตร` on that ingredient.
 
-- Moisture %: approximate total water contained in the ingredient.
-- Water Availability %: the fraction of that moisture expected to behave as available water in the dough.
-- Water Demand ×: the amount of extra dough water the ingredient is estimated to need, expressed as a multiple of ingredient weight (for example 0.50× means about 50 g water per 100 g ingredient).
+When off, Moisture / Water Availability / Water Demand are reference data only and have zero effect on the recipe calculation.
 
-These values are editable per selected inclusion and are also persisted for user-created library items.
+When on, the recipe engine uses only that ingredient's profile:
 
-## Calculation model
-Baker's hydration remains based on flour and water. Add-ins are not silently reclassified as flour.
+- **Moisture %** — estimated percentage of the ingredient's weight that is water.
+- **Water Availability %** — estimated percentage of that water that is treated as available to affect dough hydration.
+- **Water Demand ×** — water compensation factor. Example: `0.50×` means 50 g water per 100 g of that ingredient.
 
-Available ingredient water = ingredient grams × moisture × availability.
+## Calculation
+For each enabled custom inclusion:
 
-Ingredient water demand = ingredient grams × demand factor.
+`waterContribution = ingredientWeight × moisture × availability`
 
-Recommended mix water = base formula water − starter water − available ingredient water + ingredient water demand.
+`waterDemand = ingredientWeight × demandFactor`
 
-The flour basis is solved so the target dough weight still includes the selected add-in mass and net water effect where feasible.
+The main formula water is adjusted by:
 
-## Important limitation
-These are practical estimating controls, not laboratory measurements. Ingredients vary by brand, processing, storage, soaking, salting, fat content, and particle size. The user can override the defaults.
+`adjustedWater = baseFormulaWater - waterContribution + waterDemand`
+
+The ingredient's own weight remains part of the dough weight as usual; the profile only changes how much of the target water is supplied by or reserved for that ingredient.
+
+## UI
+The profile panel starts collapsed. The checkbox is shown first so the user can explicitly opt in. Numeric fields are shown only when the checkbox is enabled, with a plain-language explanation of what each field changes in the formula.
+
+## Important
+These values are estimates, not laboratory measurements. Different brands, processing methods, and ingredient forms can behave differently. The user can change the profile later and the values are saved with the personal ingredient library.
