@@ -3664,7 +3664,13 @@ export default function Home() {
   };
 
   const updateUserInclusionWaterProfile = (id: string, profile: Partial<WaterProfileSettings>) => {
-    const next = userInclusions.map((item) => item.id === id ? { ...item, ...profile } : item);
+    const storedPatch: Partial<UserLibraryItem> = {
+      ...(typeof profile.enabled === "boolean" ? { waterProfileEnabled: profile.enabled } : {}),
+      ...(typeof profile.moisturePct === "number" ? { moisturePct: profile.moisturePct } : {}),
+      ...(typeof profile.waterAvailabilityPct === "number" ? { waterAvailabilityPct: profile.waterAvailabilityPct } : {}),
+      ...(typeof profile.waterDemandFactor === "number" ? { waterDemandFactor: profile.waterDemandFactor } : {}),
+    };
+    const next = userInclusions.map((item) => item.id === id ? { ...item, ...storedPatch } : item);
     if (next.some((item, index) => item !== userInclusions[index])) {
       setUserInclusions(next);
       persistIngredientLibrary("doughgarden-inclusion-library", next);
@@ -3763,10 +3769,16 @@ export default function Home() {
     setActiveRecipeId("");
   };
   const updateCustomInclusionWaterProfile = (id: string, patch: Partial<WaterProfileSettings>) => {
-    setCustomInclusions((items) => items.map((item) => item.id === id ? { ...item, ...patch } : item));
+    const storedPatch: Partial<CustomInclusion> = {
+      ...(typeof patch.enabled === "boolean" ? { waterProfileEnabled: patch.enabled } : {}),
+      ...(typeof patch.moisturePct === "number" ? { moisturePct: patch.moisturePct } : {}),
+      ...(typeof patch.waterAvailabilityPct === "number" ? { waterAvailabilityPct: patch.waterAvailabilityPct } : {}),
+      ...(typeof patch.waterDemandFactor === "number" ? { waterDemandFactor: patch.waterDemandFactor } : {}),
+    };
+    setCustomInclusions((items) => items.map((item) => item.id === id ? { ...item, ...storedPatch } : item));
     const current = customInclusions.find((item) => item.id === id);
     if (current && userInclusions.some((item) => item.id === id)) {
-      updateUserInclusionWaterProfile(id, { ...getWaterProfile(current), ...patch });
+      updateUserInclusionWaterProfile(id, storedPatch as Partial<WaterProfileSettings>);
     }
     setActiveRecipeId("");
   };
